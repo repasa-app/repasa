@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Conversar, preguntar o contar cómo lo usan en tu casa
+    url: https://github.com/repasa-app/repasa/discussions
+    about: Dudas de uso e ideas a medio cocinar. / Questions and rough ideas.
+  - name: 🤖 Ayuda para instalar la IA
+    url: https://repasa-app.github.io/repasa/ia.html
+    about: Guía paso a paso para Claude Code, Codex o Gemini CLI. / Step-by-step AI setup guide.

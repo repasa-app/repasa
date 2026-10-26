@@ -1,0 +1,101 @@
+{
+ "formato": 1,
+ "id": "sujeto-y-predicado",
+ "titulo": "Sujeto y predicado",
+ "ramo": "lenguaje",
+ "curso": "6b",
+ "resumen": "Casi todas las oraciones tienen dos partes. El sujeto es de quién o de qué se habla, y el predicado es lo que se dice del sujeto. En «Los niños juegan en el parque», el sujeto es «Los niños» y el predicado es «juegan en el parque». La palabra más importante del sujeto es el núcleo del sujeto, que suele ser un sustantivo («niños»). La más importante del predicado es el núcleo del predicado, que es el verbo («juegan»). Para encontrar el sujeto, pregúntale al verbo: ¿quiénes juegan?",
+ "conceptos": [
+  {
+   "termino": "Sujeto",
+   "definicion": "De quién o de qué se habla en la oración."
+  },
+  {
+   "termino": "Predicado",
+   "definicion": "Lo que se dice del sujeto."
+  },
+  {
+   "termino": "Núcleo del predicado",
+   "definicion": "El verbo, la palabra más importante del predicado."
+  }
+ ],
+ "preguntas": [
+  {
+   "id": "p1",
+   "tipo": "alternativas",
+   "enunciado": "En «Mi abuela cocina empanadas», ¿cuál es el sujeto?",
+   "correcta": 0,
+   "explicacion": "Pregúntale al verbo: ¿quién cocina? Mi abuela.",
+   "dificultad": 1,
+   "opciones": [
+    "Mi abuela",
+    "cocina empanadas",
+    "empanadas"
+   ]
+  },
+  {
+   "id": "p2",
+   "tipo": "alternativas",
+   "enunciado": "En «El perro ladra fuerte», ¿cuál es el núcleo del predicado?",
+   "correcta": 1,
+   "explicacion": "El núcleo del predicado es el verbo: ladra.",
+   "dificultad": 1,
+   "opciones": [
+    "perro",
+    "ladra",
+    "fuerte"
+   ]
+  },
+  {
+   "id": "p3",
+   "tipo": "vf",
+   "enunciado": "El predicado es lo que se dice del sujeto.",
+   "correcta": true,
+   "explicacion": "Sí: el sujeto es de quién se habla y el predicado, lo que se dice de él.",
+   "dificultad": 1
+  },
+  {
+   "id": "p4",
+   "tipo": "completar",
+   "enunciado": "El núcleo del sujeto suele ser un ___.",
+   "correcta": [
+    "sustantivo"
+   ],
+   "explicacion": "Un sustantivo, como «niños» o «abuela».",
+   "dificultad": 2
+  },
+  {
+   "id": "p5",
+   "tipo": "alternativas",
+   "enunciado": "En «Llegaron mis primos», ¿cuál es el sujeto?",
+   "correcta": 2,
+   "explicacion": "¿Quiénes llegaron? Mis primos. El sujeto también puede ir al final.",
+   "dificultad": 3,
+   "opciones": [
+    "Llegaron",
+    "Llegaron mis",
+    "mis primos"
+   ]
+  },
+  {
+   "id": "p6",
+   "tipo": "vf",
+   "enunciado": "Para encontrar el sujeto, le preguntamos al verbo «¿quién?».",
+   "correcta": true,
+   "explicacion": "Sí: ¿quién o quiénes hacen la acción del verbo?",
+   "dificultad": 1
+  }
+ ],
+ "tarjetas": [
+  {
+   "frente": "Sujeto",
+   "reverso": "De quién o de qué se habla"
+  },
+  {
+   "frente": "Núcleo del predicado",
+   "reverso": "El verbo"
+  }
+ ],
+ "autor": "Repasa (ejemplo)",
+ "creado": "2026-10-12"
+}

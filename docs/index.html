@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repasa — app gratis para estudiar desde la foto del cuaderno | 5° básico a 4° medio</title>
+<meta name="description" content="App de estudio gratis y de código abierto para niñas y niños de 5° básico a 4° medio. Le sacas una foto al cuaderno y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas, con repaso espaciado para preparar las pruebas. Sin cuentas, sin publicidad y con todo en el computador de la casa.">
+<link rel="canonical" href="https://repasa-app.github.io/repasa/">
+<meta name="theme-color" content="#2f5bea">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Repasa">
+<meta property="og:url" content="https://repasa-app.github.io/repasa/">
+<meta property="og:locale" content="es_CL"><meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="Repasa — de la foto del cuaderno a la prueba preparada">
+<meta property="og:description" content="Resumen fácil, preguntas tipo prueba y tarjetas desde una foto del cuaderno. Gratis, de código abierto y sin cuentas.">
+<meta property="og:image" content="https://repasa-app.github.io/repasa/img/compartir.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "SoftwareApplication",
+   "name": "Repasa",
+   "url": "https://repasa-app.github.io/repasa/",
+   "image": "https://repasa-app.github.io/repasa/img/compartir.png",
+   "description": "App de estudio para estudiantes de 5° básico a 4° medio que convierte fotos del cuaderno en resúmenes, preguntas tipo prueba y tarjetas, con repaso espaciado.",
+   "applicationCategory": "EducationalApplication",
+   "operatingSystem": "macOS, Windows, Linux",
+   "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+   "isAccessibleForFree": true,
+   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+   "codeRepository": "https://github.com/repasa-app/repasa",
+   "inLanguage": ["es", "en"],
+   "audience": { "@type": "EducationalAudience", "educationalRole": "student" }
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    { "@type": "Question", "name": "¿Repasa es gratis?", "acceptedAnswer": { "@type": "Answer", "text": "Sí. Es gratis y de código abierto (AGPL-3.0), sin publicidad, sin compras dentro de la app y sin cuentas. Usa la IA que ya tiene un adulto de la casa." } },
+    { "@type": "Question", "name": "¿Qué IA necesito?", "acceptedAnswer": { "@type": "Answer", "text": "Claude Code, Codex (ChatGPT) o Gemini CLI, instalada en el computador con la cuenta de un adulto. Hay una guía paso a paso. Sin IA igual se pueden repasar los temas que ya estén creados." } },
+    { "@type": "Question", "name": "¿Qué ve la IA?", "acceptedAnswer": { "@type": "Answer", "text": "Solo el material que agregan (las fotos, el PDF o el texto), el curso para ajustar el nivel y, si piden otra explicación, esa pregunta. Nunca el nombre del perfil ni cómo le va." } },
+    { "@type": "Question", "name": "¿Y si la IA se equivoca?", "acceptedAnswer": { "@type": "Answer", "text": "Antes de guardar un tema, Repasa muestra el resumen y las preguntas para revisar que calcen con el cuaderno. La IA tiene la instrucción de usar solo lo que dice el material, y todo lo que responde se valida." } },
+    { "@type": "Question", "name": "¿Sirve para preparar una prueba?", "acceptedAnswer": { "@type": "Answer", "text": "Sí. Pones la fecha y los temas que entran, y los días antes Repasa les da prioridad en el repaso diario." } }
+   ]
+  }
+ ]
+}
+</script>
+<style>
+  :root { --fondo: #f7f5ef; --papel: #fffefa; --texto: #1d2333; --suave: #5d6475; --linea: #e6e2d6; --cuadricula: rgba(70, 110, 200, .08);
+    --acento: #2f5bea; --acento-osc: #2347c2; --destacador: #ffd84d; --verde: #1f9d5a; --rojo: #d6453d;
+    --redonda: ui-rounded, "SF Pro Rounded", "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo: #12141b; --papel: #171a23; --texto: #f2f3f7; --suave: #a2a8b8; --linea: #2c3140; --cuadricula: rgba(120, 150, 255, .05);
+      --acento: #7c9bff; --acento-osc: #5b7cf0; --destacador: #f5c940; }
+  }
+  * { box-sizing: border-box; } html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 17px/1.6 var(--redonda); -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    background-image: linear-gradient(var(--cuadricula) 1px, transparent 1px), linear-gradient(90deg, var(--cuadricula) 1px, transparent 1px); background-size: 26px 26px; }
+  a { color: var(--acento); } :focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; border-radius: 6px; }
+  .ancho { width: min(1120px, 100% - 32px); margin: 0 auto; }
+  h1, h2, h3 { letter-spacing: -.02em; line-height: 1.1; margin: 0; }
+  section { padding: 80px 0; }
+  .etiqueta { display: inline-block; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--acento); margin-bottom: 12px; }
+  h2 { font-size: clamp(30px, 4.2vw, 46px); font-weight: 900; max-width: 22ch; }
+  .intro { color: var(--suave); font-size: 19px; max-width: 60ch; margin: 16px 0 0; }
+  mark { background: linear-gradient(transparent 55%, var(--destacador) 55%); color: inherit; padding: 0 4px; }
+
+  .barra { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: color-mix(in srgb, var(--fondo) 85%, transparent); border-bottom: 2px solid var(--linea); }
+  .barra .ancho { display: flex; align-items: center; gap: 14px; height: 62px; }
+  .marca { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 21px; text-decoration: none; color: var(--texto); }
+  .marca img { width: 32px; height: 32px; }
+  .barra nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 700; } .barra nav a { color: var(--suave); text-decoration: none; } .barra nav a:hover { color: var(--texto); }
+  .idioma { border: 2px solid var(--linea); background: var(--papel); color: var(--texto); border-radius: 999px; padding: 4px 12px; font: 800 12px var(--redonda); cursor: pointer; }
+  @media (max-width: 820px) { .barra nav { display: none; } .idioma { margin-left: auto; } }
+
+  .boton { display: inline-flex; align-items: center; gap: 8px; padding: 14px 22px; border-radius: 16px; font-weight: 800; text-decoration: none; color: var(--texto);
+    background: var(--papel); border: 2px solid var(--linea); box-shadow: 0 4px 0 var(--linea); transition: transform .1s; }
+  .boton:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--linea); }
+  .boton.principal { background: var(--acento); color: #fff; border-color: var(--acento); box-shadow: 0 4px 0 var(--acento-osc); }
+  @media (prefers-color-scheme: dark) { .boton.principal { color: #0e1220; } }
+
+  .portada { padding: 64px 0 40px; }
+  .portada h1 { font-size: clamp(40px, 6.6vw, 78px); font-weight: 900; max-width: 14ch; }
+  .portada .acciones { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
+  .aviso { font-size: 15px; color: var(--suave); margin-top: 16px; max-width: 62ch; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+  .chips span { background: var(--papel); border: 2px solid var(--linea); border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 700; }
+  .captura { margin-top: 48px; position: relative; }
+  .captura img { width: 100%; display: block; border-radius: 22px; border: 2px solid var(--linea); box-shadow: 0 30px 70px rgba(29, 35, 51, .14); }
+  .captura .nota { position: absolute; right: -10px; top: -26px; transform: rotate(3deg); background: var(--destacador); color: #1d2333; font-weight: 800; padding: 10px 16px; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.12); font-size: 15px; max-width: 260px; }
+  .pie-captura { text-align: center; color: var(--suave); font-size: 14px; margin-top: 14px; }
+  @media (max-width: 700px) { .captura .nota { position: static; transform: none; display: inline-block; margin-bottom: 12px; } }
+
+  .rejilla { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 40px; }
+  @media (max-width: 860px) { .rejilla { grid-template-columns: 1fr; } }
+  .tarjeta { background: var(--papel); border: 2px solid var(--linea); border-radius: 22px; padding: 26px; box-shadow: 0 4px 0 var(--linea); }
+  .tarjeta .num { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--acento); color: #fff; font-weight: 900; margin-bottom: 14px; }
+  @media (prefers-color-scheme: dark) { .tarjeta .num { color: #0e1220; } }
+  .tarjeta .emoji { font-size: 32px; display: block; margin-bottom: 10px; }
+  .tarjeta h3 { font-size: 21px; margin-bottom: 8px; } .tarjeta p { margin: 0; color: var(--suave); }
+
+  .cajas { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 34px; }
+  .caja { background: var(--papel); border: 2px solid var(--linea); border-radius: 16px; padding: 12px 4px; text-align: center; }
+  .caja small { font-size: 12px; } .caja b { display: block; font-size: 26px; font-weight: 900; } .caja small { color: var(--suave); font-weight: 700; }
+  .dos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+  @media (max-width: 860px) { .dos { grid-template-columns: 1fr; gap: 28px; } }
+  .lista { list-style: none; padding: 0; margin: 26px 0 0; display: grid; gap: 14px; }
+  .lista li { display: flex; gap: 12px; align-items: flex-start; } .lista li span:first-child { font-size: 22px; line-height: 1.3; }
+  .imagen-lado img { width: 100%; border-radius: 22px; border: 2px solid var(--linea); display: block; }
+
+  details { background: var(--papel); border: 2px solid var(--linea); border-radius: 18px; padding: 18px 22px; margin-top: 12px; }
+  summary { font-weight: 800; cursor: pointer; font-size: 18px; } details p { color: var(--suave); margin: 10px 0 0; }
+  .final { text-align: center; } .final h2 { margin: 0 auto; } .final .intro { margin: 16px auto 0; } .final .acciones { justify-content: center; display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; }
+  footer { border-top: 2px solid var(--linea); padding: 30px 0 40px; color: var(--suave); font-size: 14px; }
+  footer .ancho { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; } footer a { color: var(--suave); }
+
+  [data-en] { display: none; } html[lang="en"] [data-es] { display: none; } html[lang="en"] [data-en] { display: revert; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .boton { transition: none; } }
+</style>
+</head>
+<body>
+<header class="barra"><div class="ancho">
+  <a class="marca" href="./"><img src="favicon.svg" alt="">Repasa</a>
+  <nav>
+    <a href="#como"><span data-es>Cómo funciona</span><span data-en>How it works</span></a>
+    <a href="#familias"><span data-es>Para familias</span><span data-en>For families</span></a>
+    <a href="#preguntas"><span data-es>Preguntas</span><span data-en>FAQ</span></a>
+    <a href="https://github.com/repasa-app/repasa">GitHub</a>
+  </nav>
+  <button class="idioma" id="idioma" aria-label="Cambiar idioma / Change language">EN</button>
+</div></header>
+
+<main>
+<section class="portada"><div class="ancho">
+  <span class="etiqueta"><span data-es>Gratis · Código abierto · 5° básico a 4° medio</span><span data-en>Free · Open source · Grades 5 to 12</span></span>
+  <h1><span data-es>De la foto del cuaderno a la <mark>prueba preparada</mark>.</span><span data-en>From a notebook photo to <mark>test-ready</mark>.</span></h1>
+  <p class="intro"><span data-es>Le sacas una foto al cuaderno o a la guía y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas para memorizar. Unos minutos al día, y las preguntas que cuestan vuelven hasta que se aprenden.</span><span data-en>Snap a photo of the notebook or worksheet and Repasa builds an easy summary, test-style questions and flashcards. A few minutes a day, and the tricky questions come back until they're learned.</span></p>
+  <div class="acciones">
+    <a class="boton principal" href="demo/"><span data-es>Probar la vista previa</span><span data-en>Try the live preview</span> →</a>
+    <a class="boton" href="https://github.com/repasa-app/repasa"><span data-es>Ver el código</span><span data-en>See the code</span></a>
+  </div>
+  <p class="aviso"><span data-es>Las apps para Mac, Windows y Linux vienen en camino. Mientras, la vista previa funciona en el navegador con datos inventados.</span><span data-en>The Mac, Windows and Linux apps are on the way. Meanwhile, the preview runs in your browser with made-up data.</span></p>
+  <div class="chips">
+    <span>🙅 <span data-es>Sin cuentas ni correos</span><span data-en>No accounts or emails</span></span>
+    <span>🚫 <span data-es>Sin publicidad</span><span data-en>No ads</span></span>
+    <span>🏠 <span data-es>Todo queda en el computador</span><span data-en>Everything stays on the computer</span></span>
+    <span>✦ <span data-es>Con Claude, ChatGPT o Gemini</span><span data-en>With Claude, ChatGPT or Gemini</span></span>
+  </div>
+  <div class="captura">
+    <span class="nota"><span data-es>12 preguntas hoy, unos 7 minutos ✏️</span><span data-en>12 questions today, about 7 minutes ✏️</span></span>
+    <img src="img/app-inicio.png" alt="Pantalla de inicio de Repasa: el repaso de hoy, la próxima prueba, la racha y los temas" width="1280" height="800">
+  </div>
+  <p class="pie-captura"><span data-es>Datos inventados.</span><span data-en>Made-up data.</span></p>
+</div></section>
+
+<section id="como"><div class="ancho">
+  <span class="etiqueta"><span data-es>Cómo funciona</span><span data-en>How it works</span></span>
+  <h2><span data-es>Lo que pasan en el colegio, convertido en repaso.</span><span data-en>What they cover at school, turned into practice.</span></h2>
+  <div class="rejilla">
+    <article class="tarjeta"><span class="num">1</span><h3><span data-es>Foto del cuaderno</span><span data-en>Notebook photo</span></h3>
+      <p><span data-es>Fotos del cuaderno o de la guía, un PDF o texto pegado. Eliges el curso y el ramo (o dejas que lo adivine).</span><span data-en>Photos of the notebook or worksheet, a PDF or pasted text. Pick the grade and subject (or let it guess).</span></p></article>
+    <article class="tarjeta"><span class="num">2</span><h3><span data-es>La IA arma el tema</span><span data-en>The AI builds the topic</span></h3>
+      <p><span data-es>Resumen fácil, conceptos clave, preguntas de alternativas, verdadero o falso y completar, y tarjetas. Lo revisas antes de guardarlo.</span><span data-en>An easy summary, key concepts, multiple-choice, true/false and fill-in questions, and flashcards. You check it before saving.</span></p></article>
+    <article class="tarjeta"><span class="num">3</span><h3><span data-es>Unos minutos al día</span><span data-en>A few minutes a day</span></h3>
+      <p><span data-es>Repasa elige las preguntas de hoy. ¿No entendiste? La IA lo explica de otra forma, con un ejemplo de la vida diaria.</span><span data-en>Repasa picks today's questions. Didn't get it? The AI explains it another way, with an everyday example.</span></p></article>
+  </div>
+</div></section>
+
+<section><div class="ancho dos">
+  <div>
+    <span class="etiqueta"><span data-es>Por qué funciona</span><span data-en>Why it works</span></span>
+    <h2><span data-es>Recordar es mejor que releer.</span><span data-en>Recalling beats rereading.</span></h2>
+    <p class="intro"><span data-es>Responder preguntas (en vez de mirar el cuaderno otra vez) y repasar justo cuando algo se está olvidando son dos de las formas de estudiar que más ayudan. Repasa usa las dos: cada pregunta vive en una caja y, mientras mejor te la sabes, más días espera para volver.</span><span data-en>Answering questions (instead of rereading the notebook) and reviewing right when something is fading are two of the most helpful ways to study. Repasa uses both: each question lives in a box, and the better you know it, the longer it waits to come back.</span></p>
+    <div class="cajas">
+      <div class="caja"><b>1</b><small><span data-es>mañana</span><span data-en>tomorrow</span></small></div>
+      <div class="caja"><b>3</b><small><span data-es>días</span><span data-en>days</span></small></div>
+      <div class="caja"><b>7</b><small><span data-es>días</span><span data-en>days</span></small></div>
+      <div class="caja"><b>14</b><small><span data-es>días</span><span data-en>days</span></small></div>
+      <div class="caja"><b>30</b><small><span data-es>días</span><span data-en>days</span></small></div>
+    </div>
+    <ul class="lista">
+      <li><span>📅</span><span><span data-es><b>¿Tienes prueba?</b> Pones la fecha y los temas, y los días antes se priorizan.</span><span data-en><b>Got a test?</b> Add the date and topics, and they're prioritized in the days before.</span></span></li>
+      <li><span>🔥</span><span><span data-es><b>Puntos y racha</b> para que den ganas de volver, sin perder puntos si un día no se puede.</span><span data-en><b>Points and streaks</b> to make it fun to come back, without losing points if a day gets missed.</span></span></li>
+      <li><span>⌨️</span><span><span data-es><b>Rápida con teclado:</b> 1, 2, 3 para responder y Enter para seguir.</span><span data-en><b>Quick with a keyboard:</b> 1, 2, 3 to answer and Enter to continue.</span></span></li>
+    </ul>
+  </div>
+  <div class="imagen-lado"><img src="img/app-pregunta.png" alt="Una pregunta de verdadero o falso respondida en Repasa, con su explicación" width="1280" height="640" loading="lazy"></div>
+</div></section>
+
+<section id="familias"><div class="ancho">
+  <span class="etiqueta"><span data-es>Para familias</span><span data-en>For families</span></span>
+  <h2><span data-es>Hecha para niñas y niños, con un adulto cerca.</span><span data-en>Made for kids, with a grown-up nearby.</span></h2>
+  <div class="rejilla">
+    <article class="tarjeta"><span class="emoji">🏠</span><h3><span data-es>Todo en el computador</span><span data-en>All on the computer</span></h3>
+      <p><span data-es>Sin cuentas, sin servidores de Repasa, sin publicidad ni telemetría. Los temas y el progreso son archivos abiertos en una carpeta.</span><span data-en>No accounts, no Repasa servers, no ads or telemetry. Topics and progress are open files in a folder.</span></p></article>
+    <article class="tarjeta"><span class="emoji">✦</span><h3><span data-es>La IA de un adulto</span><span data-en>A grown-up's AI</span></h3>
+      <p><span data-es>Usa Claude, ChatGPT o Gemini con la cuenta de un adulto. Solo ve el material, el curso y la pregunta; nunca el nombre ni el progreso.</span><span data-en>It uses Claude, ChatGPT or Gemini with a grown-up's account. It only sees the material, the grade and the question; never the name or progress.</span></p></article>
+    <article class="tarjeta"><span class="emoji">👀</span><h3><span data-es>Cómo van, de un vistazo</span><span data-en>How they're doing, at a glance</span></h3>
+      <p><span data-es>Varios perfiles en el mismo computador. En «Para adultos» ves la semana de cada uno y cómo va por ramo.</span><span data-en>Several profiles on the same computer. In "For grown-ups" you see each kid's week and how they're doing by subject.</span></p></article>
+  </div>
+</div></section>
+
+<section id="preguntas"><div class="ancho">
+  <span class="etiqueta"><span data-es>Preguntas</span><span data-en>FAQ</span></span>
+  <h2><span data-es>Lo que suelen preguntar.</span><span data-en>What people usually ask.</span></h2>
+  <div style="margin-top:30px;max-width:820px">
+    <details><summary><span data-es>¿Es gratis de verdad?</span><span data-en>Is it really free?</span></summary>
+      <p><span data-es>Sí. Es de código abierto (AGPL-3.0), sin publicidad, sin compras y sin cuentas. Lo único que usa es la IA que ya tiene un adulto de la casa.</span><span data-en>Yes. It's open source (AGPL-3.0), with no ads, purchases or accounts. The only thing it uses is the AI a grown-up at home already has.</span></p></details>
+    <details><summary><span data-es>¿Qué IA necesito?</span><span data-en>Which AI do I need?</span></summary>
+      <p><span data-es>Claude Code, Codex (ChatGPT) o Gemini CLI, instalada con la cuenta de un adulto. Hay una <a href="ia.html">guía paso a paso</a>. Sin IA igual se pueden repasar los temas ya creados.</span><span data-en>Claude Code, Codex (ChatGPT) or Gemini CLI, installed with a grown-up's account. There's a <a href="ia.html">step-by-step guide</a>. Without an AI you can still review topics already created.</span></p></details>
+    <details><summary><span data-es>¿Y si la IA se equivoca?</span><span data-en>What if the AI gets something wrong?</span></summary>
+      <p><span data-es>Antes de guardar un tema ves el resumen y las preguntas para revisar que calcen con el cuaderno. La IA tiene la instrucción de usar solo lo que dice el material, y Repasa valida todo lo que responde.</span><span data-en>Before saving a topic you see the summary and questions to check they match the notebook. The AI is told to use only what's in the material, and Repasa validates everything it returns.</span></p></details>
+    <details><summary><span data-es>¿Sirve para cualquier ramo?</span><span data-en>Does it work for any subject?</span></summary>
+      <p><span data-es>Para casi todos: Lenguaje, Matemática, Historia, Ciencias, Inglés, Biología, Química, Física, Filosofía y más. Funciona mejor con contenidos para memorizar y entender; los ejercicios largos de matemática todavía no.</span><span data-en>Almost all of them: Language arts, Math, History, Science, English, Biology, Chemistry, Physics, Philosophy and more. It works best for content to memorize and understand; long math problems aren't supported yet.</span></p></details>
+    <details><summary><span data-es>¿Puedo ayudar?</span><span data-en>Can I help?</span></summary>
+      <p><span data-es>¡Sí! Si eres profe, revisando temas; si programas, con código; y cualquiera, contando qué le falta. Todo está en <a href="https://github.com/repasa-app/repasa/blob/main/CONTRIBUTING.md">Cómo aportar</a>.</span><span data-en>Yes! Teachers can review topics, developers can code, and anyone can tell us what's missing. It's all in <a href="https://github.com/repasa-app/repasa/blob/main/CONTRIBUTING.md">How to contribute</a>.</span></p></details>
+  </div>
+</div></section>
+
+<section class="final"><div class="ancho">
+  <h2><span data-es>Pruébala ahora, sin instalar nada.</span><span data-en>Try it now, nothing to install.</span></h2>
+  <p class="intro"><span data-es>La vista previa usa datos inventados: un repaso de Historia, una prueba el viernes y tres temas listos.</span><span data-en>The preview uses made-up data: a History review, a test on Friday and three ready topics.</span></p>
+  <div class="acciones"><a class="boton principal" href="demo/"><span data-es>Abrir la vista previa</span><span data-en>Open the preview</span> →</a>
+    <a class="boton" href="https://github.com/repasa-app/repasa/discussions"><span data-es>Conversar con la comunidad</span><span data-en>Join the community</span></a></div>
+</div></section>
+</main>
+
+<footer><div class="ancho">
+  <span><span data-es>Repasa es gratis y de código abierto (AGPL-3.0). Hecha en Chile, para cualquier lugar.</span><span data-en>Repasa is free and open source (AGPL-3.0). Made in Chile, for anywhere.</span></span>
+  <span><a href="https://github.com/repasa-app/repasa">GitHub</a> · <a href="ia.html"><span data-es>Instalar la IA</span><span data-en>Set up the AI</span></a> · <a href="https://github.com/repasa-app/repasa/blob/main/CODE_OF_CONDUCT.md"><span data-es>Código de conducta</span><span data-en>Code of conduct</span></a></span>
+</div></footer>
+
+<script>
+  const html = document.documentElement, boton = document.getElementById("idioma");
+  const TITULOS = { es: "Repasa — app gratis para estudiar desde la foto del cuaderno | 5° básico a 4° medio", en: "Repasa — free study app that turns notebook photos into practice | Grades 5–12" };
+  let guardado = null; try { guardado = localStorage.getItem("repasa-idioma"); } catch (e) {}
+  const poner = (l) => { html.lang = l; boton.textContent = l === "es" ? "EN" : "ES"; document.title = TITULOS[l]; };
+  poner(guardado || ((navigator.language || "es").toLowerCase().startsWith("es") ? "es" : "en"));
+  boton.onclick = () => { const l = html.lang === "es" ? "en" : "es"; poner(l); try { localStorage.setItem("repasa-idioma", l); } catch (e) {} };
+</script>
+</body>
+</html>

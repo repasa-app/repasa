@@ -1,0 +1,514 @@
+// Interfaz de Repasa: la misma en Mac (WKWebView), Windows y Linux (Electron) y en el navegador (vista previa con demo.json).
+// La app manda el estado con window.Repasa.estado(json); la interfaz pide cosas con host.enviar(accion, datos).
+// La lógica del repaso (cajas, qué preguntar hoy, corregir, puntos y racha) vive aquí y se prueba con pruebas/casos.json.
+(() => {
+  "use strict";
+  const HOST = window.REPASA_HOST || "web";
+  document.documentElement.dataset.host = HOST;
+  const E = {
+    hoy: "", perfiles: [], temas: [], progreso: {}, pruebas: [], config: {}, ias: [], version: "", carpeta: "", actualizacion: { hay: false },
+    perfil: null, vista: "inicio", temaSel: null, pestana: "resumen", volteadas: {}, sesion: null, nuevo: null, prueba: null, perfilEdit: null,
+    adultos: false, probando: {}, resultadoIA: {}, bv: null, bvCerrada: false, buscando: null, idioma: "es", textos: {},
+  };
+  const ENLACES = { sitio: "https://repasa-app.github.io/repasa/", codigo: "https://github.com/repasa-app/repasa",
+    comunidad: "https://github.com/repasa-app/repasa/discussions", guiaIA: "https://repasa-app.github.io/repasa/ia.html" };
+  const RAMOS = { lenguaje: "Lenguaje", matematica: "Matemática", historia: "Historia", ciencias: "Ciencias", ingles: "Inglés", biologia: "Biología",
+    quimica: "Química", fisica: "Física", filosofia: "Filosofía", artes: "Artes", tecnologia: "Tecnología", musica: "Música", otro: "Otro" };
+  const EMOJI_RAMO = { lenguaje: "📖", matematica: "➗", historia: "🏛️", ciencias: "🔬", ingles: "🇬🇧", biologia: "🧬", quimica: "⚗️", fisica: "🧲", filosofia: "💭", artes: "🎨", tecnologia: "💻", musica: "🎵", otro: "📝" };
+  const CURSOS = { "5b": "5° básico", "6b": "6° básico", "7b": "7° básico", "8b": "8° básico", "1m": "1° medio", "2m": "2° medio", "3m": "3° medio", "4m": "4° medio" };
+  const AVATARES = ["🦊", "🐼", "🐨", "🐸", "🦁", "🐯", "🐙", "🦄", "🐢", "🐧", "🦉", "🐶", "🐱", "🦖"];
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // ───────────── Puente con la app ─────────────
+  const host = {
+    enviar(accion, datos = {}) {
+      const msg = { accion, datos };
+      if (window.webkit?.messageHandlers?.repasa) return window.webkit.messageHandlers.repasa.postMessage(msg);
+      if (window.repasaEscritorio) return window.repasaEscritorio.enviar(msg);
+      return simular(accion, datos);
+    },
+  };
+
+  // ───────────── Idiomas (las claves son el texto en español) ─────────────
+  function tr(t) {
+    if (E.idioma === "es" || !t) return t;
+    const limpio = String(t).replace(/\s+/g, " ").trim();
+    if (!limpio) return t;
+    if (E.textos[limpio]) return t.replace(limpio, E.textos[limpio]);
+    if (window._faltantes && /\p{L}{2}/u.test(limpio)) window._faltantes.add(limpio);
+    return t;
+  }
+  function T(plantilla, valores = {}) {
+    let t = plantilla;
+    if (E.idioma !== "es") { if (E.textos[plantilla]) t = E.textos[plantilla]; else if (window._faltantes) window._faltantes.add(plantilla); }
+    t = esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+    for (const [k, v] of Object.entries(valores)) t = t.split(`{${k}}`).join(String(v));
+    return t;
+  }
+  const frase = (plantilla, valores, etiqueta = "span") => `<${etiqueta} data-sin-traducir>${T(plantilla, valores)}</${etiqueta}>`;
+  function traducirDOM(raiz) {
+    if (E.idioma === "es") return;
+    const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+    const nodos = []; let n; while ((n = w.nextNode())) nodos.push(n);
+    for (const t of nodos) {
+      const el = t.parentElement;
+      if (!el || el.closest("[data-sin-traducir], script, style") || !/\p{L}/u.test(t.nodeValue)) continue;
+      const v = tr(t.nodeValue); if (v !== t.nodeValue) t.nodeValue = v;
+    }
+    for (const el of raiz.querySelectorAll("[title],[aria-label],[placeholder]")) {
+      if (el.closest("[data-sin-traducir]")) continue;
+      for (const a of ["title", "aria-label", "placeholder"]) { const v = el.getAttribute(a); if (v) el.setAttribute(a, tr(v)); }
+    }
+  }
+  async function cargarIdioma() {
+    const pedido = new URLSearchParams(location.search).get("idioma");
+    const codigo = pedido || E.config.idioma_ui || ((navigator.language || "es").startsWith("es") ? "es" : "en");
+    if (codigo === E.idioma && (codigo === "es" || Object.keys(E.textos).length)) return;
+    E.idioma = codigo; E.textos = {};
+    if (codigo !== "es") { try { E.textos = (await (await fetch(`idiomas/${codigo}.json`)).json()).textos || {}; } catch { E.idioma = "es"; } }
+    document.documentElement.lang = E.idioma;
+  }
+
+  // ───────────── Lógica del repaso (casos en pruebas/casos.json) ─────────────
+  const INTERVALOS = [0, 1, 3, 7, 14, 30]; // días hasta volver a preguntar, según la caja (1 a 5)
+  function sumarDias(fecha, n) { const d = new Date(fecha + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  const diasEntre = (a, b) => Math.round((new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z")) / 86400000);
+  /** Cajas de repaso (Leitner): acierto sube una caja y espera más días; error vuelve a la caja 1 y se pregunta hoy. */
+  function actualizarCaja(estado, correcta, hoy) {
+    const e = { caja: 0, aciertos: 0, errores: 0, ...(estado || {}) };
+    const caja = correcta ? Math.min(5, (e.caja || 0) + 1) : 1;
+    return { caja, proxima: correcta ? sumarDias(hoy, INTERVALOS[caja]) : hoy, aciertos: e.aciertos + (correcta ? 1 : 0), errores: e.errores + (correcta ? 0 : 1), ultima: hoy };
+  }
+  const normalizar = (t) => String(t || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9ñ/ ]/g, " ").replace(/\s+/g, " ").trim();
+  function distancia(a, b) {
+    const m = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) m[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return m[a.length][b.length];
+  }
+  /** ¿Está bien? En «completar» no importan mayúsculas ni tildes, y se perdona una letra en palabras de 6 o más (así «nuevo» no pasa por «nueva»). */
+  function esCorrecta(p, respuesta) {
+    if (p.tipo === "alternativas") return respuesta === p.correcta;
+    if (p.tipo === "vf") return respuesta === p.correcta;
+    const r = normalizar(respuesta);
+    return !!r && p.correcta.some((c) => { const n = normalizar(c); return r === n || (n.length >= 6 && distancia(r, n) <= 1); });
+  }
+  /** Las preguntas de hoy: primero las que tocan (o que se fallaron), después nuevas, con prioridad a los temas de una prueba cercana. */
+  function elegirSesion(temas, progreso, hoy, pruebas, maximo = 12) {
+    const urgentes = new Set((pruebas || []).filter((x) => { const d = diasEntre(hoy, x.fecha); return d >= 0 && d <= 4; }).flatMap((x) => x.temas));
+    const todas = temas.flatMap((t) => t.preguntas.map((p) => ({ clave: `${t.id}/${p.id}`, tema: t.id, p, est: progreso.preguntas?.[`${t.id}/${p.id}`] })));
+    const peso = (x) => (urgentes.has(x.tema) ? 0 : 1);
+    const tocan = todas.filter((x) => x.est && x.est.proxima <= hoy).sort((a, b) => peso(a) - peso(b) || a.est.caja - b.est.caja || a.clave.localeCompare(b.clave));
+    const nuevas = todas.filter((x) => !x.est).sort((a, b) => peso(a) - peso(b) || a.p.dificultad - b.p.dificultad || a.clave.localeCompare(b.clave));
+    const repasoPrueba = todas.filter((x) => x.est && x.est.proxima > hoy && urgentes.has(x.tema) && x.est.caja < 5).sort((a, b) => a.est.caja - b.est.caja);
+    const elegidas = [...tocan, ...nuevas, ...repasoPrueba].slice(0, maximo);
+    return elegidas.map((x) => x.clave);
+  }
+  function actualizarRacha(prog, hoy) {
+    if (prog.ultimo_dia === hoy) return prog.racha || 1;
+    return prog.ultimo_dia && diasEntre(prog.ultimo_dia, hoy) === 1 ? (prog.racha || 0) + 1 : 1;
+  }
+  const PUNTOS = { acierto: 10, intento: 2, sesionPerfecta: 30 };
+  /** Qué tan dominado está un tema: % de sus preguntas en caja 3 o más. */
+  function dominio(t, prog) {
+    const n = t.preguntas.length;
+    return n ? Math.round(t.preguntas.filter((p) => (prog.preguntas?.[`${t.id}/${p.id}`]?.caja || 0) >= 3).length / n * 100) : 0;
+  }
+
+  // ───────────── Utilidades ─────────────
+  const perfil = () => E.perfiles.find((p) => p.id === E.perfil);
+  const prog = () => (E.progreso[E.perfil] ||= { preguntas: {}, puntos: 0, racha: 0, sesiones: [] });
+  const temasDe = (pf) => E.temas.filter((t) => t.curso === pf.curso);
+  const temaPorId = (id) => E.temas.find((t) => t.id === id);
+  const color = (ramo) => `var(--${RAMOS[ramo] ? ramo : "otro"})`;
+  const nombreIA = () => E.ias.find((i) => i.id === E.config.ia)?.nombre || tr("tu IA");
+  function toast(texto) { const t = $("#toast"); t.textContent = tr(texto); t.classList.add("visible"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("visible"), 2200); }
+  function fechaLarga(f) { const [a, m, d] = f.split("-").map(Number); return new Date(a, m - 1, d).toLocaleDateString(E.idioma === "es" ? "es-CL" : "en-US", { weekday: "long", day: "numeric", month: "long" }); }
+  const guardarProgreso = () => host.enviar("guardarProgreso", { perfil: E.perfil, progreso: prog() });
+  const elegir = (lista, semilla) => lista[Math.abs([...semilla].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % lista.length];
+
+  // ───────────── Pintar ─────────────
+  function pintar() {
+    const raiz = $("#app"), activo = document.activeElement?.id, y = window.scrollY;
+    raiz.innerHTML = `${barra()}<main>${principal()}</main>${dialogos()}`;
+    traducirDOM(raiz);
+    if (activo) document.getElementById(activo)?.focus();
+    if (E._mantener) window.scrollTo(0, y); else window.scrollTo(0, 0);
+    E._mantener = false;
+  }
+  const mantener = () => { E._mantener = true; pintar(); };
+
+  function barra() {
+    const pf = perfil();
+    return `<header class="barra"><span class="marca">${LOGO}<span>Repasa</span></span><span class="espacio"></span>
+      ${pf ? `<span class="marcador" title="Racha de días seguidos">🔥 <span data-sin-traducir>${esc(prog().racha || 0)}</span></span>
+        <span class="marcador" title="Puntos">⭐ <span data-sin-traducir>${esc(prog().puntos || 0)}</span></span>
+        <button class="chip-perfil" data-accion="cambiar-perfil" title="Cambiar de perfil"><span class="av" aria-hidden="true">${esc(pf.avatar)}</span><span data-sin-traducir>${esc(pf.nombre)}</span></button>` : ""}
+      <button class="icono" data-accion="adultos" title="Para adultos" aria-label="Para adultos">⚙︎</button></header>`;
+  }
+
+  function principal() {
+    if (!perfil()) return elegirPerfil();
+    if (E.sesion) return E.sesion.fin ? finSesion() : vistaSesion();
+    if (E.vista === "tema" && temaPorId(E.temaSel)) return vistaTema();
+    return inicio();
+  }
+
+  function elegirPerfil() {
+    return `<section class="perfiles"><div><h1>¿Quién va a repasar?</h1><p>Elige tu perfil para seguir donde quedaste.</p>
+      <div class="lista-perfiles">${E.perfiles.map((p) => `<button class="perfil" data-perfil="${esc(p.id)}"><span class="av" aria-hidden="true">${esc(p.avatar)}</span>
+        <b data-sin-traducir>${esc(p.nombre)}</b><small data-sin-traducir>${esc(tr(CURSOS[p.curso] || ""))}</small></button>`).join("")}
+        <button class="perfil nuevo" data-accion="nuevo-perfil"><span class="av" aria-hidden="true">＋</span><b>Nuevo perfil</b><small>Para otro estudiante</small></button></div></div></section>`;
+  }
+
+  function inicio() {
+    const pf = perfil(), p = prog(), temas = temasDe(pf);
+    const hoyClaves = elegirSesion(temas, p, E.hoy, E.pruebas.filter((x) => x.perfil === pf.id));
+    const prueba = E.pruebas.filter((x) => x.perfil === pf.id && x.fecha >= E.hoy).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
+    const hora = new Date().getHours(), saludo = hora < 12 ? "¡Buenos días, {n}!" : hora < 20 ? "¡Hola, {n}!" : "¡Buenas noches, {n}!";
+    const dominadas = Object.values(p.preguntas || {}).filter((x) => x.caja >= 3).length;
+    const tarjetaHoy = `<div class="repaso-hoy"><span class="deco" aria-hidden="true">✏️</span><h2>Tu repaso de hoy</h2>
+      ${hoyClaves.length ? `<div class="grande" data-sin-traducir>${T(hoyClaves.length === 1 ? "1 pregunta" : "{n} preguntas", { n: hoyClaves.length })}</div>
+        <p>${frase("Unos {m} minutos. ¡Tú puedes!", { m: Math.max(2, Math.round(hoyClaves.length * 0.6)) })}</p>
+        <button class="boton grande" data-accion="empezar">Empezar ▶</button>`
+        : temas.length ? `<div class="grande">¡Todo al día! 🎉</div><p>Vuelve mañana o practica un tema que quieras.</p>`
+          : `<div class="grande">Agrega tu primer tema</div><p>Saca una foto a tu cuaderno y Repasa arma las preguntas.</p><button class="boton grande" data-accion="nuevo-tema">＋ Nuevo tema</button>`}</div>`;
+    const tarjetaPrueba = prueba
+      ? `<div class="prueba-prox"><h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--suave)">Próxima prueba</h2>
+          <div class="dias" data-sin-traducir>${(() => { const d = diasEntre(E.hoy, prueba.fecha); return d === 0 ? T("¡Hoy!") : d === 1 ? T("Mañana") : `${d} <small>${T("días")}</small>`; })()}</div>
+          <p data-sin-traducir>${esc(tr(RAMOS[prueba.ramo] || ""))} · ${esc(fechaLarga(prueba.fecha))}</p>
+          <button class="boton" data-accion="editar-prueba" data-prueba="${esc(prueba.id)}">Cambiar</button></div>`
+      : `<div class="prueba-prox"><h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--suave)">¿Tienes prueba?</h2>
+          <p style="margin-top:8px">Dime cuándo y te preparo un repaso para llegar listo.</p><button class="boton" data-accion="nueva-prueba">📅 Agregar prueba</button></div>`;
+    const porRamo = {};
+    for (const t of temas) (porRamo[t.ramo] ||= []).push(t);
+    const tarjetasTema = temas.map((t) => `<button class="tema" data-tema="${esc(t.id)}" style="--c:${color(t.ramo)}">
+      <span class="ramo" data-sin-traducir>${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo]))}</span><b data-sin-traducir>${esc(t.titulo)}</b>
+      <span class="barra-dom"><i style="width:${dominio(t, p)}%"></i></span><small data-sin-traducir>${T("{n} % dominado", { n: dominio(t, p) })}</small></button>`).join("");
+    return `<div class="contenido"><div class="saludo"><h1 data-sin-traducir>${T(saludo, { n: `<span>${esc(pf.nombre)}</span>` })}</h1></div>
+      <div class="hoy">${tarjetaHoy}${tarjetaPrueba}</div>
+      <div class="cifras"><div class="cifra"><b data-sin-traducir>🔥 ${esc(p.racha || 0)}</b><small>días seguidos</small></div>
+        <div class="cifra"><b data-sin-traducir>⭐ ${esc(p.puntos || 0)}</b><small>puntos</small></div>
+        <div class="cifra"><b data-sin-traducir>✅ ${esc(dominadas)}</b><small>preguntas dominadas</small></div></div>
+      <div class="seccion-titulo"><h2>Mis temas</h2></div>
+      <div class="rejilla-temas">${tarjetasTema}<button class="tema nuevo" data-accion="nuevo-tema"><span style="font-size:28px" aria-hidden="true">📸</span><b>Nuevo tema</b><small>Foto del cuaderno, guía o texto</small></button></div></div>`;
+  }
+
+  const PESTANAS = [["resumen", "Explicado fácil"], ["conceptos", "Conceptos"], ["tarjetas", "Tarjetas"], ["material", "Material"]];
+  function vistaTema() {
+    const t = temaPorId(E.temaSel), p = prog();
+    let cuerpo;
+    if (E.pestana === "conceptos") cuerpo = `<div class="tarjeta"><div class="conceptos" data-sin-traducir>${t.conceptos.map((c) => `<div class="concepto"><b>${esc(c.termino)}</b><span>${esc(c.definicion)}</span></div>`).join("") || esc(tr("Este tema no tiene conceptos."))}</div></div>`;
+    else if (E.pestana === "tarjetas") cuerpo = `<p class="nota" style="margin:0 0 12px">Toca una tarjeta para darla vuelta. Intenta responder antes de mirar.</p>
+      <div class="tarjetas" data-sin-traducir>${t.tarjetas.map((c, k) => `<button class="flip" data-flip="${k}" aria-pressed="${!!E.volteadas[k]}" style="--c:${color(t.ramo)}"><span class="caras"><span class="cara">${esc(c.frente)}</span><span class="cara atras">${esc(c.reverso)}</span></span></button>`).join("")}</div>`;
+    else if (E.pestana === "material") cuerpo = `<div class="tarjeta">${(t.fuente || []).length ? `<div class="material">${(t.fuente || []).filter((f) => /\.(jpe?g|png|webp|gif)$/i.test(f)).map((f) => `<img src="${esc(rutaMaterial(t, f))}" alt="${esc(tr("Material del tema"))}">`).join("")}</div>
+      <p class="nota">${frase("{n} archivos guardados en tu computador.", { n: t.fuente.length })}</p>` : `<p class="nota" style="margin:0">Este tema no tiene fotos ni archivos: vino del catálogo o se escribió a mano.</p>`}</div>`;
+    else cuerpo = `<div class="tarjeta"><p class="resumen" data-sin-traducir style="margin:0">${esc(t.resumen)}</p></div>`;
+    return `<div class="contenido"><button class="boton sutil" data-accion="volver" style="margin:4px 0 8px">← <span>Volver</span></button>
+      <div class="cab-tema" style="--c:${color(t.ramo)}"><div><span class="ramo" data-sin-traducir>${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo]))} · ${esc(tr(CURSOS[t.curso]))}</span><h1 data-sin-traducir>${esc(t.titulo)}</h1>
+        <p class="nota" data-sin-traducir>${T("{n} preguntas · {d} % dominado", { n: t.preguntas.length, d: dominio(t, p) })}</p></div>
+        <div class="acciones"><button class="boton principal grande" data-practicar="${esc(t.id)}">Practicar ▶</button></div></div>
+      <div class="pestanas" role="tablist">${PESTANAS.map(([id, n]) => `<button class="pestana" role="tab" data-pestana="${id}" aria-selected="${E.pestana === id}">${n}</button>`).join("")}</div>${cuerpo}</div>`;
+  }
+  const rutaMaterial = (t, f) => (HOST === "web" ? `demo/${f}` : `repasa://material/${encodeURIComponent(t.id)}/${encodeURIComponent(f)}`);
+
+  // ───────────── Sesión de preguntas ─────────────
+  const BIEN = ["¡Bien!", "¡Excelente!", "¡Eso es!", "¡Muy bien!", "¡Perfecto!", "¡Sabía que podías!"];
+  const CASI = ["Casi…", "Uy, no era esa.", "¡Sigue intentando!", "Esta se aprende ahora."];
+  function vistaSesion() {
+    const s = E.sesion, [tid, pid] = s.claves[s.i].split("/"), t = temaPorId(tid), p = t.preguntas.find((x) => x.id === pid);
+    const r = s.respuesta, respondida = r !== undefined;
+    let opciones;
+    if (p.tipo === "alternativas") {
+      opciones = `<div class="opciones" data-sin-traducir>${p.opciones.map((o, k) => {
+        const cls = !respondida ? "" : k === p.correcta ? "bien" : k === r ? "mal" : "";
+        return `<button class="opcion ${cls}" data-responder="${k}" ${respondida ? "disabled" : ""}><span class="tecla">${k + 1}</span><span>${esc(o)}</span></button>`;
+      }).join("")}</div>`;
+    } else if (p.tipo === "vf") {
+      opciones = `<div class="vf">${[[true, "Verdadero"], [false, "Falso"]].map(([v, n], k) => {
+        const cls = !respondida ? "" : v === p.correcta ? "bien" : v === r ? "mal" : "";
+        return `<button class="opcion ${cls}" data-responder="${v}" ${respondida ? "disabled" : ""}><span class="tecla">${k + 1}</span><span>${n}</span></button>`;
+      }).join("")}</div>`;
+    } else {
+      opciones = `<form class="completar" data-form-completar><input id="respuesta" class="${respondida ? (s.correcta ? "bien" : "mal") : ""}" autocomplete="off" placeholder="Escribe tu respuesta" value="${esc(respondida ? r : "")}" ${respondida ? "disabled" : ""} aria-label="Tu respuesta" data-sin-traducir>
+        ${respondida ? "" : `<button class="boton principal" type="submit">Revisar</button>`}</form>`;
+    }
+    const correcta = p.tipo === "alternativas" ? p.opciones[p.correcta] : p.tipo === "vf" ? tr(p.correcta ? "Verdadero" : "Falso") : p.correcta[0];
+    const retro = !respondida ? "" : `<div class="retro ${s.correcta ? "bien" : "mal"}" role="status"><b data-sin-traducir>${esc(tr(s.correcta ? elegir(BIEN, s.claves[s.i]) : elegir(CASI, s.claves[s.i])))}</b>
+      ${s.correcta ? "" : frase("La respuesta es: **{r}**.", { r: esc(correcta) }, "div")}<span data-sin-traducir>${esc(p.explicacion)}</span>
+      ${s.explicacion ? `<div class="otra" data-sin-traducir>${s.explicacion === "cargando" ? T("{ia} está pensando otra forma de explicarlo…", { ia: esc(nombreIA()) }) : esc(s.explicacion)}</div>` : ""}</div>
+      <div class="acciones-pregunta">${!s.correcta && !s.explicacion ? `<button class="boton" data-accion="no-entendi">🤔 <span>No entendí, explícamelo de otra forma</span></button>` : ""}
+        <button class="boton principal grande der" data-accion="siguiente" id="siguiente">${s.i + 1 < s.claves.length ? "Siguiente →" : "Terminar 🎉"}</button></div>`;
+    return `<div class="sesion"><div class="progreso-sesion"><button class="icono" data-accion="salir-sesion" title="Salir" aria-label="Salir">✕</button>
+        <div class="barra-prog" role="progressbar" aria-valuemin="0" aria-valuemax="${s.claves.length}" aria-valuenow="${s.i}"><i style="width:${(s.i + (respondida ? 1 : 0)) / s.claves.length * 100}%"></i></div>
+        <span class="marcador" data-sin-traducir>${esc(s.i + 1)}/${esc(s.claves.length)}</span></div>
+      <div class="pregunta" style="--c:${color(t.ramo)}"><span class="de-tema" data-sin-traducir>${EMOJI_RAMO[t.ramo] || "📝"} ${esc(t.titulo)}</span>
+        <h2 data-sin-traducir>${esc(p.enunciado)}</h2>${opciones}${retro}</div></div>`;
+  }
+  function responder(valor) {
+    const s = E.sesion; if (!s || s.respuesta !== undefined) return;
+    const [tid, pid] = s.claves[s.i].split("/"), p = temaPorId(tid).preguntas.find((x) => x.id === pid);
+    s.respuesta = valor; s.correcta = esCorrecta(p, valor);
+    const pr = prog();
+    pr.preguntas[s.claves[s.i]] = actualizarCaja(pr.preguntas[s.claves[s.i]], s.correcta, E.hoy);
+    s.aciertos += s.correcta ? 1 : 0;
+    s.puntos += s.correcta ? PUNTOS.acierto : PUNTOS.intento;
+    mantener();
+    setTimeout(() => $("#siguiente")?.focus(), 30);
+  }
+  function terminarSesion() {
+    const s = E.sesion, pr = prog();
+    if (s.aciertos === s.claves.length && s.claves.length >= 5) s.puntos += PUNTOS.sesionPerfecta;
+    pr.racha = actualizarRacha(pr, E.hoy); pr.ultimo_dia = E.hoy;
+    pr.puntos = (pr.puntos || 0) + s.puntos;
+    (pr.sesiones ||= []).push({ fecha: E.hoy, preguntas: s.claves.length, aciertos: s.aciertos });
+    pr.sesiones = pr.sesiones.slice(-200);
+    s.fin = true;
+    guardarProgreso();
+    pintar();
+    if (s.aciertos / s.claves.length >= 0.7) confeti();
+  }
+  function finSesion() {
+    const s = E.sesion, pct = Math.round(s.aciertos / s.claves.length * 100);
+    const [emoji, titulo] = pct === 100 ? ["🏆", "¡Perfecto!"] : pct >= 70 ? ["🎉", "¡Muy bien!"] : pct >= 40 ? ["💪", "¡Vas mejorando!"] : ["🌱", "¡Buen comienzo!"];
+    return `<div class="sesion fin"><div class="emoji" aria-hidden="true">${emoji}</div><h1>${titulo}</h1>
+      ${frase("Acertaste {a} de {n}. Las que fallaste vuelven pronto para que las aprendas.", { a: s.aciertos, n: s.claves.length }, "p")}
+      <div class="premios"><div class="premio"><b data-sin-traducir>+${esc(s.puntos)}</b><small>puntos</small></div><div class="premio"><b data-sin-traducir>🔥 ${esc(prog().racha)}</b><small>días seguidos</small></div></div>
+      <button class="boton principal grande" data-accion="cerrar-sesion">Volver al inicio</button></div>`;
+  }
+  function confeti() {
+    const c = document.createElement("div"); c.className = "confeti"; c.setAttribute("aria-hidden", "true");
+    const colores = ["#2f5bea", "#ffd84d", "#1f9d5a", "#e5484d", "#8e4ec6"];
+    c.innerHTML = Array.from({ length: 60 }, (_, k) => `<i style="left:${(k * 37) % 100}%;background:${colores[k % 5]};animation-delay:${(k % 12) * 0.08}s"></i>`).join("");
+    document.body.appendChild(c); setTimeout(() => c.remove(), 3200);
+  }
+
+  // ───────────── Diálogos ─────────────
+  function dialogoNuevoTema() {
+    const n = E.nuevo, pf = perfil(), ia = esc(nombreIA());
+    if (n.paso === "creando") return `<h2 id="t-d">Armando tu repaso…</h2>${frase("{ia} está leyendo tu material y escribiendo las preguntas. Puede tomar un minuto.", { ia }, "p")}<div class="barra-prog-d"><i></i></div>`;
+    if (n.paso === "vista") {
+      const t = n.tema;
+      return `<h2 id="t-d">¡Listo! Revisa tu tema</h2><p>Si algo no calza con tu cuaderno, vuelve a intentarlo. Nada se guarda hasta que digas que sí.</p>
+        <div class="vista-tema" style="--c:${color(t.ramo)}" data-sin-traducir><span class="ramo" style="color:var(--c);font-weight:800;font-size:12.5px">${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo]))}</span><b>${esc(t.titulo)}</b>
+          <p style="margin:6px 0;color:var(--suave);line-height:1.5">${esc(t.resumen.slice(0, 260))}${t.resumen.length > 260 ? "…" : ""}</p>
+          <small>${T("{p} preguntas · {c} conceptos · {t} tarjetas", { p: t.preguntas.length, c: t.conceptos.length, t: t.tarjetas.length })}</small></div>
+        <div class="pie-dialogo"><button class="boton izq" data-accion="otra-vez">Intentar de nuevo</button><button class="boton" data-accion="cerrar">Cancelar</button><button class="boton principal" data-accion="guardar-tema">Guardar tema</button></div>`;
+    }
+    return `<h2 id="t-d">Nuevo tema</h2>${frase("Sácale fotos a tu cuaderno o a la guía, o pega el texto. {ia} arma el resumen, las preguntas y las tarjetas.", { ia }, "p")}
+      <div class="soltar"><span style="font-size:30px" aria-hidden="true">📸</span><button class="boton principal" data-accion="elegir-material">Elegir fotos o PDF</button>
+        <small style="color:var(--suave)">Fotos (JPG, PNG) o PDF. Que se lea bien y con buena luz.</small>
+        ${n.archivos.length ? `<div class="archivos">${n.archivos.map((a, k) => `<span class="archivo"><span data-sin-traducir>${esc(a.nombre)}</span><button data-quitar="${k}" aria-label="Quitar" title="Quitar">✕</button></span>`).join("")}</div>` : ""}</div>
+      <label class="campo"><span>O pega el texto (opcional)</span><textarea id="texto-tema" rows="3" placeholder="Ej.: el resumen que dictó la profesora" data-sin-traducir>${esc(n.texto || "")}</textarea></label>
+      <div class="dos"><label class="campo"><span>Ramo</span><select id="ramo-tema"><option value="auto">Que lo adivine la IA</option>${Object.entries(RAMOS).map(([k, v]) => `<option value="${k}" ${n.ramo === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+        <label class="campo"><span>Curso</span><select id="curso-tema">${Object.entries(CURSOS).map(([k, v]) => `<option value="${k}" ${(n.curso || pf.curso) === k ? "selected" : ""}>${v}</option>`).join("")}</select></label></div>
+      ${n.error ? `<p class="error-txt" data-sin-traducir>${esc(n.error)}</p>` : ""}
+      <div class="pie-dialogo"><button class="boton" data-accion="cerrar">Cancelar</button><button class="boton principal" data-accion="crear-tema">Armar mi repaso ✨</button></div>`;
+  }
+  function dialogoPrueba() {
+    const x = E.prueba, pf = perfil(), temas = temasDe(pf).filter((t) => !x.ramo || t.ramo === x.ramo);
+    return `<h2 id="t-d">${x.id ? "Tu prueba" : "Agregar prueba"}</h2><p>Repasa va a darle prioridad a estos temas los días antes.</p>
+      <div class="dos"><label class="campo"><span>Ramo</span><select id="ramo-prueba">${Object.entries(RAMOS).map(([k, v]) => `<option value="${k}" ${x.ramo === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+        <label class="campo"><span>Fecha</span><input class="texto" type="date" id="fecha-prueba" min="${esc(E.hoy)}" value="${esc(x.fecha || sumarDias(E.hoy, 7))}"></label></div>
+      <div class="campo"><span>Temas que entran</span>${temas.length ? temas.map((t) => `<label style="display:flex;gap:8px;align-items:center;font-weight:650"><input type="checkbox" data-tema-prueba="${esc(t.id)}" ${x.temas.includes(t.id) ? "checked" : ""}><span data-sin-traducir>${esc(t.titulo)}</span></label>`).join("")
+        : `<small>Todavía no tienes temas de este ramo. Agrégalos con una foto del cuaderno.</small>`}</div>
+      <div class="pie-dialogo">${x.id ? `<button class="boton peligro izq" data-accion="borrar-prueba">Borrar</button>` : ""}<button class="boton" data-accion="cerrar">Cancelar</button><button class="boton principal" data-accion="guardar-prueba">Guardar</button></div>`;
+  }
+  function dialogoPerfil() {
+    const x = E.perfilEdit;
+    return `<h2 id="t-d">${x.id ? "Editar perfil" : "Nuevo perfil"}</h2><p>Solo un nombre o apodo y el curso. Nada más.</p>
+      <label class="campo"><span>Nombre o apodo</span><input class="texto" id="nombre-perfil" maxlength="20" value="${esc(x.nombre || "")}" data-sin-traducir></label>
+      <label class="campo"><span>Curso</span><select id="curso-perfil">${Object.entries(CURSOS).map(([k, v]) => `<option value="${k}" ${x.curso === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      <div class="campo"><span>Elige un personaje</span><div class="avatares">${AVATARES.map((a) => `<button data-avatar="${a}" aria-pressed="${x.avatar === a}" aria-label="${esc(a)}">${a}</button>`).join("")}</div></div>
+      ${x.error ? `<p class="error-txt" data-sin-traducir>${esc(x.error)}</p>` : ""}
+      <div class="pie-dialogo"><button class="boton" data-accion="cerrar">Cancelar</button><button class="boton principal" data-accion="guardar-perfil">Guardar</button></div>`;
+  }
+  function filasIA() {
+    return E.ias.map((ia) => {
+      const enUso = E.config.ia === ia.id, probando = E.probando[ia.id], r = E.resultadoIA[ia.id];
+      const estado = !ia.instalada ? `<small>No está instalada · <a href="#" data-enlace="${ENLACES.guiaIA}#${ia.id}">Cómo instalarla</a></small>`
+        : r && !r.ok ? `<small class="error-txt" data-sin-traducir>${esc(r.texto || tr("No respondió."))}</small>` : `<small>Instalada</small>`;
+      const accion = enUso ? `<span class="ok">✓ En uso</span>` : ia.instalada ? `<button class="boton" data-probar="${esc(ia.id)}" ${probando ? "disabled" : ""}>${probando ? "Probando…" : "Usar"}</button>` : "";
+      return `<div class="fila"><div class="txt"><b data-sin-traducir>${esc(ia.nombre)}</b>${estado}</div>${accion}</div>`;
+    }).join("");
+  }
+  function dialogoAdultos() {
+    const avance = E.perfiles.map((pf) => {
+      const p = E.progreso[pf.id] || { preguntas: {} }, temas = temasDe(pf), ramos = [...new Set(temas.map((t) => t.ramo))];
+      const sem = (p.sesiones || []).filter((s) => diasEntre(s.fecha, E.hoy) < 7);
+      return `<div class="fila" style="display:block"><div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><span style="font-size:24px" aria-hidden="true">${esc(pf.avatar)}</span>
+          <b data-sin-traducir style="flex:1">${esc(pf.nombre)} · ${esc(tr(CURSOS[pf.curso]))}</b><button class="boton sutil" data-editar-perfil="${esc(pf.id)}">Editar</button></div>
+        ${frase("Esta semana: {s} sesiones, {p} preguntas, {a} % de aciertos.", { s: sem.length, p: sem.reduce((a, x) => a + x.preguntas, 0), a: sem.length ? Math.round(sem.reduce((a, x) => a + x.aciertos, 0) / Math.max(1, sem.reduce((a, x) => a + x.preguntas, 0)) * 100) : 0 }, "small")}
+        ${ramos.map((r) => { const ts = temas.filter((t) => t.ramo === r), d = Math.round(ts.reduce((a, t) => a + dominio(t, p), 0) / ts.length);
+          return `<div class="ramo-avance"><span data-sin-traducir>${esc(tr(RAMOS[r]))}</span><span class="barra-dom"><i style="width:${d}%;background:${color(r)}"></i></span><span data-sin-traducir>${d}%</span></div>`; }).join("")}</div>`;
+    }).join("");
+    return `<h2 id="t-d">Para adultos</h2><p>Todo queda en este computador. La IA usa la cuenta de un adulto y solo ve el material que agregan y las preguntas.</p>
+      <div class="seccion"><h3>Cómo van</h3>${avance || `<small>Todavía no hay perfiles.</small>`}</div>
+      <div class="seccion"><h3>La IA</h3>${filasIA()}</div>
+      <div class="seccion"><h3>General</h3><div class="fila"><div class="txt"><b>Idioma de la app</b></div><select data-config="idioma_ui"><option value="es" ${E.idioma === "es" ? "selected" : ""}>Español</option><option value="en" ${E.idioma === "en" ? "selected" : ""}>English</option></select></div>
+        <div class="fila"><div class="txt"><b>Carpeta de Repasa</b><small data-sin-traducir>${esc(E.carpeta)}</small></div><button class="boton" data-accion="abrir-carpeta">Abrir</button></div></div>
+      <div class="seccion"><h3>Acerca de Repasa</h3><p style="margin:0 0 8px;color:var(--suave)">${frase("Repasa {v} · Gratis y de código abierto (AGPL-3.0).", { v: esc(E.version) })}</p>
+        <div class="fila"><div class="txt"><b>Actualizaciones</b><small>${E.buscando === "buscando" ? "Buscando…" : E.buscando === "alDia" ? "Estás en la última versión." : "Repasa revisa sola cada 6 horas."}</small></div><button class="boton" data-accion="buscar-act" ${E.buscando === "buscando" ? "disabled" : ""}>Buscar actualizaciones</button></div>
+        <div class="enlaces"><a href="#" data-enlace="${ENLACES.sitio}">Sitio web</a><a href="#" data-enlace="${ENLACES.codigo}">Código</a><a href="#" data-enlace="${ENLACES.comunidad}">Comunidad</a></div></div>
+      <div class="pie-dialogo"><button class="boton principal" data-accion="cerrar">Listo</button></div>`;
+  }
+  function bienvenida() {
+    const pasos = [
+      ["Hola, esto es Repasa", `<p>Una app para estudiar con lo que pasan en el colegio. Le sacan una foto al cuaderno y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas para memorizar. Las preguntas que cuestan vuelven hasta que se aprenden.</p><p class="nota">Gratis, sin cuentas y sin publicidad. Todo queda en este computador.</p>`, true],
+      ["Elijan la IA", `<p>Repasa usa la IA que ya tiene un adulto de la casa (Claude, ChatGPT o Gemini), con su cuenta. La probamos con una pregunta corta.</p><div class="seccion">${filasIA()}</div>`, !!E.config.ia],
+    ];
+    const [titulo, cuerpo, puede] = pasos[E.bv];
+    return `<div class="pasos-bv">${pasos.map((_, i) => `<i class="${i <= E.bv ? "hecho" : ""}"></i>`).join("")}</div><h2 id="t-d">${titulo}</h2>${cuerpo}
+      <div class="pie-dialogo">${E.bv ? `<button class="boton izq" data-bv="${E.bv - 1}">Atrás</button>` : ""}<button class="boton" data-accion="bv-fin">Lo hago después</button>
+        ${E.bv < pasos.length - 1 ? `<button class="boton principal" data-bv="${E.bv + 1}" ${puede ? "" : "disabled"}>Siguiente</button>` : `<button class="boton principal" data-accion="bv-fin">Empezar</button>`}</div>`;
+  }
+  function dialogos() {
+    const capa = (html) => `<div class="capa"><div class="dialogo" role="dialog" aria-modal="true" aria-labelledby="t-d">${html}</div></div>`;
+    if (E.nuevo) return capa(dialogoNuevoTema());
+    if (E.prueba) return capa(dialogoPrueba());
+    if (E.perfilEdit) return capa(dialogoPerfil());
+    if (E.bv !== null) return capa(bienvenida());
+    if (E.adultos) return capa(dialogoAdultos());
+    return "";
+  }
+
+  // ───────────── Eventos ─────────────
+  function leerNuevo() { if (!E.nuevo) return; E.nuevo.texto = $("#texto-tema")?.value ?? E.nuevo.texto; E.nuevo.ramo = $("#ramo-tema")?.value || E.nuevo.ramo; E.nuevo.curso = $("#curso-tema")?.value || E.nuevo.curso; }
+  function empezarSesion(claves) {
+    if (!claves.length) return toast("No hay preguntas por ahora");
+    E.sesion = { claves, i: 0, aciertos: 0, puntos: 0 }; pintar();
+  }
+  document.addEventListener("click", (ev) => {
+    const el = ev.target.closest("[data-accion],[data-perfil],[data-tema],[data-pestana],[data-flip],[data-practicar],[data-responder],[data-quitar],[data-avatar],[data-editar-perfil],[data-probar],[data-bv],[data-enlace]");
+    if (!el) return;
+    const d = el.dataset;
+    if (d.enlace) { ev.preventDefault(); return host.enviar("abrirEnlace", { url: d.enlace }); }
+    if (d.perfil) { E.perfil = d.perfil; E.vista = "inicio"; host.enviar("config", { ultimo_perfil: d.perfil }); return pintar(); }
+    if (d.tema) { E.temaSel = d.tema; E.vista = "tema"; E.pestana = "resumen"; E.volteadas = {}; return pintar(); }
+    if (d.pestana) { E.pestana = d.pestana; return mantener(); }
+    if (d.flip != null) { E.volteadas[d.flip] = !E.volteadas[d.flip]; el.setAttribute("aria-pressed", String(!!E.volteadas[d.flip])); return; }
+    if (d.practicar) { const t = temaPorId(d.practicar), p = prog(); return empezarSesion(t.preguntas.map((q) => `${t.id}/${q.id}`).sort((a, b) => (p.preguntas[a]?.caja || 0) - (p.preguntas[b]?.caja || 0)).slice(0, 12)); }
+    if (d.responder != null) { const s = E.sesion, [tid, pid] = s.claves[s.i].split("/"), p = temaPorId(tid).preguntas.find((x) => x.id === pid); return responder(p.tipo === "vf" ? d.responder === "true" : Number(d.responder)); }
+    if (d.quitar != null) { leerNuevo(); E.nuevo.archivos.splice(Number(d.quitar), 1); return mantener(); }
+    if (d.avatar) { E.perfilEdit.nombre = $("#nombre-perfil")?.value ?? E.perfilEdit.nombre; E.perfilEdit.curso = $("#curso-perfil")?.value || E.perfilEdit.curso; E.perfilEdit.avatar = d.avatar; return mantener(); }
+    if (d.editarPerfil) { E.adultos = false; E.perfilEdit = { ...E.perfiles.find((p) => p.id === d.editarPerfil) }; return pintar(); }
+    if (d.probar) { E.probando[d.probar] = true; delete E.resultadoIA[d.probar]; host.enviar("probarIA", { id: d.probar }); return mantener(); }
+    if (d.bv) { E.bv = Number(d.bv); return pintar(); }
+    switch (d.accion) {
+      case "cambiar-perfil": E.perfil = null; E.sesion = null; return pintar();
+      case "nuevo-perfil": E.perfilEdit = { nombre: "", curso: "6b", avatar: AVATARES[E.perfiles.length % AVATARES.length] }; pintar(); return $("#nombre-perfil")?.focus();
+      case "guardar-perfil": {
+        const x = E.perfilEdit, nombre = ($("#nombre-perfil")?.value || "").trim();
+        if (!nombre) { x.error = tr("Escribe un nombre o apodo."); return mantener(); }
+        const p = { id: x.id || nombre.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "") + "-" + Date.now().toString(36).slice(-4), nombre: nombre.slice(0, 20), curso: $("#curso-perfil").value, avatar: x.avatar };
+        E.perfiles = E.perfiles.filter((y) => y.id !== p.id).concat(p);
+        host.enviar("guardarPerfil", { perfil: p }); E.perfilEdit = null; if (!x.id) E.perfil = p.id; return pintar();
+      }
+      case "volver": E.vista = "inicio"; return pintar();
+      case "empezar": { const pf = perfil(); return empezarSesion(elegirSesion(temasDe(pf), prog(), E.hoy, E.pruebas.filter((x) => x.perfil === pf.id))); }
+      case "siguiente": { const s = E.sesion; if (s.i + 1 >= s.claves.length) return terminarSesion(); s.i++; delete s.respuesta; delete s.explicacion; pintar(); return $("#respuesta")?.focus(); }
+      case "no-entendi": { const s = E.sesion, [tid, pid] = s.claves[s.i].split("/"); s.explicacion = "cargando"; host.enviar("explicar", { tema: tid, pregunta: pid, respondio: String(s.respuesta ?? "") }); return mantener(); }
+      case "salir-sesion": if (E.sesion.i > 0 || E.sesion.respuesta !== undefined) guardarProgreso(); E.sesion = null; return pintar();
+      case "cerrar-sesion": E.sesion = null; E.vista = "inicio"; return pintar();
+      case "nuevo-tema": E.nuevo = { paso: "elegir", archivos: [], texto: "", ramo: "auto", curso: perfil().curso }; return pintar();
+      case "elegir-material": leerNuevo(); return host.enviar("elegirMaterial");
+      case "crear-tema": {
+        leerNuevo(); const n = E.nuevo;
+        if (!n.archivos.length && !n.texto.trim()) { n.error = tr("Agrega una foto, un PDF o pega el texto."); return mantener(); }
+        n.paso = "creando"; n.error = "";
+        host.enviar("crearTema", { curso: n.curso, ramo: n.ramo, texto: n.texto, archivos: n.archivos.map((a) => a.ruta) }); return pintar();
+      }
+      case "otra-vez": E.nuevo.paso = "elegir"; return pintar();
+      case "guardar-tema": host.enviar("guardarTema", { tema: E.nuevo.tema, archivos: E.nuevo.archivos.map((a) => a.ruta) }); return;
+      case "nueva-prueba": E.prueba = { ramo: temasDe(perfil())[0]?.ramo || "historia", temas: [], fecha: "" }; return pintar();
+      case "editar-prueba": E.prueba = { ...E.pruebas.find((x) => x.id === d.prueba) }; return pintar();
+      case "guardar-prueba": {
+        const x = E.prueba; x.ramo = $("#ramo-prueba").value; x.fecha = $("#fecha-prueba").value || sumarDias(E.hoy, 7);
+        x.temas = [...document.querySelectorAll("[data-tema-prueba]:checked")].map((c) => c.dataset.temaPrueba);
+        const p = { id: x.id || `prueba-${Date.now().toString(36)}`, perfil: E.perfil, ramo: x.ramo, temas: x.temas, fecha: x.fecha };
+        E.pruebas = E.pruebas.filter((y) => y.id !== p.id).concat(p); host.enviar("guardarPruebas", { pruebas: E.pruebas }); E.prueba = null; pintar(); return toast("Prueba guardada");
+      }
+      case "borrar-prueba": E.pruebas = E.pruebas.filter((y) => y.id !== E.prueba.id); host.enviar("guardarPruebas", { pruebas: E.pruebas }); E.prueba = null; return pintar();
+      case "adultos": E.adultos = true; return pintar();
+      case "cerrar": if (E.nuevo?.paso !== "creando") E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false; return pintar();
+      case "abrir-carpeta": return host.enviar("abrirCarpeta", {});
+      case "buscar-act": E.buscando = "buscando"; host.enviar("buscarActualizacion"); return mantener();
+      case "bv-fin": E.bv = null; E.bvCerrada = true; host.enviar("config", { bienvenida: true }); return pintar();
+    }
+  });
+  document.addEventListener("submit", (ev) => { if (ev.target.matches("[data-form-completar]")) { ev.preventDefault(); const v = $("#respuesta").value; if (v.trim()) responder(v); } });
+  document.addEventListener("change", async (ev) => {
+    const ds = ev.target.dataset || {};
+    if (ev.target.id === "ramo-prueba") { E.prueba.ramo = ev.target.value; E.prueba.fecha = $("#fecha-prueba").value; return mantener(); }
+    if (ds.config) { E.config[ds.config] = ev.target.value; host.enviar("config", { [ds.config]: ev.target.value }); if (ds.config === "idioma_ui") await cargarIdioma(); return mantener(); }
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") { if (E.nuevo?.paso !== "creando") E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false; return pintar(); }
+    const s = E.sesion;
+    if (!s || s.fin || ev.target.closest?.("input, textarea, select")) return;
+    if (s.respuesta === undefined && /^[1-5]$/.test(ev.key)) { const b = document.querySelectorAll("[data-responder]")[Number(ev.key) - 1]; if (b) b.click(); }
+    else if (s.respuesta !== undefined && ev.key === "Enter" && document.activeElement?.id !== "siguiente") { ev.preventDefault(); $("#siguiente")?.click(); }
+  });
+
+  // ───────────── Lo que manda la app ─────────────
+  window.Repasa = {
+    async estado(e) {
+      Object.assign(E, { hoy: e.hoy, perfiles: e.perfiles || [], temas: e.temas || [], progreso: e.progreso || {}, pruebas: e.pruebas || [], config: e.config || {},
+        ias: e.ias || [], version: e.version || "", carpeta: e.carpeta || "", actualizacion: e.actualizacion || { hay: false } });
+      if (E.perfil && !E.perfiles.some((p) => p.id === E.perfil)) E.perfil = null;
+      if (!E.config.bienvenida && E.bv === null && !E.bvCerrada) E.bv = 0;
+      await cargarIdioma();
+      pintar();
+    },
+    materialElegido(lista) { if (!E.nuevo) return; leerNuevo(); const ya = new Set(E.nuevo.archivos.map((a) => a.ruta)); E.nuevo.archivos.push(...(lista || []).filter((a) => !ya.has(a.ruta))); mantener(); },
+    temaCreado(r) { if (!E.nuevo) return; Object.assign(E.nuevo, r.ok ? { paso: "vista", tema: r.tema } : { paso: "elegir", error: r.error }); pintar(); },
+    temaGuardado(r) {
+      if (!r.ok) { if (E.nuevo) { E.nuevo.paso = "vista"; E.nuevo.error = r.error; } toast(r.error || "No se pudo guardar"); return pintar(); }
+      E.temas = E.temas.filter((t) => t.id !== r.tema.id).concat(r.tema); E.nuevo = null; E.temaSel = r.tema.id; E.vista = "tema"; E.pestana = "resumen"; pintar(); toast("Tema guardado");
+    },
+    explicado(r) { const s = E.sesion; if (!s) return; s.explicacion = r.ok ? r.texto : r.error || tr("No se pudo explicar ahora."); mantener(); },
+    iaProbada(r) { delete E.probando[r.id]; E.resultadoIA[r.id] = r; if (r.ok) { E.config.ia = r.id; toast("Lista para usar"); } mantener(); },
+    actualizacionRevisada(r) { E.buscando = r.hay ? null : "alDia"; if (r.hay) E.actualizacion = r; mantener(); },
+    _probar(f) { f(E); pintar(); },
+    _pruebas: { actualizarCaja, esCorrecta, elegirSesion, actualizarRacha, sumarDias, normalizar },
+  };
+
+  // ───────────── Vista previa en el navegador (datos ficticios de demo.json) ─────────────
+  let DEMO = null;
+  function simular(accion, d) {
+    if (!DEMO) return;
+    const A = window.Repasa, luego = (ms, f) => setTimeout(f, ms);
+    switch (accion) {
+      case "listo": return A.estado(JSON.parse(JSON.stringify(DEMO)));
+      case "config": Object.assign(DEMO.config, d); return;
+      case "guardarProgreso": case "guardarPerfil": case "guardarPruebas": return;
+      case "elegirMaterial": return luego(200, () => A.materialElegido([{ ruta: "/demo/cuaderno.jpg", nombre: "cuaderno.jpg" }]));
+      case "crearTema": return luego(1600, () => {
+        const t = JSON.parse(JSON.stringify(DEMO.temas[0]));
+        t.id = "independencia-de-chile-2"; t.titulo = tr("La Independencia de Chile (de tu cuaderno)"); t.curso = d.curso; t.fuente = ["cuaderno.jpg"]; t.autor = "ia";
+        A.temaCreado({ ok: true, tema: t });
+      });
+      case "guardarTema": return luego(300, () => A.temaGuardado({ ok: true, tema: d.tema }));
+      case "explicar": return luego(1100, () => A.explicado({ ok: true, texto: tr("Piensa en una carrera de postas: la Patria Vieja fue la primera vuelta, en Rancagua se cayó el bastón (la Reconquista) y con Chacabuco el equipo lo recuperó y siguió corriendo: la Patria Nueva. (En la vista previa esta explicación es de ejemplo; en la app la escribe tu IA para cada pregunta.)") }));
+      case "probarIA": return luego(500, () => { DEMO.config.ia = d.id; A.iaProbada({ id: d.id, ok: true }); });
+      case "abrirEnlace": return window.open(d.url, "_blank", "noopener");
+      case "abrirCarpeta": return toast("En la app, aquí se abre la carpeta");
+      case "buscarActualizacion": return luego(500, () => A.actualizacionRevisada({ hay: false }));
+    }
+  }
+
+  const LOGO = `<svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#2f5bea"/><path d="M14 18c6-3 12-3 18 1v30c-6-4-12-4-18-1z" fill="#fffefa"/><path d="M50 18c-6-3-12-3-18 1v30c6-4 12-4 18-1z" fill="#e8eeff"/><path d="M36 33l5 5 9-11" fill="none" stroke="#ffd84d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  async function iniciar() {
+    if (HOST === "web") {
+      try { DEMO = await (await fetch("demo.json")).json(); } catch { DEMO = { hoy: new Date().toISOString().slice(0, 10), perfiles: [], temas: [], progreso: {}, pruebas: [], config: {}, ias: [] }; }
+      const q = new URLSearchParams(location.search);
+      DEMO.config.bienvenida = !q.has("bienvenida");
+      if (q.has("vacio")) { DEMO.perfiles = []; DEMO.temas = []; }
+      if (q.has("perfil")) E.perfil = q.get("perfil");
+    }
+    host.enviar("listo");
+  }
+  iniciar();
+})();

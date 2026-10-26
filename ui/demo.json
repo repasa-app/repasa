@@ -1,0 +1,708 @@
+{
+ "version": "0.1.0",
+ "hoy": "2026-10-25",
+ "carpeta": "~/Repasa",
+ "config": {
+  "ia": "claude",
+  "bienvenida": true
+ },
+ "ias": [
+  {
+   "id": "claude",
+   "nombre": "Claude",
+   "instalada": true
+  },
+  {
+   "id": "codex",
+   "nombre": "ChatGPT (Codex)",
+   "instalada": true
+  },
+  {
+   "id": "gemini",
+   "nombre": "Gemini",
+   "instalada": false
+  }
+ ],
+ "perfiles": [
+  {
+   "id": "martina",
+   "nombre": "Martina",
+   "curso": "6b",
+   "avatar": "🦊"
+  },
+  {
+   "id": "diego",
+   "nombre": "Diego",
+   "curso": "1m",
+   "avatar": "🐼"
+  }
+ ],
+ "temas": [
+  {
+   "formato": 1,
+   "id": "independencia-de-chile",
+   "titulo": "La Independencia de Chile",
+   "ramo": "historia",
+   "curso": "6b",
+   "resumen": "Entre 1810 y 1818 Chile pasó de ser una colonia de España a ser un país independiente. Todo partió el 18 de septiembre de 1810 con la Primera Junta Nacional de Gobierno, que gobernaba en nombre del rey Fernando VII, que estaba preso por Napoleón. Ese período se llama Patria Vieja. En 1814 los patriotas perdieron la batalla de Rancagua y los españoles volvieron a gobernar: fue la Reconquista. Bernardo O'Higgins y José de San Martín organizaron en Mendoza el Ejército de los Andes, cruzaron la cordillera y ganaron la batalla de Chacabuco en 1817. Así empezó la Patria Nueva. En 1818 se proclamó la independencia, y la batalla de Maipú la aseguró.",
+   "conceptos": [
+    {
+     "termino": "Patria Vieja",
+     "definicion": "De 1810 a 1814: los primeros gobiernos criollos, desde la Primera Junta hasta la derrota de Rancagua."
+    },
+    {
+     "termino": "Reconquista",
+     "definicion": "De 1814 a 1817: los españoles vuelven a gobernar Chile."
+    },
+    {
+     "termino": "Patria Nueva",
+     "definicion": "Desde 1817: después de Chacabuco, con O'Higgins como Director Supremo."
+    },
+    {
+     "termino": "Ejército de los Andes",
+     "definicion": "El ejército que se formó en Mendoza y cruzó la cordillera para liberar Chile."
+    }
+   ],
+   "preguntas": [
+    {
+     "id": "p1",
+     "tipo": "alternativas",
+     "enunciado": "¿Qué se formó el 18 de septiembre de 1810?",
+     "correcta": 0,
+     "explicacion": "Ese día se formó la Primera Junta Nacional de Gobierno, y por eso celebramos el 18.",
+     "dificultad": 1,
+     "opciones": [
+      "La Primera Junta Nacional de Gobierno",
+      "El Congreso Nacional",
+      "El Ejército de los Andes"
+     ]
+    },
+    {
+     "id": "p2",
+     "tipo": "vf",
+     "enunciado": "La Primera Junta gobernaba en nombre del rey Fernando VII.",
+     "correcta": true,
+     "explicacion": "Sí: el rey estaba preso por Napoleón y la Junta decía gobernar en su nombre mientras volvía.",
+     "dificultad": 2
+    },
+    {
+     "id": "p3",
+     "tipo": "alternativas",
+     "enunciado": "¿Cómo se llama el período entre 1810 y 1814?",
+     "correcta": 0,
+     "explicacion": "Patria Vieja: los primeros años de gobierno criollo, antes de Rancagua.",
+     "dificultad": 1,
+     "opciones": [
+      "Patria Vieja",
+      "Patria Nueva",
+      "Reconquista"
+     ]
+    },
+    {
+     "id": "p4",
+     "tipo": "completar",
+     "enunciado": "En 1814 los patriotas perdieron la batalla de ___.",
+     "correcta": [
+      "Rancagua"
+     ],
+     "explicacion": "La derrota de Rancagua terminó con la Patria Vieja y dio paso a la Reconquista.",
+     "dificultad": 2
+    },
+    {
+     "id": "p5",
+     "tipo": "alternativas",
+     "enunciado": "¿Dónde se organizó el Ejército de los Andes?",
+     "correcta": 1,
+     "explicacion": "Se organizó en Mendoza, al otro lado de la cordillera, en Argentina.",
+     "dificultad": 2,
+     "opciones": [
+      "Santiago",
+      "Mendoza",
+      "Lima"
+     ]
+    },
+    {
+     "id": "p6",
+     "tipo": "vf",
+     "enunciado": "La batalla de Chacabuco fue en 1817.",
+     "correcta": true,
+     "explicacion": "Sí, en febrero de 1817. Con ese triunfo empezó la Patria Nueva.",
+     "dificultad": 1
+    },
+    {
+     "id": "p7",
+     "tipo": "alternativas",
+     "enunciado": "¿Qué batalla aseguró la independencia en 1818?",
+     "correcta": 2,
+     "explicacion": "Maipú, en abril de 1818, aseguró la independencia que se había proclamado ese año.",
+     "dificultad": 2,
+     "opciones": [
+      "Rancagua",
+      "Chacabuco",
+      "Maipú"
+     ]
+    },
+    {
+     "id": "p8",
+     "tipo": "vf",
+     "enunciado": "La Reconquista fue el período en que Chile ya era independiente.",
+     "correcta": false,
+     "explicacion": "Al revés: en la Reconquista los españoles volvieron a gobernar Chile.",
+     "dificultad": 1
+    },
+    {
+     "id": "p9",
+     "tipo": "completar",
+     "enunciado": "El período que empezó después de Chacabuco se llama Patria ___.",
+     "correcta": [
+      "Nueva"
+     ],
+     "explicacion": "Patria Nueva: desde 1817, con O'Higgins como Director Supremo.",
+     "dificultad": 1
+    },
+    {
+     "id": "p10",
+     "tipo": "alternativas",
+     "enunciado": "¿Quiénes lideraron el Ejército de los Andes?",
+     "correcta": 0,
+     "explicacion": "Bernardo O'Higgins y José de San Martín.",
+     "dificultad": 2,
+     "opciones": [
+      "Bernardo O'Higgins y José de San Martín",
+      "José Miguel Carrera y Manuel Rodríguez",
+      "Arturo Prat y Carlos Condell"
+     ]
+    }
+   ],
+   "tarjetas": [
+    {
+     "frente": "18 de septiembre de 1810",
+     "reverso": "Primera Junta Nacional de Gobierno"
+    },
+    {
+     "frente": "1814",
+     "reverso": "Derrota de Rancagua: empieza la Reconquista"
+    },
+    {
+     "frente": "1817",
+     "reverso": "Batalla de Chacabuco: empieza la Patria Nueva"
+    },
+    {
+     "frente": "1818",
+     "reverso": "Proclamación de la Independencia y batalla de Maipú"
+    },
+    {
+     "frente": "¿Quién fue Director Supremo en la Patria Nueva?",
+     "reverso": "Bernardo O'Higgins"
+    }
+   ],
+   "autor": "Repasa (ejemplo)",
+   "creado": "2026-10-20"
+  },
+  {
+   "formato": 1,
+   "id": "sistema-digestivo",
+   "titulo": "El sistema digestivo",
+   "ramo": "ciencias",
+   "curso": "5b",
+   "resumen": "El sistema digestivo transforma lo que comemos en nutrientes que el cuerpo puede usar. En la boca, los dientes trituran la comida y la saliva la humedece. Por el esófago, un tubo, baja al estómago, donde los jugos gástricos la siguen deshaciendo. En el intestino delgado los nutrientes pasan a la sangre, que los lleva a todo el cuerpo. En el intestino grueso se absorbe el agua y se forman los desechos, que salen del cuerpo. El hígado ayuda produciendo la bilis.",
+   "conceptos": [
+    {
+     "termino": "Digestión",
+     "definicion": "Transformar los alimentos en nutrientes que el cuerpo puede usar."
+    },
+    {
+     "termino": "Esófago",
+     "definicion": "Tubo que lleva el alimento de la boca al estómago."
+    },
+    {
+     "termino": "Intestino delgado",
+     "definicion": "Donde los nutrientes pasan a la sangre."
+    },
+    {
+     "termino": "Intestino grueso",
+     "definicion": "Donde se absorbe el agua y se forman los desechos."
+    }
+   ],
+   "preguntas": [
+    {
+     "id": "p1",
+     "tipo": "alternativas",
+     "enunciado": "¿Dónde empieza la digestión?",
+     "correcta": 0,
+     "explicacion": "Empieza en la boca: los dientes trituran la comida y la saliva la humedece.",
+     "dificultad": 1,
+     "opciones": [
+      "En la boca",
+      "En el estómago",
+      "En el intestino"
+     ]
+    },
+    {
+     "id": "p2",
+     "tipo": "completar",
+     "enunciado": "El tubo que lleva la comida al estómago se llama ___.",
+     "correcta": [
+      "esófago",
+      "esofago"
+     ],
+     "explicacion": "El esófago conecta la boca con el estómago.",
+     "dificultad": 1
+    },
+    {
+     "id": "p3",
+     "tipo": "alternativas",
+     "enunciado": "¿Dónde pasan los nutrientes a la sangre?",
+     "correcta": 1,
+     "explicacion": "En el intestino delgado los nutrientes pasan a la sangre.",
+     "dificultad": 2,
+     "opciones": [
+      "En el estómago",
+      "En el intestino delgado",
+      "En el esófago"
+     ]
+    },
+    {
+     "id": "p4",
+     "tipo": "vf",
+     "enunciado": "En el intestino grueso se absorbe el agua.",
+     "correcta": true,
+     "explicacion": "Sí: ahí se absorbe el agua y se forman los desechos.",
+     "dificultad": 2
+    },
+    {
+     "id": "p5",
+     "tipo": "vf",
+     "enunciado": "La saliva sirve para triturar la comida.",
+     "correcta": false,
+     "explicacion": "La saliva humedece la comida; los que la trituran son los dientes.",
+     "dificultad": 2
+    },
+    {
+     "id": "p6",
+     "tipo": "alternativas",
+     "enunciado": "¿Qué órgano produce la bilis?",
+     "correcta": 2,
+     "explicacion": "El hígado produce la bilis, que ayuda a digerir las grasas.",
+     "dificultad": 3,
+     "opciones": [
+      "El estómago",
+      "El corazón",
+      "El hígado"
+     ]
+    },
+    {
+     "id": "p7",
+     "tipo": "completar",
+     "enunciado": "En el estómago, los jugos ___ siguen deshaciendo la comida.",
+     "correcta": [
+      "gástricos",
+      "gastricos"
+     ],
+     "explicacion": "Los jugos gástricos del estómago deshacen la comida.",
+     "dificultad": 2
+    },
+    {
+     "id": "p8",
+     "tipo": "vf",
+     "enunciado": "La sangre lleva los nutrientes a todo el cuerpo.",
+     "correcta": true,
+     "explicacion": "Sí: los nutrientes viajan por la sangre a todas las células.",
+     "dificultad": 1
+    }
+   ],
+   "tarjetas": [
+    {
+     "frente": "Boca",
+     "reverso": "Los dientes trituran y la saliva humedece"
+    },
+    {
+     "frente": "Estómago",
+     "reverso": "Los jugos gástricos deshacen la comida"
+    },
+    {
+     "frente": "Intestino delgado",
+     "reverso": "Los nutrientes pasan a la sangre"
+    },
+    {
+     "frente": "Intestino grueso",
+     "reverso": "Se absorbe el agua"
+    }
+   ],
+   "autor": "Repasa (ejemplo)",
+   "creado": "2026-10-18"
+  },
+  {
+   "formato": 1,
+   "id": "fracciones",
+   "titulo": "Fracciones: comparar y sumar",
+   "ramo": "matematica",
+   "curso": "6b",
+   "resumen": "Una fracción dice cuántas partes tomas de un entero dividido en partes iguales: el numerador (arriba) son las partes que tomas y el denominador (abajo) en cuántas partes se divide. Dos fracciones son equivalentes si representan lo mismo, como 1/2 y 2/4. Para sumar fracciones con el mismo denominador, sumas los numeradores y dejas el denominador igual: 1/5 + 2/5 = 3/5. Si tienen el mismo denominador, es mayor la que tiene el numerador más grande.",
+   "conceptos": [
+    {
+     "termino": "Numerador",
+     "definicion": "El número de arriba: cuántas partes tomas."
+    },
+    {
+     "termino": "Denominador",
+     "definicion": "El número de abajo: en cuántas partes iguales se divide el entero."
+    },
+    {
+     "termino": "Fracciones equivalentes",
+     "definicion": "Fracciones distintas que representan la misma cantidad, como 1/2 y 2/4."
+    }
+   ],
+   "preguntas": [
+    {
+     "id": "p1",
+     "tipo": "alternativas",
+     "enunciado": "¿Cuánto es 1/5 + 2/5?",
+     "correcta": 1,
+     "explicacion": "Con el mismo denominador, sumas arriba: 1 + 2 = 3, y queda 3/5.",
+     "dificultad": 1,
+     "opciones": [
+      "3/10",
+      "3/5",
+      "2/5"
+     ]
+    },
+    {
+     "id": "p2",
+     "tipo": "alternativas",
+     "enunciado": "¿Qué fracción es equivalente a 1/2?",
+     "correcta": 2,
+     "explicacion": "4/8: multiplicas 1 y 2 por 4.",
+     "dificultad": 1,
+     "opciones": [
+      "1/4",
+      "2/3",
+      "4/8"
+     ]
+    },
+    {
+     "id": "p3",
+     "tipo": "vf",
+     "enunciado": "3/7 es mayor que 5/7.",
+     "correcta": false,
+     "explicacion": "Con el mismo denominador, gana el numerador más grande: 5/7 es mayor.",
+     "dificultad": 1
+    },
+    {
+     "id": "p4",
+     "tipo": "completar",
+     "enunciado": "En 3/4, el número 4 se llama ___.",
+     "correcta": [
+      "denominador"
+     ],
+     "explicacion": "El de abajo es el denominador: el entero se dividió en 4 partes.",
+     "dificultad": 1
+    },
+    {
+     "id": "p5",
+     "tipo": "alternativas",
+     "enunciado": "Si una pizza tiene 8 trozos y te comes 2, ¿qué fracción comiste?",
+     "correcta": 0,
+     "explicacion": "2 de 8 trozos: 2/8, que es lo mismo que 1/4.",
+     "dificultad": 2,
+     "opciones": [
+      "2/8",
+      "8/2",
+      "2/6"
+     ]
+    },
+    {
+     "id": "p6",
+     "tipo": "vf",
+     "enunciado": "2/3 y 4/6 son equivalentes.",
+     "correcta": true,
+     "explicacion": "Sí: 4/6 es 2/3 multiplicando arriba y abajo por 2.",
+     "dificultad": 2
+    },
+    {
+     "id": "p7",
+     "tipo": "alternativas",
+     "enunciado": "¿Cuánto es 7/9 − 4/9?",
+     "correcta": 0,
+     "explicacion": "Restas arriba y dejas el denominador: 7 − 4 = 3, queda 3/9.",
+     "dificultad": 2,
+     "opciones": [
+      "3/9",
+      "3/0",
+      "11/9"
+     ]
+    },
+    {
+     "id": "p8",
+     "tipo": "completar",
+     "enunciado": "1/3 + 1/3 + 1/3 = ___",
+     "correcta": [
+      "1",
+      "3/3",
+      "un entero",
+      "uno"
+     ],
+     "explicacion": "Tres tercios forman un entero: 3/3 = 1.",
+     "dificultad": 3
+    }
+   ],
+   "tarjetas": [
+    {
+     "frente": "Sumar con el mismo denominador",
+     "reverso": "Sumas los numeradores y dejas el denominador"
+    },
+    {
+     "frente": "¿Cuál es mayor, 2/9 o 5/9?",
+     "reverso": "5/9"
+    }
+   ],
+   "autor": "Repasa (ejemplo)",
+   "creado": "2026-10-15"
+  },
+  {
+   "formato": 1,
+   "id": "sujeto-y-predicado",
+   "titulo": "Sujeto y predicado",
+   "ramo": "lenguaje",
+   "curso": "6b",
+   "resumen": "Casi todas las oraciones tienen dos partes. El sujeto es de quién o de qué se habla, y el predicado es lo que se dice del sujeto. En «Los niños juegan en el parque», el sujeto es «Los niños» y el predicado es «juegan en el parque». La palabra más importante del sujeto es el núcleo del sujeto, que suele ser un sustantivo («niños»). La más importante del predicado es el núcleo del predicado, que es el verbo («juegan»). Para encontrar el sujeto, pregúntale al verbo: ¿quiénes juegan?",
+   "conceptos": [
+    {
+     "termino": "Sujeto",
+     "definicion": "De quién o de qué se habla en la oración."
+    },
+    {
+     "termino": "Predicado",
+     "definicion": "Lo que se dice del sujeto."
+    },
+    {
+     "termino": "Núcleo del predicado",
+     "definicion": "El verbo, la palabra más importante del predicado."
+    }
+   ],
+   "preguntas": [
+    {
+     "id": "p1",
+     "tipo": "alternativas",
+     "enunciado": "En «Mi abuela cocina empanadas», ¿cuál es el sujeto?",
+     "correcta": 0,
+     "explicacion": "Pregúntale al verbo: ¿quién cocina? Mi abuela.",
+     "dificultad": 1,
+     "opciones": [
+      "Mi abuela",
+      "cocina empanadas",
+      "empanadas"
+     ]
+    },
+    {
+     "id": "p2",
+     "tipo": "alternativas",
+     "enunciado": "En «El perro ladra fuerte», ¿cuál es el núcleo del predicado?",
+     "correcta": 1,
+     "explicacion": "El núcleo del predicado es el verbo: ladra.",
+     "dificultad": 1,
+     "opciones": [
+      "perro",
+      "ladra",
+      "fuerte"
+     ]
+    },
+    {
+     "id": "p3",
+     "tipo": "vf",
+     "enunciado": "El predicado es lo que se dice del sujeto.",
+     "correcta": true,
+     "explicacion": "Sí: el sujeto es de quién se habla y el predicado, lo que se dice de él.",
+     "dificultad": 1
+    },
+    {
+     "id": "p4",
+     "tipo": "completar",
+     "enunciado": "El núcleo del sujeto suele ser un ___.",
+     "correcta": [
+      "sustantivo"
+     ],
+     "explicacion": "Un sustantivo, como «niños» o «abuela».",
+     "dificultad": 2
+    },
+    {
+     "id": "p5",
+     "tipo": "alternativas",
+     "enunciado": "En «Llegaron mis primos», ¿cuál es el sujeto?",
+     "correcta": 2,
+     "explicacion": "¿Quiénes llegaron? Mis primos. El sujeto también puede ir al final.",
+     "dificultad": 3,
+     "opciones": [
+      "Llegaron",
+      "Llegaron mis",
+      "mis primos"
+     ]
+    },
+    {
+     "id": "p6",
+     "tipo": "vf",
+     "enunciado": "Para encontrar el sujeto, le preguntamos al verbo «¿quién?».",
+     "correcta": true,
+     "explicacion": "Sí: ¿quién o quiénes hacen la acción del verbo?",
+     "dificultad": 1
+    }
+   ],
+   "tarjetas": [
+    {
+     "frente": "Sujeto",
+     "reverso": "De quién o de qué se habla"
+    },
+    {
+     "frente": "Núcleo del predicado",
+     "reverso": "El verbo"
+    }
+   ],
+   "autor": "Repasa (ejemplo)",
+   "creado": "2026-10-12"
+  }
+ ],
+ "progreso": {
+  "martina": {
+   "preguntas": {
+    "independencia-de-chile/p1": {
+     "caja": 3,
+     "proxima": "2026-10-27",
+     "aciertos": 4,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    },
+    "independencia-de-chile/p2": {
+     "caja": 1,
+     "proxima": "2026-10-25",
+     "aciertos": 2,
+     "errores": 1,
+     "ultima": "2026-10-24"
+    },
+    "independencia-de-chile/p3": {
+     "caja": 2,
+     "proxima": "2026-10-25",
+     "aciertos": 3,
+     "errores": 1,
+     "ultima": "2026-10-24"
+    },
+    "independencia-de-chile/p6": {
+     "caja": 4,
+     "proxima": "2026-10-30",
+     "aciertos": 5,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    },
+    "sistema-digestivo/p1": {
+     "caja": 5,
+     "proxima": "2026-11-05",
+     "aciertos": 6,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    },
+    "sistema-digestivo/p2": {
+     "caja": 4,
+     "proxima": "2026-10-30",
+     "aciertos": 5,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    },
+    "sistema-digestivo/p3": {
+     "caja": 2,
+     "proxima": "2026-10-25",
+     "aciertos": 3,
+     "errores": 1,
+     "ultima": "2026-10-24"
+    },
+    "sistema-digestivo/p4": {
+     "caja": 3,
+     "proxima": "2026-10-27",
+     "aciertos": 4,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    },
+    "fracciones/p1": {
+     "caja": 3,
+     "proxima": "2026-10-27",
+     "aciertos": 4,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    },
+    "fracciones/p2": {
+     "caja": 2,
+     "proxima": "2026-10-25",
+     "aciertos": 3,
+     "errores": 1,
+     "ultima": "2026-10-24"
+    },
+    "fracciones/p3": {
+     "caja": 1,
+     "proxima": "2026-10-25",
+     "aciertos": 2,
+     "errores": 1,
+     "ultima": "2026-10-24"
+    },
+    "sujeto-y-predicado/p1": {
+     "caja": 4,
+     "proxima": "2026-10-30",
+     "aciertos": 5,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    },
+    "sujeto-y-predicado/p2": {
+     "caja": 3,
+     "proxima": "2026-10-27",
+     "aciertos": 4,
+     "errores": 0,
+     "ultima": "2026-10-24"
+    }
+   },
+   "puntos": 320,
+   "racha": 4,
+   "ultimo_dia": "2026-10-24",
+   "sesiones": [
+    {
+     "fecha": "2026-10-18",
+     "preguntas": 10,
+     "aciertos": 7
+    },
+    {
+     "fecha": "2026-10-21",
+     "preguntas": 12,
+     "aciertos": 9
+    },
+    {
+     "fecha": "2026-10-22",
+     "preguntas": 10,
+     "aciertos": 8
+    },
+    {
+     "fecha": "2026-10-23",
+     "preguntas": 8,
+     "aciertos": 7
+    },
+    {
+     "fecha": "2026-10-24",
+     "preguntas": 12,
+     "aciertos": 10
+    }
+   ]
+  },
+  "diego": {
+   "preguntas": {},
+   "puntos": 0,
+   "racha": 0,
+   "sesiones": []
+  }
+ },
+ "pruebas": [
+  {
+   "id": "prueba-historia",
+   "perfil": "martina",
+   "ramo": "historia",
+   "temas": [
+    "independencia-de-chile"
+   ],
+   "fecha": "2026-10-30"
+  }
+ ]
+}

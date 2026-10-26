@@ -1,0 +1,30 @@
+name: 🐞 Algo falla / Something's broken
+description: Cuéntanos qué pasó. No incluyas fotos de cuadernos, nombres ni datos de niños. / Tell us what happened. Don't include notebook photos, names or kids' data.
+labels: [error]
+body:
+  - type: textarea
+    id: que
+    attributes:
+      label: ¿Qué pasó? / What happened?
+      description: Qué hiciste, qué esperabas y qué pasó en cambio.
+    validations: { required: true }
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema / System
+      options: [Mac, Windows, Linux, Vista previa en el navegador / Browser preview]
+    validations: { required: true }
+  - type: dropdown
+    id: ia
+    attributes:
+      label: IA / AI
+      options: [Claude, ChatGPT (Codex), Gemini, No tiene que ver / Not related]
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Repasa / Repasa version
+      description: Para adultos → Acerca de Repasa.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Algo más (capturas sin datos reales, pasos para repetirlo) / Anything else

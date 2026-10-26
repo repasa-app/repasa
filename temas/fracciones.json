@@ -1,0 +1,127 @@
+{
+ "formato": 1,
+ "id": "fracciones",
+ "titulo": "Fracciones: comparar y sumar",
+ "ramo": "matematica",
+ "curso": "6b",
+ "resumen": "Una fracción dice cuántas partes tomas de un entero dividido en partes iguales: el numerador (arriba) son las partes que tomas y el denominador (abajo) en cuántas partes se divide. Dos fracciones son equivalentes si representan lo mismo, como 1/2 y 2/4. Para sumar fracciones con el mismo denominador, sumas los numeradores y dejas el denominador igual: 1/5 + 2/5 = 3/5. Si tienen el mismo denominador, es mayor la que tiene el numerador más grande.",
+ "conceptos": [
+  {
+   "termino": "Numerador",
+   "definicion": "El número de arriba: cuántas partes tomas."
+  },
+  {
+   "termino": "Denominador",
+   "definicion": "El número de abajo: en cuántas partes iguales se divide el entero."
+  },
+  {
+   "termino": "Fracciones equivalentes",
+   "definicion": "Fracciones distintas que representan la misma cantidad, como 1/2 y 2/4."
+  }
+ ],
+ "preguntas": [
+  {
+   "id": "p1",
+   "tipo": "alternativas",
+   "enunciado": "¿Cuánto es 1/5 + 2/5?",
+   "correcta": 1,
+   "explicacion": "Con el mismo denominador, sumas arriba: 1 + 2 = 3, y queda 3/5.",
+   "dificultad": 1,
+   "opciones": [
+    "3/10",
+    "3/5",
+    "2/5"
+   ]
+  },
+  {
+   "id": "p2",
+   "tipo": "alternativas",
+   "enunciado": "¿Qué fracción es equivalente a 1/2?",
+   "correcta": 2,
+   "explicacion": "4/8: multiplicas 1 y 2 por 4.",
+   "dificultad": 1,
+   "opciones": [
+    "1/4",
+    "2/3",
+    "4/8"
+   ]
+  },
+  {
+   "id": "p3",
+   "tipo": "vf",
+   "enunciado": "3/7 es mayor que 5/7.",
+   "correcta": false,
+   "explicacion": "Con el mismo denominador, gana el numerador más grande: 5/7 es mayor.",
+   "dificultad": 1
+  },
+  {
+   "id": "p4",
+   "tipo": "completar",
+   "enunciado": "En 3/4, el número 4 se llama ___.",
+   "correcta": [
+    "denominador"
+   ],
+   "explicacion": "El de abajo es el denominador: el entero se dividió en 4 partes.",
+   "dificultad": 1
+  },
+  {
+   "id": "p5",
+   "tipo": "alternativas",
+   "enunciado": "Si una pizza tiene 8 trozos y te comes 2, ¿qué fracción comiste?",
+   "correcta": 0,
+   "explicacion": "2 de 8 trozos: 2/8, que es lo mismo que 1/4.",
+   "dificultad": 2,
+   "opciones": [
+    "2/8",
+    "8/2",
+    "2/6"
+   ]
+  },
+  {
+   "id": "p6",
+   "tipo": "vf",
+   "enunciado": "2/3 y 4/6 son equivalentes.",
+   "correcta": true,
+   "explicacion": "Sí: 4/6 es 2/3 multiplicando arriba y abajo por 2.",
+   "dificultad": 2
+  },
+  {
+   "id": "p7",
+   "tipo": "alternativas",
+   "enunciado": "¿Cuánto es 7/9 − 4/9?",
+   "correcta": 0,
+   "explicacion": "Restas arriba y dejas el denominador: 7 − 4 = 3, queda 3/9.",
+   "dificultad": 2,
+   "opciones": [
+    "3/9",
+    "3/0",
+    "11/9"
+   ]
+  },
+  {
+   "id": "p8",
+   "tipo": "completar",
+   "enunciado": "1/3 + 1/3 + 1/3 = ___",
+   "correcta": [
+    "1",
+    "3/3",
+    "un entero",
+    "uno"
+   ],
+   "explicacion": "Tres tercios forman un entero: 3/3 = 1.",
+   "dificultad": 3
+  }
+ ],
+ "tarjetas": [
+  {
+   "frente": "Sumar con el mismo denominador",
+   "reverso": "Sumas los numeradores y dejas el denominador"
+  },
+  {
+   "frente": "¿Cuál es mayor, 2/9 o 5/9?",
+   "reverso": "5/9"
+  }
+ ],
+ "autor": "Repasa (ejemplo)",
+ "creado": "2026-10-15"
+}

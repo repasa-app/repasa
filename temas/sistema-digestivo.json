@@ -1,0 +1,133 @@
+{
+ "formato": 1,
+ "id": "sistema-digestivo",
+ "titulo": "El sistema digestivo",
+ "ramo": "ciencias",
+ "curso": "5b",
+ "resumen": "El sistema digestivo transforma lo que comemos en nutrientes que el cuerpo puede usar. En la boca, los dientes trituran la comida y la saliva la humedece. Por el esófago, un tubo, baja al estómago, donde los jugos gástricos la siguen deshaciendo. En el intestino delgado los nutrientes pasan a la sangre, que los lleva a todo el cuerpo. En el intestino grueso se absorbe el agua y se forman los desechos, que salen del cuerpo. El hígado ayuda produciendo la bilis.",
+ "conceptos": [
+  {
+   "termino": "Digestión",
+   "definicion": "Transformar los alimentos en nutrientes que el cuerpo puede usar."
+  },
+  {
+   "termino": "Esófago",
+   "definicion": "Tubo que lleva el alimento de la boca al estómago."
+  },
+  {
+   "termino": "Intestino delgado",
+   "definicion": "Donde los nutrientes pasan a la sangre."
+  },
+  {
+   "termino": "Intestino grueso",
+   "definicion": "Donde se absorbe el agua y se forman los desechos."
+  }
+ ],
+ "preguntas": [
+  {
+   "id": "p1",
+   "tipo": "alternativas",
+   "enunciado": "¿Dónde empieza la digestión?",
+   "correcta": 0,
+   "explicacion": "Empieza en la boca: los dientes trituran la comida y la saliva la humedece.",
+   "dificultad": 1,
+   "opciones": [
+    "En la boca",
+    "En el estómago",
+    "En el intestino"
+   ]
+  },
+  {
+   "id": "p2",
+   "tipo": "completar",
+   "enunciado": "El tubo que lleva la comida al estómago se llama ___.",
+   "correcta": [
+    "esófago",
+    "esofago"
+   ],
+   "explicacion": "El esófago conecta la boca con el estómago.",
+   "dificultad": 1
+  },
+  {
+   "id": "p3",
+   "tipo": "alternativas",
+   "enunciado": "¿Dónde pasan los nutrientes a la sangre?",
+   "correcta": 1,
+   "explicacion": "En el intestino delgado los nutrientes pasan a la sangre.",
+   "dificultad": 2,
+   "opciones": [
+    "En el estómago",
+    "En el intestino delgado",
+    "En el esófago"
+   ]
+  },
+  {
+   "id": "p4",
+   "tipo": "vf",
+   "enunciado": "En el intestino grueso se absorbe el agua.",
+   "correcta": true,
+   "explicacion": "Sí: ahí se absorbe el agua y se forman los desechos.",
+   "dificultad": 2
+  },
+  {
+   "id": "p5",
+   "tipo": "vf",
+   "enunciado": "La saliva sirve para triturar la comida.",
+   "correcta": false,
+   "explicacion": "La saliva humedece la comida; los que la trituran son los dientes.",
+   "dificultad": 2
+  },
+  {
+   "id": "p6",
+   "tipo": "alternativas",
+   "enunciado": "¿Qué órgano produce la bilis?",
+   "correcta": 2,
+   "explicacion": "El hígado produce la bilis, que ayuda a digerir las grasas.",
+   "dificultad": 3,
+   "opciones": [
+    "El estómago",
+    "El corazón",
+    "El hígado"
+   ]
+  },
+  {
+   "id": "p7",
+   "tipo": "completar",
+   "enunciado": "En el estómago, los jugos ___ siguen deshaciendo la comida.",
+   "correcta": [
+    "gástricos",
+    "gastricos"
+   ],
+   "explicacion": "Los jugos gástricos del estómago deshacen la comida.",
+   "dificultad": 2
+  },
+  {
+   "id": "p8",
+   "tipo": "vf",
+   "enunciado": "La sangre lleva los nutrientes a todo el cuerpo.",
+   "correcta": true,
+   "explicacion": "Sí: los nutrientes viajan por la sangre a todas las células.",
+   "dificultad": 1
+  }
+ ],
+ "tarjetas": [
+  {
+   "frente": "Boca",
+   "reverso": "Los dientes trituran y la saliva humedece"
+  },
+  {
+   "frente": "Estómago",
+   "reverso": "Los jugos gástricos deshacen la comida"
+  },
+  {
+   "frente": "Intestino delgado",
+   "reverso": "Los nutrientes pasan a la sangre"
+  },
+  {
+   "frente": "Intestino grueso",
+   "reverso": "Se absorbe el agua"
+  }
+ ],
+ "autor": "Repasa (ejemplo)",
+ "creado": "2026-10-18"
+}

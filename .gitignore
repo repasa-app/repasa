@@ -1,0 +1,22 @@
+# Lista blanca: solo se versiona lo listado.
+/*
+!/.gitignore
+!/.github/
+!/.claude/
+!/app/
+!/bin/
+!/ui/
+!/docs/
+!/temas/
+!/herramientas/
+!/pruebas/
+!/README.md
+!/AGENTS.md
+!/CLAUDE.md
+!/GEMINI.md
+!/CONTRIBUTING.md
+!/CODE_OF_CONDUCT.md
+!/LICENSE
+__pycache__/
+.terminos-privados
+capturas/

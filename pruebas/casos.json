@@ -1,0 +1,268 @@
+{
+ "_nota": "Casos de la lógica del repaso (ui/app.js). Los prueba pruebas/interfaz.mjs.",
+ "cajas": [
+  {
+   "antes": null,
+   "correcta": true,
+   "hoy": "2026-10-25",
+   "esperado": {
+    "caja": 1,
+    "proxima": "2026-10-26",
+    "aciertos": 1,
+    "errores": 0,
+    "ultima": "2026-10-25"
+   }
+  },
+  {
+   "antes": {
+    "caja": 3,
+    "proxima": "2026-10-25",
+    "aciertos": 3,
+    "errores": 1
+   },
+   "correcta": true,
+   "hoy": "2026-10-25",
+   "esperado": {
+    "caja": 4,
+    "proxima": "2026-11-08",
+    "aciertos": 4,
+    "errores": 1,
+    "ultima": "2026-10-25"
+   }
+  },
+  {
+   "antes": {
+    "caja": 4,
+    "proxima": "2026-10-25",
+    "aciertos": 4,
+    "errores": 0
+   },
+   "correcta": false,
+   "hoy": "2026-10-25",
+   "esperado": {
+    "caja": 1,
+    "proxima": "2026-10-25",
+    "aciertos": 4,
+    "errores": 1,
+    "ultima": "2026-10-25"
+   }
+  },
+  {
+   "antes": {
+    "caja": 5,
+    "proxima": "2026-10-25",
+    "aciertos": 9,
+    "errores": 0
+   },
+   "correcta": true,
+   "hoy": "2026-12-30",
+   "esperado": {
+    "caja": 5,
+    "proxima": "2027-01-29",
+    "aciertos": 10,
+    "errores": 0,
+    "ultima": "2026-12-30"
+   }
+  }
+ ],
+ "corregir": [
+  [
+   {
+    "tipo": "completar",
+    "correcta": [
+     "esófago",
+     "esofago"
+    ]
+   },
+   "Esofago",
+   true
+  ],
+  [
+   {
+    "tipo": "completar",
+    "correcta": [
+     "Rancagua"
+    ]
+   },
+   " rancagua ",
+   true
+  ],
+  [
+   {
+    "tipo": "completar",
+    "correcta": [
+     "Rancagua"
+    ]
+   },
+   "Rancgua",
+   true
+  ],
+  [
+   {
+    "tipo": "completar",
+    "correcta": [
+     "Nueva"
+    ]
+   },
+   "Nuevo",
+   false
+  ],
+  [
+   {
+    "tipo": "completar",
+    "correcta": [
+     "1",
+     "3/3"
+    ]
+   },
+   "3/3",
+   true
+  ],
+  [
+   {
+    "tipo": "completar",
+    "correcta": [
+     "denominador"
+    ]
+   },
+   "",
+   false
+  ],
+  [
+   {
+    "tipo": "alternativas",
+    "correcta": 2
+   },
+   2,
+   true
+  ],
+  [
+   {
+    "tipo": "vf",
+    "correcta": false
+   },
+   true,
+   false
+  ],
+  [
+   {
+    "tipo": "completar",
+    "correcta": [
+     "Nueva"
+    ]
+   },
+   "nueva",
+   true
+  ]
+ ],
+ "racha": [
+  [
+   {
+    "ultimo_dia": "2026-10-24",
+    "racha": 4
+   },
+   "2026-10-25",
+   5
+  ],
+  [
+   {
+    "ultimo_dia": "2026-10-25",
+    "racha": 4
+   },
+   "2026-10-25",
+   4
+  ],
+  [
+   {
+    "ultimo_dia": "2026-10-20",
+    "racha": 9
+   },
+   "2026-10-25",
+   1
+  ],
+  [
+   {},
+   "2026-10-25",
+   1
+  ]
+ ],
+ "sesion": {
+  "temas": [
+   {
+    "id": "a",
+    "preguntas": [
+     {
+      "id": "p1",
+      "dificultad": 2
+     },
+     {
+      "id": "p2",
+      "dificultad": 1
+     },
+     {
+      "id": "p3",
+      "dificultad": 3
+     }
+    ]
+   },
+   {
+    "id": "b",
+    "preguntas": [
+     {
+      "id": "p1",
+      "dificultad": 1
+     },
+     {
+      "id": "p2",
+      "dificultad": 1
+     }
+    ]
+   }
+  ],
+  "progreso": {
+   "preguntas": {
+    "a/p1": {
+     "caja": 2,
+     "proxima": "2026-10-25"
+    },
+    "a/p3": {
+     "caja": 4,
+     "proxima": "2026-11-02"
+    },
+    "b/p1": {
+     "caja": 1,
+     "proxima": "2026-10-24"
+    }
+   }
+  },
+  "hoy": "2026-10-25",
+  "sin_prueba": {
+   "pruebas": [],
+   "maximo": 4,
+   "esperado": [
+    "b/p1",
+    "a/p1",
+    "a/p2",
+    "b/p2"
+   ]
+  },
+  "con_prueba": {
+   "pruebas": [
+    {
+     "temas": [
+      "a"
+     ],
+     "fecha": "2026-10-27"
+    }
+   ],
+   "maximo": 5,
+   "esperado": [
+    "a/p1",
+    "b/p1",
+    "a/p2",
+    "b/p2",
+    "a/p3"
+   ]
+  }
+ }
+}
