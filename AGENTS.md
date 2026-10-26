@@ -40,6 +40,10 @@ racha para que den ganas de volver. Interfaz web única; apps de escritorio para
   Cajas 1–5 → próxima vez en 1, 3, 7, 14 y 30 días; un error vuelve a la caja 1 y la pregunta toca de nuevo hoy. Una sesión (hasta 12
   preguntas) junta primero lo que toca, después preguntas nuevas (de las más fáciles) y, si hay prueba en los próximos 4 días, pone
   primero sus temas y adelanta lo que aún no está en la caja 5. Completar acepta mayúsculas, tildes y, en palabras de 6+ letras, una letra de diferencia.
+- **Bienvenida (primer uso, `bienvenida()` en `ui/app.js`):** lo primero es el idioma (paso 0: «Elige tu idioma · Choose your
+  language», Español/English escritos cada uno en su idioma, el del sistema marcado como sugerido; teclas 1 y 2). Mientras no se
+  elige no se pinta nada más (ni perfiles ni ajustes). Elegir guarda `idioma_ui` con `config`, igual que Ajustes, y el resto
+  (presentación, la IA) ya sale en ese idioma. Quien ya tiene `bienvenida: true` no la vuelve a ver; el idioma se cambia en Ajustes.
 - **Explicar de nuevo:** `explicar.py <tema> <pregunta> "<lo que respondió>" <salida.json>` devuelve texto plano corto (sin Markdown
   ni HTML, máx. 900 caracteres).
 

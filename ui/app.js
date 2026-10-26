@@ -61,9 +61,11 @@
       for (const a of ["title", "aria-label", "placeholder"]) { const v = el.getAttribute(a); if (v) el.setAttribute(a, tr(v)); }
     }
   }
-  async function cargarIdioma() {
+  const idiomaSistema = () => ((navigator.language || "es").startsWith("es") ? "es" : "en");
+  /** Carga los textos del idioma. `elegido` viene de la persona (bienvenida o Ajustes) y manda sobre ?idioma= de la vista previa. */
+  async function cargarIdioma(elegido) {
     const pedido = new URLSearchParams(location.search).get("idioma");
-    const codigo = pedido || E.config.idioma_ui || ((navigator.language || "es").startsWith("es") ? "es" : "en");
+    const codigo = elegido || pedido || E.config.idioma_ui || idiomaSistema();
     if (codigo === E.idioma && (codigo === "es" || Object.keys(E.textos).length)) return;
     E.idioma = codigo; E.textos = {};
     if (codigo !== "es") { try { E.textos = (await (await fetch(`idiomas/${codigo}.json`)).json()).textos || {}; } catch { E.idioma = "es"; } }
@@ -131,21 +133,24 @@
   // ───────────── Pintar ─────────────
   function pintar() {
     const raiz = $("#app"), activo = document.activeElement?.id, y = window.scrollY;
-    raiz.innerHTML = `${barra()}<main>${principal()}</main>${dialogos()}`;
+    // Primer uso: mientras se elige el idioma no se muestra nada más (ni perfiles ni ajustes), para no hablarle en otro idioma.
+    const soloIdioma = E.bv === 0;
+    raiz.innerHTML = `${barra(soloIdioma)}<main>${soloIdioma ? "" : principal()}</main>${dialogos()}`;
     traducirDOM(raiz);
     if (activo) document.getElementById(activo)?.focus();
+    if (soloIdioma && !document.activeElement?.closest?.(".dialogo")) $(".idioma-op.sugerido")?.focus();
     if (E._mantener) window.scrollTo(0, y); else window.scrollTo(0, 0);
     E._mantener = false;
   }
   const mantener = () => { E._mantener = true; pintar(); };
 
-  function barra() {
-    const pf = perfil();
+  function barra(soloMarca = false) {
+    const pf = soloMarca ? null : perfil();
     return `<header class="barra"><span class="marca">${LOGO}<span>Repasa</span></span><span class="espacio"></span>
       ${pf ? `<span class="marcador" title="Racha de días seguidos">🔥 <span data-sin-traducir>${esc(prog().racha || 0)}</span></span>
         <span class="marcador" title="Puntos">⭐ <span data-sin-traducir>${esc(prog().puntos || 0)}</span></span>
         <button class="chip-perfil" data-accion="cambiar-perfil" title="Cambiar de perfil"><span class="av" aria-hidden="true">${esc(pf.avatar)}</span><span data-sin-traducir>${esc(pf.nombre)}</span></button>` : ""}
-      <button class="icono" data-accion="adultos" title="Para adultos" aria-label="Para adultos">⚙︎</button></header>`;
+      ${soloMarca ? "" : `<button class="icono" data-accion="adultos" title="Para adultos" aria-label="Para adultos">⚙︎</button>`}</header>`;
   }
 
   function principal() {
@@ -353,14 +358,34 @@
         <div class="enlaces"><a href="#" data-enlace="${ENLACES.sitio}">Sitio web</a><a href="#" data-enlace="${ENLACES.codigo}">Código</a><a href="#" data-enlace="${ENLACES.comunidad}">Comunidad</a></div></div>
       <div class="pie-dialogo"><button class="boton principal" data-accion="cerrar">Listo</button></div>`;
   }
+  // Paso 0: el idioma, antes que cualquier otra cosa. Cada opción va escrita en su propio idioma (no se traduce).
+  const IDIOMAS = [["es", "Español", "Sugerido"], ["en", "English", "Suggested"]];
+  function pasoIdioma() {
+    const sugerido = E.config.idioma_ui || idiomaSistema();
+    return `<h2 id="t-d" class="titulo-idioma" data-sin-traducir><span lang="es">Elige tu idioma</span> <span class="sep">·</span> <span lang="en">Choose your language</span></h2>
+      <div class="opciones-idioma" role="group" aria-labelledby="t-d" data-sin-traducir>${IDIOMAS.map(([codigo, nombre, marca], k) => `
+        <button class="idioma-op ${codigo === sugerido ? "sugerido" : ""}" id="idioma-${codigo}" data-idioma="${codigo}" lang="${codigo}" aria-keyshortcuts="${k + 1}">
+          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div>`;
+  }
+  async function elegirIdioma(codigo) {
+    if (!IDIOMAS.some(([c]) => c === codigo)) return;
+    E.config.idioma_ui = codigo;
+    host.enviar("config", { idioma_ui: codigo });
+    await cargarIdioma(codigo);
+    E.bv = 1; pintar();
+    $(".dialogo .boton.principal:not([disabled])")?.focus();
+  }
   function bienvenida() {
     const pasos = [
+      ["", pasoIdioma(), true],
       ["Hola, esto es Repasa", `<p>Una app para estudiar con lo que pasan en el colegio. Le sacan una foto al cuaderno y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas para memorizar. Las preguntas que cuestan vuelven hasta que se aprenden.</p><p class="nota">Gratis, sin cuentas y sin publicidad. Todo queda en este computador.</p>`, true],
       ["Elijan la IA", `<p>Repasa usa la IA que ya tiene un adulto de la casa (Claude, ChatGPT o Gemini), con su cuenta. La probamos con una pregunta corta.</p><div class="seccion">${filasIA()}</div>`, !!E.config.ia],
     ];
     const [titulo, cuerpo, puede] = pasos[E.bv];
-    return `<div class="pasos-bv">${pasos.map((_, i) => `<i class="${i <= E.bv ? "hecho" : ""}"></i>`).join("")}</div><h2 id="t-d">${titulo}</h2>${cuerpo}
-      <div class="pie-dialogo">${E.bv ? `<button class="boton izq" data-bv="${E.bv - 1}">Atrás</button>` : ""}<button class="boton" data-accion="bv-fin">Lo hago después</button>
+    const puntos = `<div class="pasos-bv">${pasos.map((_, i) => `<i class="${i <= E.bv ? "hecho" : ""}"></i>`).join("")}</div>`;
+    if (E.bv === 0) return puntos + cuerpo; // sin «Lo hago después»: elegir es un solo toque
+    return `${puntos}<h2 id="t-d">${titulo}</h2>${cuerpo}
+      <div class="pie-dialogo"><button class="boton izq" data-bv="${E.bv - 1}">Atrás</button><button class="boton" data-accion="bv-fin">Lo hago después</button>
         ${E.bv < pasos.length - 1 ? `<button class="boton principal" data-bv="${E.bv + 1}" ${puede ? "" : "disabled"}>Siguiente</button>` : `<button class="boton principal" data-accion="bv-fin">Empezar</button>`}</div>`;
   }
   function dialogos() {
@@ -380,7 +405,7 @@
     E.sesion = { claves, i: 0, aciertos: 0, puntos: 0 }; pintar();
   }
   document.addEventListener("click", (ev) => {
-    const el = ev.target.closest("[data-accion],[data-perfil],[data-tema],[data-pestana],[data-flip],[data-practicar],[data-responder],[data-quitar],[data-avatar],[data-editar-perfil],[data-probar],[data-bv],[data-enlace]");
+    const el = ev.target.closest("[data-accion],[data-perfil],[data-tema],[data-pestana],[data-flip],[data-practicar],[data-responder],[data-quitar],[data-avatar],[data-editar-perfil],[data-probar],[data-bv],[data-enlace],[data-idioma]");
     if (!el) return;
     const d = el.dataset;
     if (d.enlace) { ev.preventDefault(); return host.enviar("abrirEnlace", { url: d.enlace }); }
@@ -394,6 +419,7 @@
     if (d.avatar) { E.perfilEdit.nombre = $("#nombre-perfil")?.value ?? E.perfilEdit.nombre; E.perfilEdit.curso = $("#curso-perfil")?.value || E.perfilEdit.curso; E.perfilEdit.avatar = d.avatar; return mantener(); }
     if (d.editarPerfil) { E.adultos = false; E.perfilEdit = { ...E.perfiles.find((p) => p.id === d.editarPerfil) }; return pintar(); }
     if (d.probar) { E.probando[d.probar] = true; delete E.resultadoIA[d.probar]; host.enviar("probarIA", { id: d.probar }); return mantener(); }
+    if (d.idioma) return elegirIdioma(d.idioma);
     if (d.bv) { E.bv = Number(d.bv); return pintar(); }
     switch (d.accion) {
       case "cambiar-perfil": E.perfil = null; E.sesion = null; return pintar();
@@ -441,10 +467,11 @@
   document.addEventListener("change", async (ev) => {
     const ds = ev.target.dataset || {};
     if (ev.target.id === "ramo-prueba") { E.prueba.ramo = ev.target.value; E.prueba.fecha = $("#fecha-prueba").value; return mantener(); }
-    if (ds.config) { E.config[ds.config] = ev.target.value; host.enviar("config", { [ds.config]: ev.target.value }); if (ds.config === "idioma_ui") await cargarIdioma(); return mantener(); }
+    if (ds.config) { E.config[ds.config] = ev.target.value; host.enviar("config", { [ds.config]: ev.target.value }); if (ds.config === "idioma_ui") await cargarIdioma(ev.target.value); return mantener(); }
   });
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape") { if (E.nuevo?.paso !== "creando") E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false; return pintar(); }
+    if (E.bv === 0 && /^[12]$/.test(ev.key) && !ev.target.closest?.("input, textarea, select")) { ev.preventDefault(); return elegirIdioma(IDIOMAS[Number(ev.key) - 1][0]); }
     const s = E.sesion;
     if (!s || s.fin || ev.target.closest?.("input, textarea, select")) return;
     if (s.respuesta === undefined && /^[1-5]$/.test(ev.key)) { const b = document.querySelectorAll("[data-responder]")[Number(ev.key) - 1]; if (b) b.click(); }

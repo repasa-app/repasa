@@ -93,6 +93,39 @@ const navegador = await chromium.launch();
   await p.close();
 }
 
+// 7) Primer uso: lo primero es el idioma, antes de perfiles, ajustes o la IA. Elegir guarda idioma_ui y lo que sigue sale en ese idioma.
+{
+  const p = await navegador.newPage({ locale: "es-CL" });
+  p.on("pageerror", (e) => falla(`error de JavaScript (idioma primero): ${e.message}`));
+  // Como la app nativa: se anota lo que la interfaz manda por el puente.
+  await p.addInitScript(() => { window._enviados = []; window.webkit = { messageHandlers: { repasa: { postMessage: (m) => window._enviados.push(m) } } }; });
+  await p.goto(BASE);
+  await p.waitForFunction(() => window.Repasa);
+  const estadoDemo = JSON.parse(demo);
+  await p.evaluate((e) => window.Repasa.estado({ ...e, config: {} }), estadoDemo);
+  const primera = await p.evaluate(() => ({
+    titulo: document.querySelector(".dialogo h2")?.textContent || "", opciones: [...document.querySelectorAll("[data-idioma]")].map((b) => b.dataset.idioma),
+    foco: document.activeElement?.dataset?.idioma, otros: !!document.querySelector(".perfiles, [data-accion='adultos'], [data-probar]"),
+  }));
+  if (!/Elige tu idioma/.test(primera.titulo) || !/Choose your language/.test(primera.titulo) || primera.opciones.join() !== "es,en") falla("con la bienvenida pendiente, la primera pantalla no es la de idioma: " + JSON.stringify(primera));
+  else if (primera.otros) falla("se ve algo más (perfiles, ajustes o la IA) antes de elegir el idioma");
+  else if (primera.foco !== "es") falla("el idioma del sistema (es-CL) no quedó enfocado como sugerido: " + primera.foco);
+  else {
+    await p.keyboard.press("2"); // 2 = English
+    await p.waitForFunction(() => document.documentElement.lang === "en" && document.querySelector(".dialogo h2")?.textContent.includes("Hi, this is Repasa"), null, { timeout: 3000 }).catch(() => {});
+    const despues = await p.evaluate(() => ({ titulo: document.querySelector(".dialogo h2")?.textContent, guardado: window._enviados.some((m) => m.accion === "config" && m.datos.idioma_ui === "en"), perfiles: document.querySelector(".perfiles h1")?.textContent }));
+    if (despues.titulo !== "Hi, this is Repasa") falla("después de elegir English, el paso siguiente no salió en inglés: " + despues.titulo);
+    else if (!despues.guardado) falla("elegir English no guardó idioma_ui por el puente (config)");
+    else if (despues.perfiles !== "Who's studying?") falla("detrás de la bienvenida la pantalla no quedó en inglés: " + despues.perfiles);
+    else console.log("  ✓ Primer uso: el idioma va primero y se guarda");
+  }
+  // Quien ya hizo la bienvenida no vuelve a ver la pantalla de idioma.
+  await p.reload(); await p.waitForFunction(() => window.Repasa);
+  await p.evaluate((e) => window.Repasa.estado({ ...e, config: { bienvenida: true } }), estadoDemo);
+  if (await p.$("[data-idioma]") || !(await p.$(".perfiles"))) falla("la pantalla de idioma aparece aunque la bienvenida ya estaba hecha");
+  await p.close();
+}
+
 // 2–4) Todas las vistas
 for (const [idioma, consulta] of [["español", "idioma=es"], ["inglés", "idioma=en"]]) {
   for (const [modo, opciones] of [["escritorio", { viewport: { width: 1360, height: 860 } }], ["celular", { viewport: { width: 390, height: 844 }, colorScheme: "light" }]]) {
@@ -102,7 +135,7 @@ for (const [idioma, consulta] of [["español", "idioma=es"], ["inglés", "idioma
       await p.addInitScript(() => { window._faltantes = new Set(); });
       await p.goto(BASE + "?" + [consulta, bv ? "bienvenida" : ""].filter(Boolean).join("&"));
       await p.waitForFunction(() => window.Repasa && document.querySelector(".barra"));
-      const pasos = bv ? [0, 1].map((n) => [`bienvenida-${n}`, `E=>{E.bv=${n}}`]) : VISTAS;
+      const pasos = bv ? [0, 1, 2].map((n) => [`bienvenida-${n}`, `E=>{E.bv=${n}}`]) : VISTAS;
       for (const [nombre, f] of pasos) {
         await p.evaluate(`window.Repasa._probar(${f})`);
         await p.waitForTimeout(80);
