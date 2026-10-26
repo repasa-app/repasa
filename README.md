@@ -33,8 +33,33 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 - **Respuestas validadas:** todo lo que viene de la IA o del catálogo se revisa (formato, largo, sin HTML) antes de mostrarse.
 
 ## Estado
-Versión 0.1, recién nacida. Ya funcionan el motor (crear temas con la IA, explicar de nuevo, validar) y la interfaz completa, que
-puedes [probar con datos ficticios](https://repasa-app.github.io/repasa/demo/). Las apps de Mac, Windows y Linux vienen en camino.
+Versión 0.1, recién nacida. Ya funcionan el motor (crear temas con la IA, explicar de nuevo, validar, escribir temas a mano) y la
+interfaz completa, que puedes [probar con datos ficticios](https://repasa-app.github.io/repasa/demo/). Las apps de Mac, Windows y
+Linux vienen en camino. La app del celular está en su primera fase (abajo).
+
+## En el celular (fase 1, en pruebas)
+Repasa también corre en iPhone y Android, con la misma interfaz y **la IA del propio teléfono**: gratis, privada y sin internet.
+Es una primera versión para probar en casa; todavía no está en las tiendas y hay que instalarla desde un computador
+([`movil/README.md`](movil/README.md)).
+
+**Qué funciona ya**
+- Sacar fotos al cuaderno (o elegirlas de la galería) y que el teléfono lea el texto (Vision en iPhone, ML Kit en Android).
+- Armar el tema con la IA del teléfono: **Apple Intelligence** (iOS 26, iPhone 15 Pro o más nuevo, activado en Ajustes) o
+  **Gemini Nano** (algunos Android recientes con AICore). Todo lo que responde se valida igual que en el computador.
+- Si el teléfono no tiene IA, lo dice claro y deja **escribir el tema a mano** (texto simple) o **elegir uno del catálogo**.
+  Nunca pide una llave de API ni una cuenta.
+- Repaso diario, pruebas, puntos y racha, «No entendí» (con IA), varios perfiles, español e inglés: lo mismo que en el computador.
+- **Copia cifrada** en iCloud Drive o Google Drive: se guarda y se trae a mano, y solo se abre con una frase que conoce la familia
+  (nadie más puede leerla, tampoco nosotros). Al traerla se junta con lo que hay; nada se borra.
+
+**Qué falta todavía**
+- Que se sincronice sola con esa carpeta cifrada, y que **el computador de la casa haga el trabajo de la IA** cuando el teléfono
+  no tiene (con la suscripción del adulto). El formato y el cifrado ya están listos y probados; falta conectarlos.
+- Leer PDF en el teléfono.
+- App Store y Google Play: por ahora se instala en modo de prueba (en iPhone, con una cuenta gratis de Apple, dura 7 días y se
+  renueva desde el computador).
+- Las partes nativas (Swift y Kotlin) todavía no se prueban solas en GitHub: cada versión se compila y se prueba a mano en
+  teléfonos de verdad.
 
 ## Cómo funciona
 ```
@@ -43,7 +68,7 @@ fotos / PDF / texto ──► IA del adulto ──► tema (validado) ──► 
 ```
 
 ## Formato de los datos
-Todo vive en `~/Repasa/` (en Windows, `C:\Users\<tú>\Repasa`). Si lo cambiamos, será de forma compatible y avisando.
+Todo vive en `~/Repasa/` (en Windows, `C:\Users\<tú>\Repasa`; en el celular, `Repasa/` dentro de los datos de la app). Si lo cambiamos, será de forma compatible y avisando.
 
 | Archivo | Qué guarda |
 |---|---|
@@ -52,6 +77,7 @@ Todo vive en `~/Repasa/` (en Windows, `C:\Users\<tú>\Repasa`). Si lo cambiamos,
 | `temas/<id>/material/` | Copias de las fotos o PDF de donde salió el tema. |
 | `progreso/<perfil>.json` | `{"puntos", "racha", "ultimo_dia", "preguntas": {"<tema>/<pregunta>": {"caja", "proxima"}}, "sesiones": [...]}` |
 | `pruebas.json` | `[{"id", "perfil", "ramo", "temas": [...], "fecha"}]` |
+| `.repasa/temporal/` | Solo en el celular: las fotos de un tema que todavía no se guarda (se borran al abrir la app). |
 | `.repasa/` | Ajustes de la app y temas descargados del catálogo. |
 
 ## Desarrollo
@@ -60,6 +86,7 @@ Necesitas Python 3 (solo biblioteca estándar) y Node para las pruebas de la int
 cd ui && python3 -m http.server 8765      # interfaz con datos ficticios: http://localhost:8765 (?idioma=en, ?bienvenida, ?vacio)
 python3 bin/crear_tema.py 6b historia "" foto.jpg /tmp/tema.json   # crear un tema con tu IA (no guarda nada)
 bash pruebas/correr.sh                    # todas las pruebas
+cd movil && npm ci && npm run sync        # app del celular (luego: npx cap open ios / npx cap open android; ver movil/README.md)
 ```
 Lee [`AGENTS.md`](AGENTS.md) antes de cambiar algo: sirve igual para personas y para tu IA.
 
@@ -75,3 +102,8 @@ the school notebook or worksheet (or add a PDF or text) and a grown-up's own AI 
 an easy summary, test-style questions and flashcards. Daily spaced-repetition reviews bring back what's hard until it's learned, a test
 date makes Repasa prioritize those topics, and points and streaks keep it fun. No accounts, no ads, no servers: everything stays on the
 computer in open files. Spanish-first, English included. Licensed under AGPL-3.0.
+
+**On the phone (phase 1, testing):** an iPhone and Android app with the same interface and the phone's own AI (Apple
+Intelligence or Gemini Nano: free, private, offline). Without on-device AI, topics can be written by hand or picked from the
+catalog — never an API key. Encrypted copies to iCloud Drive or Google Drive, opened only with a family passphrase. Not in the
+stores yet; build instructions in [`movil/README.md`](movil/README.md).
