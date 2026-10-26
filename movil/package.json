@@ -1,0 +1,26 @@
+{
+  "name": "repasa-movil",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Repasa en el celular (iPhone y Android): la misma interfaz de ui/ con el motor JS y la IA del propio teléfono.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "armar": "node armar.mjs",
+    "sync": "node armar.mjs && cap sync",
+    "ios": "node armar.mjs && cap sync ios && cap open ios",
+    "android": "node armar.mjs && cap sync android && cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.6.9",
+    "@capacitor/camera": "7.0.5",
+    "@capacitor/core": "7.6.9",
+    "@capacitor/filesystem": "7.1.9",
+    "@capacitor/ios": "7.6.9",
+    "repasa-carpeta": "file:plugins/carpeta",
+    "repasa-ia-local": "file:plugins/ia-local"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.9"
+  }
+}

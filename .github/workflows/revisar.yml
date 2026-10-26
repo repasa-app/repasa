@@ -1,6 +1,7 @@
 # Revisión automática de cada cambio (y de cada pull request): si algo falla, se ve antes de que llegue a alguien.
-# - comun: sintaxis, privacidad básica, pruebas de Python (con una IA falsa), del motor JS (que dé lo mismo que Python) y de la interfaz
-#   (español/inglés, celular, contraste, misma lógica que Python).
+# - comun: sintaxis, privacidad básica, pruebas de Python (con una IA falsa), del motor JS (que dé lo mismo que Python), contrato del
+#   puente y de la interfaz (español/inglés, celular, contraste, misma lógica que Python), también con el anfitrión del teléfono.
+#   Los proyectos nativos de movil/ (Xcode y Gradle) no se compilan aquí todavía.
 name: Revisar
 on:
   push:
@@ -22,7 +23,7 @@ jobs:
       - name: Sintaxis
         run: |
           node --check ui/app.js
-          for f in motor/*.js; do node --check "$f"; done
+          for f in motor/*.js movil/host/*.js movil/*.mjs pruebas/*.mjs pruebas/capacitor_falso.js; do node --check "$f"; done
           python3 -m py_compile bin/*.py pruebas/*.py
           python3 -c "import json, glob; [json.load(open(f, encoding='utf-8')) for f in glob.glob('ui/idiomas/*.json') + glob.glob('temas/*.json') + ['ui/demo.json', 'pruebas/casos.json']]"
           for f in herramientas/*.sh pruebas/*.sh; do bash -n "$f"; done
@@ -41,12 +42,16 @@ jobs:
         run: python3 pruebas/test_python.py
       - name: Pruebas del motor JS (lo mismo que Python, cifrado, copia)
         run: node pruebas/motor.mjs
+      - name: Contrato del puente (interfaz, celular y plugins nativos)
+        run: python3 pruebas/contrato.py
       - name: Pruebas de la interfaz
         run: |
           npm i --no-save --prefix "$RUNNER_TEMP/pw" playwright@1.56.1
           "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium
           mkdir -p capturas
           PLAYWRIGHT="$RUNNER_TEMP/pw/node_modules/playwright" CAPTURAS=capturas node pruebas/interfaz.mjs
+          PLAYWRIGHT="$RUNNER_TEMP/pw/node_modules/playwright" MOVIL=1 node pruebas/interfaz.mjs
+          PLAYWRIGHT="$RUNNER_TEMP/pw/node_modules/playwright" node pruebas/movil.mjs
       - name: Capturas para revisar a ojo
         if: always()
         uses: actions/upload-artifact@v4

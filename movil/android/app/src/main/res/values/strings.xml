@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Repasa</string>
+    <string name="title_activity_main">Repasa</string>
+    <string name="package_name">app.repasa.movil</string>
+    <string name="custom_url_scheme">app.repasa.movil</string>
+</resources>

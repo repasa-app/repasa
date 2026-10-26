@@ -1,0 +1,14 @@
+{
+  "appId": "app.repasa.movil",
+  "appName": "Repasa",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": true
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "adjustMarginsForEdgeToEdge": "auto"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "repasa-carpeta",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Guardar y traer la copia cifrada de Repasa con el selector de archivos del sistema (iCloud Drive, Google Drive). Sin red propia.",
+  "license": "AGPL-3.0-only",
+  "files": ["ios/", "android/", "Package.swift", "RepasaCarpeta.podspec"],
+  "capacitor": { "ios": { "src": "ios" }, "android": { "src": "android" } },
+  "peerDependencies": { "@capacitor/core": "7.6.9" }
+}

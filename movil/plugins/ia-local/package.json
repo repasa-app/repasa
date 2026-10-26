@@ -1,0 +1,10 @@
+{
+  "name": "repasa-ia-local",
+  "version": "0.1.0",
+  "private": true,
+  "description": "La IA del propio teléfono para Repasa: Apple Foundation Models + Vision (iOS) y Gemini Nano + ML Kit (Android). Sin red ni llaves.",
+  "license": "AGPL-3.0-only",
+  "files": ["ios/", "android/", "Package.swift", "RepasaIaLocal.podspec"],
+  "capacitor": { "ios": { "src": "ios" }, "android": { "src": "android" } },
+  "peerDependencies": { "@capacitor/core": "7.6.9" }
+}

@@ -1,0 +1,46 @@
+// La IA del propio teléfono para Repasa (Android): Gemini Nano con ML Kit GenAI (Prompt API) y ML Kit Text Recognition
+// (modelo incluido en la app: leer la foto no baja nada). El plugin de Kotlin lo pone android/build.gradle de la app.
+ext {
+    mlkitTextoVersion = '16.0.1'
+    mlkitGenaiPromptVersion = '1.0.0-beta4'
+    corrutinasVersion = '1.10.2'
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    namespace "app.repasa.ialocal"
+    compileSdk project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 35
+    defaultConfig {
+        // Gemini Nano (ML Kit GenAI) pide Android 8.0 (API 26) o más nuevo.
+        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 26
+        targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 35
+    }
+    buildTypes {
+        release { minifyEnabled false }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    lintOptions { abortOnError false }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':capacitor-android')
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$corrutinasVersion"
+    implementation "com.google.mlkit:text-recognition:$mlkitTextoVersion"
+    implementation "com.google.mlkit:genai-prompt:$mlkitGenaiPromptVersion"
+}
