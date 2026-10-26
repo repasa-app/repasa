@@ -21,8 +21,13 @@ def _texto(v, maximo):
     return isinstance(v, str) and 0 < len(v.strip()) <= maximo and "<" not in v
 
 
+def _entero(v):
+    """Un entero de verdad: en Python True y False también son int, y un tema no puede traer «correcta: true» en alternativas."""
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
 def validar(t):
-    """Lista de problemas (vacía = tema válido)."""
+    """Lista de problemas (vacía = tema válido). Es la misma regla que motor/temas.js (pruebas/casos.json, sección «validar»)."""
     if not isinstance(t, dict):
         return ["El tema no es un objeto JSON."]
     e = []
@@ -30,11 +35,11 @@ def validar(t):
         e.append(f"formato debe ser {FORMATO}.")
     if extra := set(t) - CLAVES:
         e.append("Campos desconocidos: " + ", ".join(sorted(extra)) + ".")
-    if not re.fullmatch(r"[a-z0-9-]{2,60}", str(t.get("id", ""))):
+    if not (isinstance(t.get("id"), str) and re.fullmatch(r"[a-z0-9-]{2,60}", t["id"])):
         e.append("id: minúsculas, números y guiones.")
     if not _texto(t.get("titulo"), 80):
         e.append("titulo: texto de 1 a 80 caracteres, sin HTML.")
-    if t.get("ramo") not in RAMOS:
+    if not (isinstance(t.get("ramo"), str) and t["ramo"] in RAMOS):
         e.append("ramo debe ser uno de: " + ", ".join(RAMOS) + ".")
     if t.get("curso") not in CURSOS:
         e.append("curso debe ser uno de: " + ", ".join(CURSOS) + ".")
@@ -57,22 +62,24 @@ def validar(t):
             continue
         if set(p) - {"id", "tipo", "enunciado", "opciones", "correcta", "explicacion", "dificultad"}:
             e.append(f"{donde}: campos desconocidos.")
-        if not re.fullmatch(r"p[0-9]{1,3}", str(p.get("id", ""))) or p.get("id") in ids:
+        pid = p.get("id")
+        if not (isinstance(pid, str) and re.fullmatch(r"p[0-9]{1,3}", pid)) or pid in ids:
             e.append(f"{donde}: id como «p1», sin repetir.")
-        ids.add(p.get("id"))
-        if p.get("tipo") not in TIPOS:
+        if isinstance(pid, str):
+            ids.add(pid)
+        if not (isinstance(p.get("tipo"), str) and p["tipo"] in TIPOS):
             e.append(f"{donde}: tipo debe ser alternativas, vf o completar.")
         if not _texto(p.get("enunciado"), 300):
             e.append(f"{donde}: enunciado de 1 a 300 caracteres.")
         if not _texto(p.get("explicacion"), 500):
             e.append(f"{donde}: explicación de 1 a 500 caracteres.")
-        if p.get("dificultad") not in (1, 2, 3):
+        if isinstance(p.get("dificultad"), bool) or p.get("dificultad") not in (1, 2, 3):
             e.append(f"{donde}: dificultad 1, 2 o 3.")
         if p.get("tipo") == "alternativas":
             op = p.get("opciones")
             if not (isinstance(op, list) and 3 <= len(op) <= 5 and all(_texto(o, 120) for o in op) and len(set(op)) == len(op)):
                 e.append(f"{donde}: de 3 a 5 opciones distintas.")
-            elif not (isinstance(p.get("correcta"), int) and 0 <= p["correcta"] < len(op)):
+            elif not (_entero(p.get("correcta")) and 0 <= p["correcta"] < len(op)):
                 e.append(f"{donde}: correcta es el número (desde 0) de la opción correcta.")
         elif p.get("tipo") == "vf":
             if not isinstance(p.get("correcta"), bool) or "opciones" in p:
@@ -81,7 +88,7 @@ def validar(t):
             c = p.get("correcta")
             if not (isinstance(c, list) and 1 <= len(c) <= 4 and all(_texto(x, 40) for x in c)) or "opciones" in p:
                 e.append(f"{donde}: en completar, correcta es la lista de respuestas aceptadas (1 a 4 palabras cortas).")
-            elif "___" not in p.get("enunciado", ""):
+            elif "___" not in (p["enunciado"] if isinstance(p.get("enunciado"), str) else ""):
                 e.append(f"{donde}: el enunciado de completar lleva ___ donde va la respuesta.")
     tarjetas = t.get("tarjetas", [])
     if not isinstance(tarjetas, list) or len(tarjetas) > 40 or not all(

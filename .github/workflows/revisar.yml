@@ -1,5 +1,6 @@
 # Revisión automática de cada cambio (y de cada pull request): si algo falla, se ve antes de que llegue a alguien.
-# - comun: sintaxis, privacidad básica, pruebas de Python (con una IA falsa) y de la interfaz (español/inglés, celular, contraste, misma lógica que Python).
+# - comun: sintaxis, privacidad básica, pruebas de Python (con una IA falsa), del motor JS (que dé lo mismo que Python) y de la interfaz
+#   (español/inglés, celular, contraste, misma lógica que Python).
 name: Revisar
 on:
   push:
@@ -21,6 +22,7 @@ jobs:
       - name: Sintaxis
         run: |
           node --check ui/app.js
+          for f in motor/*.js; do node --check "$f"; done
           python3 -m py_compile bin/*.py pruebas/*.py
           python3 -c "import json, glob; [json.load(open(f, encoding='utf-8')) for f in glob.glob('ui/idiomas/*.json') + glob.glob('temas/*.json') + ['ui/demo.json', 'pruebas/casos.json']]"
           for f in herramientas/*.sh pruebas/*.sh; do bash -n "$f"; done
@@ -37,6 +39,8 @@ jobs:
           PY
       - name: Pruebas de Python
         run: python3 pruebas/test_python.py
+      - name: Pruebas del motor JS (lo mismo que Python, cifrado, copia)
+        run: node pruebas/motor.mjs
       - name: Pruebas de la interfaz
         run: |
           npm i --no-save --prefix "$RUNNER_TEMP/pw" playwright@1.56.1

@@ -25,7 +25,9 @@ os.chmod(destino, os.stat(destino).st_mode | stat.S_IEXEC)
 os.environ["PATH"] = BIN_FALSO + os.pathsep + os.environ["PATH"]
 sys.path.insert(0, os.path.join(RAIZ, "bin"))
 
+import crear_tema  # noqa: E402
 import datos  # noqa: E402
+import lineas  # noqa: E402
 import temas  # noqa: E402
 
 FOTO = os.path.join(DATOS, "cuaderno.jpg")
@@ -70,6 +72,31 @@ class Temas(unittest.TestCase):
         self.assertEqual(datos.id_de("¿¿??"), "tema")
 
 
+class Casos(unittest.TestCase):
+    """Los casos compartidos con el motor JS (pruebas/casos.json): Python y JS tienen que dar exactamente lo mismo."""
+    with open(os.path.join(RAIZ, "pruebas", "casos.json"), encoding="utf-8") as f:
+        C = json.load(f)
+
+    def test_validar(self):
+        for nombre, t, esperado in self.C["validar"]:
+            self.assertEqual(temas.validar(t), esperado, nombre)
+
+    def test_id_de(self):
+        for texto, esperado in self.C["id_de"]:
+            self.assertEqual(datos.id_de(texto), esperado, texto)
+
+    def test_lineas_y_conceptos(self):
+        for texto, idioma, esperado in self.C["lineas"]:
+            self.assertEqual(lineas.leer_preguntas(texto, idioma), esperado)
+        for texto, idioma, conceptos, tarjetas in self.C["conceptos"]:
+            self.assertEqual(lineas.leer_conceptos(texto), conceptos)
+            self.assertEqual(lineas.tarjetas_de(conceptos, idioma), tarjetas)
+
+    def test_a_mano(self):
+        for d, hoy, esperado in self.C["a_mano"]:
+            self.assertEqual(crear_tema.a_mano(d, hoy), esperado, d.get("titulo"))
+
+
 class Crear(unittest.TestCase):
     def setUp(self):
         shutil.rmtree(datos.BASE, ignore_errors=True)
@@ -96,6 +123,16 @@ class Crear(unittest.TestCase):
         r = correr("crear_tema.py", "6b", "auto", "La Patria Vieja…", env={"REPASA_IA_MALA": "1"})
         self.assertFalse(r["ok"])
         self.assertIn("no sirve", r["error"])
+
+    def test_a_mano_por_linea_de_comandos(self):
+        entrada = os.path.join(TMP, "a_mano.json")
+        d = json.loads(json.dumps(Casos.C["a_mano"][0][0]))
+        with open(entrada, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False)
+        r = correr("crear_tema.py", "amano", entrada)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(temas.validar(r["tema"]), [])
+        self.assertFalse(os.path.exists(datos.TEMAS), "a mano tampoco guarda nada")
 
     def test_sin_material(self):
         r = correr("crear_tema.py", "6b", "historia", "  ")
