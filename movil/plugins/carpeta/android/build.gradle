@@ -32,4 +32,6 @@ repositories {
 
 dependencies {
     implementation project(':capacitor-android')
+    // ActivityResult viene de androidx.activity; capacitor-android no la expone a los plugins.
+    implementation "androidx.activity:activity:${project.hasProperty('androidxActivityVersion') ? rootProject.ext.androidxActivityVersion : '1.9.2'}"
 }
