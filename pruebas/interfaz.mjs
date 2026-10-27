@@ -84,6 +84,13 @@ const VISTAS = [
   ["vacio", "E=>{E.adultos=false;E.perfiles=[];E.temas=[];E.perfil=null}"],
 ];
 const navegador = await chromium.launch();
+// Cualquier bloqueo de la Content-Security-Policy es un error: la interfaz tiene que funcionar entera con ella.
+const abrirPagina = navegador.newPage.bind(navegador);
+navegador.newPage = async (opciones) => {
+  const p = await abrirPagina(opciones);
+  p.on("console", (m) => { if (/Content Security Policy/i.test(m.text())) falla("CSP: " + m.text().slice(0, 200)); });
+  return p;
+};
 const FALSO = fs.readFileSync(path.join(RAIZ, "pruebas", "capacitor_falso.js"), "utf8");
 /** Una página nueva; en MOVIL, con el Capacitor falso y los datos de demo.json (como si estuvieran en el teléfono). */
 async function nuevaPagina(opciones) {
