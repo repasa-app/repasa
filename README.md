@@ -10,6 +10,7 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 <a href="https://repasa-app.github.io/repasa/demo/">Vista previa</a> ·
 <a href="https://github.com/repasa-app/repasa/discussions">Comunidad</a> ·
 <a href="CONTRIBUTING.md">Cómo aportar</a> ·
+<a href="SECURITY.md">Seguridad</a> ·
 <a href="#english">English</a></p>
 
 ---

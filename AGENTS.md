@@ -110,3 +110,10 @@ Todo entra por pull request y lo junta quien mantiene el proyecto, solo con su a
 (alerta roja: workflows, scripts de instalación, red nueva, dependencias nuevas, binarios, cualquier cosa que lea claves o mande datos
 afuera, enlaces externos en la interfaz). Los temas nuevos se validan con `temas.validar`, se revisa que el contenido sea correcto y
 apropiado para la edad, y que no traigan nombres de personas ni de colegios. Detalle en `CONTRIBUTING.md`.
+
+**Seguridad** ([SECURITY.md](SECURITY.md)): las fallas se reportan en privado. Las actions van fijadas por SHA completo con su versión en un
+comentario (Dependabot las sube), con `permissions` mínimos, `persist-credentials: false`, nunca `pull_request_target` ni
+`${{ github.event.* }}` dentro de `run:`. La página de `docs/` tiene una Content-Security-Policy con la huella de cada script en
+línea: si cambias uno, `pruebas/test_python.py` (clase `Seguridad`) dice la huella nueva para `script-src`.
+En `movil/`, `npm ci` sin scripts de instalación (`movil/.npmrc`) y `pruebas/contrato.py` revisa la configuración nativa: sin
+`server.url` ni http en claro, Android con `allowBackup="false"` y sin componentes exportados de más, iOS sin excepciones de ATS.

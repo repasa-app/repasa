@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: 🔒 Reportar una falla de seguridad (en privado)
+    url: https://github.com/repasa-app/repasa/security/advisories/new
+    about: No la publiques en un issue: así la arreglamos antes. / Please report vulnerabilities privately.
   - name: 💬 Conversar, preguntar o contar cómo lo usan en tu casa
     url: https://github.com/repasa-app/repasa/discussions
     about: Dudas de uso e ideas a medio cocinar. / Questions and rough ideas.
