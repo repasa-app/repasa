@@ -7,7 +7,10 @@ Revisa:
 2. Cada función de la interfaz que llama el anfitrión del celular (window.Repasa.<funcion>) existe en ui/app.js.
 3. Cada método nativo que llama el anfitrión (llamar("Plugin", "metodo")) existe en el plugin de iOS (Swift) y de Android (Kotlin o
    Java), y en el Capacitor falso de las pruebas (pruebas/capacitor_falso.js), para que lo probado sea lo que existe.
+4. Seguridad de las apps nativas (es para niños): Capacitor sin servidor remoto ni http en claro ni navegación a otros sitios;
+   Android sin respaldo automático a la nube, sin tráfico en claro y sin componentes exportados de más; iOS sin excepciones de ATS.
 """
+import json
 import glob
 import os
 import re
@@ -84,6 +87,31 @@ for plugin, metodo in sorted(llamadas):
             problemas.append(f"{plugin}.{metodo} no existe en el plugin de {plataforma}.")
     if not re.search(rf"\b{metodo}\b", falso[falso.index(f"{plugin}: {{"):]):
         problemas.append(f"{plugin}.{metodo} no está en pruebas/capacitor_falso.js.")
+
+# 4) Seguridad de las apps nativas
+CAP = json.loads(leer("movil", "capacitor.config.json"))
+servidor = CAP.get("server") or {}
+for clave in ("url", "cleartext", "allowNavigation", "hostname"):
+    if clave in servidor:
+        problemas.append(f"capacitor.config.json: server.{clave} no va (la app sirve sus archivos desde el teléfono, sin red).")
+if servidor.get("androidScheme", "https") != "https" or servidor.get("iosScheme", "capacitor") not in ("capacitor", "ionic"):
+    problemas.append("capacitor.config.json: el esquema de la app cambió (eso además borra los datos guardados por el WebView).")
+if (CAP.get("android") or {}).get("allowMixedContent") or (CAP.get("android") or {}).get("webContentsDebuggingEnabled"):
+    problemas.append("capacitor.config.json: android.allowMixedContent y webContentsDebuggingEnabled no van.")
+MANIFIESTO = leer("movil", "android", "app", "src", "main", "AndroidManifest.xml")
+for atributo in ('android:allowBackup="false"', 'android:fullBackupContent="false"', 'android:usesCleartextTraffic="false"'):
+    if atributo not in MANIFIESTO:
+        problemas.append(f"AndroidManifest.xml: falta {atributo} (datos de niños: sin respaldo a la nube sin cifrar ni http).")
+exportados = re.findall(r'<(activity|service|receiver|provider)\b[^>]*android:name="([^"]+)"[^>]*android:exported="true"', MANIFIESTO)
+if [n for _, n in exportados if n != ".MainActivity"]:
+    problemas.append(f"AndroidManifest.xml: componentes exportados de más: {exportados}.")
+permisos = set(re.findall(r'<uses-permission android:name="([^"]+)"', MANIFIESTO))
+for f in glob.glob(os.path.join(RAIZ, "movil", "plugins", "*", "android", "src", "main", "AndroidManifest.xml")):
+    permisos |= set(re.findall(r'<uses-permission android:name="([^"]+)"', open(f, encoding="utf-8").read()))
+if permisos - {"android.permission.INTERNET"}:
+    problemas.append(f"Permisos de Android nuevos (revisar con cuidado antes de agregarlos): {sorted(permisos)}.")
+if "NSAppTransportSecurity" in leer("movil", "ios", "App", "App", "Info.plist"):
+    problemas.append("Info.plist: sin excepciones de App Transport Security (NSAppTransportSecurity).")
 
 if problemas:
     print("✗ Contrato:\n  " + "\n  ".join(problemas))

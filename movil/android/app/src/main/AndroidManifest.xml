@@ -2,8 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Respaldo: apagado. La copia automática de Android subiría a la nube perfiles, progreso y fotos del cuaderno sin la frase
+         de la familia; Repasa tiene su propia copia cifrada («Para adultos → Copia en tu nube»). Sin tráfico en claro (http). -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
