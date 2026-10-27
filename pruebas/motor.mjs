@@ -196,6 +196,11 @@ await bloque("cifrado: frase equivocada, archivo cambiado y nombres opacos", asy
   const roto = { ...sobre, datos: sobre.datos.slice(0, -6) + (sobre.datos.at(-6) === "A" ? "B" : "A") + sobre.datos.slice(-5) };
   await cifrado.descifrarJSON(otra, roto, "aad-1").then(() => falla("abrió un sobre cambiado"), () => {});
   await cifrado.abrirCabecera({ ...cabecera, kdf: { ...cabecera.kdf, iteraciones: 1000 } }, "caballo bateria grapa correcto").then(() => falla("aceptó pocas vueltas de PBKDF2"), () => {});
+  // Un archivo raro (base64 cortado, sal o IV de otro largo) da siempre «El archivo está dañado…», nunca un error sin explicar.
+  for (const sal of ["a", "abcde", "QUJD=", "####"]) {
+    await cifrado.abrirCabecera({ ...cabecera, kdf: { ...cabecera.kdf, sal } }, "caballo bateria grapa correcto").then(() => falla("abrió con una sal rara"), (e) => { if (!(e instanceof cifrado.ErrorDañado)) falla(`sal «${sal}»: ${e.name}`); });
+  }
+  await cifrado.descifrarJSON(otra, { ...sobre, iv: "QUJD" }, "aad-1").then(() => falla("abrió con un IV corto"), (e) => { if (!(e instanceof cifrado.ErrorDañado)) falla("IV corto: " + e.name); });
   // «canción» con la tilde como un carácter o como dos (iPhone y Android pueden mandar distinto): la misma frase.
   const nfd = await cifrado.abrirCabecera((await cifrado.nuevaCabecera("mi canción favorita 2026", 100000)).cabecera, "mi canción favorita 2026").catch(() => null);
   if (!nfd) falla("la frase no se normaliza (NFC)");

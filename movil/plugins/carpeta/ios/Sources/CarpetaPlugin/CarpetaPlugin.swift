@@ -69,8 +69,14 @@ public class CarpetaPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDelegat
         guard let url = urls.first else { return call.reject("cancelado", "CANCELADO") }
         DispatchQueue.global(qos: .userInitiated).async {
             defer { try? FileManager.default.removeItem(at: url) } // asCopy: es una copia dentro de la app
+            // El tamaño puede faltar: se lee con tope igual (nunca más de `maximo` bytes en memoria).
             let tamano = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-            guard tamano <= Self.maximo, let texto = try? String(contentsOf: url, encoding: .utf8) else {
+            guard tamano <= Self.maximo, let manija = try? FileHandle(forReadingFrom: url) else {
+                return call.reject("No se pudo abrir el archivo.", "ARCHIVO")
+            }
+            defer { try? manija.close() }
+            guard let datos = try? manija.read(upToCount: Self.maximo + 1), datos.count <= Self.maximo,
+                  let texto = String(data: datos, encoding: .utf8) else {
                 return call.reject("No se pudo abrir el archivo.", "ARCHIVO")
             }
             call.resolve(["texto": texto])

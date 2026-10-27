@@ -10,6 +10,8 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.ActivityCallback
 import com.getcapacitor.annotation.CapacitorPlugin
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 
 /**
  * Guardar y traer la copia cifrada de Repasa con el selector de archivos del sistema (Storage Access Framework): la persona
@@ -80,7 +82,8 @@ class CarpetaPlugin : Plugin() {
                     if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else 0L
                 } ?: 0L
                 if (tamano > maximo) throw IllegalStateException("muy grande")
-                val texto = context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                // El tamaño que dice el proveedor puede faltar o mentir: se lee con tope igual (sin quedarse sin memoria).
+                val texto = context.contentResolver.openInputStream(uri)?.use { leerConTope(it).toString(Charsets.UTF_8) }
                     ?: throw IllegalStateException("sin entrada")
                 val r = JSObject()
                 r.put("texto", texto)
@@ -89,5 +92,20 @@ class CarpetaPlugin : Plugin() {
                 call.reject("No se pudo abrir el archivo.", "ARCHIVO")
             }
         }.start()
+    }
+
+    /** Lee todo el archivo, pero nunca más de `maximo` bytes (si hay más, no es una copia de Repasa). */
+    private fun leerConTope(entrada: InputStream): ByteArray {
+        val salida = ByteArrayOutputStream()
+        val trozo = ByteArray(64 * 1024)
+        var total = 0L
+        while (true) {
+            val n = entrada.read(trozo)
+            if (n < 0) break
+            total += n
+            if (total > maximo) throw IllegalStateException("muy grande")
+            salida.write(trozo, 0, n)
+        }
+        return salida.toByteArray()
     }
 }

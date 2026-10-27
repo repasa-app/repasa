@@ -118,6 +118,13 @@ class Crear(unittest.TestCase):
         self.assertEqual(g["tema"]["fuente"], ["material-1.jpg"])
         g2 = correr("crear_tema.py", "guardar", ruta)  # mismo título: no pisa el anterior
         self.assertNotEqual(g2["tema"]["id"], g["tema"]["id"])
+        # Solo fotos y PDF llegan al material (igual que motor/datos.js): una página web, no.
+        raro = os.path.join(TMP, "pagina.html")
+        with open(raro, "w", encoding="utf-8") as f:
+            f.write("<script>alert(1)</script>")
+        g3 = correr("crear_tema.py", "guardar", ruta, raro, FOTO)
+        self.assertEqual(g3["tema"]["fuente"], ["material-1.jpg"])
+        self.assertEqual(os.listdir(os.path.join(datos.TEMAS, g3["tema"]["id"], "material")), ["material-1.jpg"])
 
     def test_respuesta_mala_de_la_ia_no_se_usa(self):
         r = correr("crear_tema.py", "6b", "auto", "La Patria Vieja…", env={"REPASA_IA_MALA": "1"})

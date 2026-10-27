@@ -22,8 +22,10 @@ export function aBase64(bytes) {
   return btoa(s);
 }
 export function deBase64(b64) {
-  if (typeof b64 !== "string" || !/^[A-Za-z0-9+/]*={0,2}$/.test(b64)) throw new ErrorDañado(MENSAJES.dañado);
-  const s = atob(b64), r = new Uint8Array(s.length);
+  if (typeof b64 !== "string" || b64.length % 4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(b64)) throw new ErrorDañado(MENSAJES.dañado);
+  let s;
+  try { s = atob(b64); } catch { throw new ErrorDañado(MENSAJES.dañado); } // un archivo raro nunca da un error sin explicar
+  const r = new Uint8Array(s.length);
   for (let i = 0; i < s.length; i++) r[i] = s.charCodeAt(i);
   return r;
 }

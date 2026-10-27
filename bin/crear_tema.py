@@ -116,6 +116,9 @@ def crear(curso, ramo, texto, archivos):
     return {"ok": True, "tema": t}
 
 
+EXT_MATERIAL = (".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif", ".pdf")
+
+
 def guardar(tema, archivos):
     problemas = temas.validar(tema)
     if problemas:
@@ -126,6 +129,8 @@ def guardar(tema, archivos):
     carpeta = os.path.join(datos.TEMAS, tema["id"])
     os.makedirs(os.path.join(carpeta, "material"))
     nombres = []
+    # Solo fotos y PDF (lo mismo que EXT_MATERIAL en motor/datos.js): un .html o un .svg no llega a la carpeta del tema.
+    archivos = [a for a in archivos if os.path.splitext(a)[1].lower() in EXT_MATERIAL]
     for k, a in enumerate(archivos):
         destino = f"material-{k + 1}{os.path.splitext(a)[1].lower()}"
         shutil.copy2(a, os.path.join(carpeta, "material", destino))
