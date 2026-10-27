@@ -22,7 +22,7 @@ Necesitas Node 22, Xcode 26.2 y Android Studio (con el Android SDK 35 y su JDK 2
 
 ```bash
 cd movil
-npm ci                       # instala exactamente lo de package-lock.json (incluye los plugins propios, por ruta)
+npm ci                       # instala exactamente lo de package-lock.json (incluye los plugins propios, por ruta), sin scripts de instalación (.npmrc)
 npx cap telemetry off        # la herramienta de Capacitor no manda estadísticas de uso (una vez por computador)
 npm run sync                 # = node armar.mjs && npx cap sync   (repetir cada vez que cambie ui/, motor/ o host/)
 ```

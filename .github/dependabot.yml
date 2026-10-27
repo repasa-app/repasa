@@ -1,0 +1,38 @@
+# Dependabot: avisa cuando hay versiones nuevas de las actions (fijadas por SHA) y de las dependencias de la app del celular, y abre
+# un pull request para revisarlas. Nada se junta solo: cada pull request se revisa como cualquier aporte (ver CONTRIBUTING.md).
+# `cooldown`: espera unos días antes de proponer una versión recién publicada; si un paquete o una action fue secuestrada, casi
+# siempre se descubre y se retira en ese plazo. Las alertas de seguridad (Dependabot security updates) no esperan.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
+    groups:
+      actions: { patterns: ["*"] }
+    commit-message: { prefix: "Actions" }
+
+  # Capacitor y sus plugins oficiales (movil/package.json, versiones exactas). Un cambio de versión mayor de Capacitor pide migrar
+  # los proyectos de Xcode y Android Studio: se hace a mano, no por Dependabot.
+  - package-ecosystem: npm
+    directory: /movil
+    schedule: { interval: weekly }
+    versioning-strategy: increase
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+    ignore:
+      - dependency-name: "@capacitor/*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      capacitor: { patterns: ["@capacitor/*"] }
+    commit-message: { prefix: "Celular" }
+
+  # Gradle (Android): solo alertas de seguridad (0 pull requests de versiones nuevas). Kotlin, ML Kit y AndroidX se suben a mano
+  # y se compilan en Android Studio antes de juntar.
+  - package-ecosystem: gradle
+    directory: /movil/android
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 0
