@@ -1,4 +1,5 @@
-// Genera las imágenes de la página (docs/img y docs/) con la interfaz y datos ficticios de ui/demo.json.
+// Genera las imágenes de la página y del README (docs/img y docs/) con la interfaz y datos ficticios de ui/demo.json:
+// capturas a escritorio y a 390 px (claro y oscuro), logo (sirve de avatar de la organización), apple-touch-icon e imagen para compartir.
 // Uso: PLAYWRIGHT=/ruta/a/playwright node herramientas/imagenes.mjs
 import http from "node:http";
 import fs from "node:fs";
@@ -20,9 +21,15 @@ const IMG = path.join(RAIZ, "docs", "img");
 fs.mkdirSync(IMG, { recursive: true });
 const navegador = await chromium.launch();
 
-for (const [archivo, consulta, pasos] of [["app-inicio", "?idioma=es&perfil=martina", []], ["app-pregunta", "?idioma=es&perfil=martina", ['[data-accion="empezar"]', "tecla:2"]]]) {
-  const p = await navegador.newPage({ viewport: { width: 1280, height: archivo === "app-pregunta" ? 640 : 800 }, colorScheme: "light", deviceScaleFactor: 1 });
-  await p.goto(`${URL_BASE}/ui/index.html${consulta}`);
+// Capturas a escritorio y a 390 px, en claro y oscuro: el inicio de un perfil y una pregunta respondida.
+const capturas = [];
+for (const [esquema, sufijo] of [["light", ""], ["dark", "-oscuro"]]) {
+  capturas.push([`app-inicio${sufijo}`, 1280, 800, 1, esquema, []], [`app-pregunta${sufijo}`, 1280, 640, 1, esquema, ['[data-accion="empezar"]', "tecla:2"]],
+    [`app-celular${sufijo}`, 390, 844, 2, esquema, []], [`app-pregunta-celular${sufijo}`, 390, 844, 2, esquema, ['[data-accion="empezar"]', "tecla:2"]]);
+}
+for (const [archivo, ancho, alto, escala, esquema, pasos] of capturas) {
+  const p = await navegador.newPage({ viewport: { width: ancho, height: alto }, colorScheme: esquema, deviceScaleFactor: escala });
+  await p.goto(`${URL_BASE}/ui/index.html?idioma=es&perfil=martina`);
   await p.waitForSelector(".barra");
   for (const sel of pasos) { if (sel.startsWith("tecla:")) await p.keyboard.press(sel.slice(6)); else await p.click(sel); await p.waitForTimeout(350); }
   await p.waitForTimeout(400);
@@ -51,13 +58,15 @@ await p.setContent(`<style>
   p{font-size:23px;color:#5d6475;margin:0;line-height:1.4}
   .chips{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap}
   .chips span{font-size:17px;font-weight:700;padding:7px 14px;border-radius:99px;border:2px solid #e6e2d6;background:#fffefa}
-  img{position:absolute;left:590px;top:70px;width:760px;border-radius:20px;box-shadow:0 30px 80px rgba(29,35,51,.18);border:2px solid #e6e2d6}
+  .mac{position:absolute;left:590px;top:62px;width:760px;border-radius:20px;box-shadow:0 30px 80px rgba(29,35,51,.18);border:2px solid #e6e2d6}
+  .cel{position:absolute;left:955px;top:150px;width:205px;border-radius:30px;border:7px solid #1d2333;box-shadow:0 30px 70px rgba(29,35,51,.3)}
 </style>
 <div class="txt"><div class="marca">${svg}<span>Repasa</span></div>
 <h1>De la foto del cuaderno a la <mark>prueba preparada</mark></h1>
-<p>Resumen fácil, preguntas tipo prueba y tarjetas. 5° básico a 4° medio.</p>
+<p>Resumen fácil, preguntas tipo prueba y tarjetas. En el computador y en el celular. 5°&nbsp;básico a 4°&nbsp;medio.</p>
 <div class="chips"><span>Gratis</span><span>Código abierto</span><span>Sin cuentas</span></div></div>
-<img src="data:image/png;base64,${captura}">`);
+<img class="mac" src="data:image/png;base64,${captura}">
+<img class="cel" src="data:image/png;base64,${fs.readFileSync(path.join(IMG, "app-pregunta-celular.png")).toString("base64")}">`);
 await p.screenshot({ path: path.join(IMG, "compartir.png") });
 await navegador.close();
 servidor.close();
