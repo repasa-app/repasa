@@ -2,6 +2,7 @@
 # - comun: sintaxis, privacidad básica, pruebas de Python (con una IA falsa), del motor JS (que dé lo mismo que Python), contrato del
 #   puente y de la interfaz (español/inglés, celular, contraste, misma lógica que Python), también con el anfitrión del teléfono.
 #   Los proyectos nativos de movil/ (Xcode y Gradle) no se compilan aquí todavía.
+# - mac: compila la app de Mac (app/, Swift) en macOS cuando cambió algo de ella.
 name: Revisar
 on:
   push:
@@ -24,10 +25,10 @@ jobs:
       - name: Sintaxis
         run: |
           node --check ui/app.js
-          for f in motor/*.js movil/host/*.js movil/*.mjs pruebas/*.mjs pruebas/capacitor_falso.js; do node --check "$f"; done
+          for f in motor/*.js movil/host/*.js movil/*.mjs app/web/*.js herramientas/*.mjs pruebas/*.mjs pruebas/capacitor_falso.js; do node --check "$f"; done
           python3 -m py_compile bin/*.py pruebas/*.py
           python3 -c "import json, glob; [json.load(open(f, encoding='utf-8')) for f in glob.glob('ui/idiomas/*.json') + glob.glob('temas/*.json') + ['ui/demo.json', 'pruebas/casos.json']]"
-          for f in herramientas/*.sh pruebas/*.sh; do bash -n "$f"; done
+          for f in herramientas/*.sh pruebas/*.sh build.sh; do bash -n "$f"; done
       - name: Privacidad (correos personales y rutas de usuario)
         run: bash herramientas/revisar_privacidad.sh --generico
       - name: Temas incluidos válidos
@@ -43,7 +44,9 @@ jobs:
         run: python3 pruebas/test_python.py
       - name: Pruebas del motor JS (lo mismo que Python, cifrado, copia)
         run: node pruebas/motor.mjs
-      - name: Contrato del puente (interfaz, celular y plugins nativos)
+      - name: Copia cifrada en el escritorio (app/web/escritorio.js con el motor)
+        run: node pruebas/escritorio.mjs
+      - name: Contrato del puente (interfaz, celular, Mac y plugins nativos)
         run: python3 pruebas/contrato.py
       - name: Pruebas de la interfaz
         run: |
@@ -65,3 +68,20 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with: { name: capturas, path: capturas, retention-days: 14, if-no-files-found: ignore }
+  mac:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: ¿Cambió algo de la app de Mac?
+        id: cambio
+        # Lo que viene del evento entra por variables de entorno, nunca pegado en el guion.
+        env:
+          ANTES: ${{ github.event.before }}
+          EVENTO: ${{ github.event_name }}
+        run: |
+          if [ "$EVENTO" != "push" ] || ! git cat-file -e "$ANTES" 2>/dev/null || git diff --name-only "$ANTES" HEAD | grep -qE '^(app/|herramientas/empaquetar\.sh|build\.sh)'; then echo "si=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Compilar
+        if: steps.cambio.outputs.si == '1'
+        run: cd app && swift build -c release

@@ -3,12 +3,15 @@
 Uso: python3 pruebas/contrato.py
 Revisa:
 1. Cada acción que manda la interfaz (host.enviar en ui/app.js) existe en el anfitrión del celular (movil/host/host.js), en la vista
-   previa (simular() en ui/app.js) y, cuando existan, en la app de Mac (app/**/Ventana.swift) y en la de Windows/Linux (escritorio/).
-2. Cada función de la interfaz que llama el anfitrión del celular (window.Repasa.<funcion>) existe en ui/app.js.
+   previa (simular() en ui/app.js), en la app de Mac (app/Sources/Repasa/Ventana.swift) y, cuando exista, en la de Windows/Linux
+   (escritorio/).
+2. Cada función de la interfaz que llaman el anfitrión del celular y la app de Mac (window.Repasa.<funcion>) existe en ui/app.js, y
+   cada script de bin/ que llama la app de Mac existe.
 3. Cada método nativo que llama el anfitrión (llamar("Plugin", "metodo")) existe en el plugin de iOS (Swift) y de Android (Kotlin o
    Java), y en el Capacitor falso de las pruebas (pruebas/capacitor_falso.js), para que lo probado sea lo que existe.
 4. Seguridad de las apps nativas (es para niños): Capacitor sin servidor remoto ni http en claro ni navegación a otros sitios;
-   Android sin respaldo automático a la nube, sin tráfico en claro y sin componentes exportados de más; iOS sin excepciones de ATS.
+   Android sin respaldo automático a la nube, sin tráfico en claro y sin componentes exportados de más; iOS sin excepciones de ATS;
+   Mac con el puente solo para la interfaz local, la ventana sin navegar fuera de ui/ y descargas solo de los Releases de Repasa.
 """
 import json
 import glob
@@ -29,7 +32,7 @@ HOST = leer("movil", "host", "host.js")
 FALSO = leer("pruebas", "capacitor_falso.js")
 problemas = []
 
-# Acciones nuevas del celular que las apps de escritorio todavía no tienen (se agregan cuando cada app las implemente).
+# Acciones que la app de Windows/Linux todavía no tiene (se agregan cuando exista). La de Mac las tiene todas.
 SOLO_MOVIL = {"guardarCopia": "copia cifrada (celular, fase 1)", "traerCopia": "copia cifrada (celular, fase 1)",
               "temaAMano": "en escritorio: crear_tema.py amano", "agregarDelCatalogo": "en escritorio: crear_tema.py guardar temas/<id>.json"}
 
@@ -38,25 +41,40 @@ acciones = set(re.findall(r'host\.enviar\("(\w+)"', APP))
 simular = APP[APP.index("function simular("):]
 simular = simular[:simular.index("\n  }\n")]
 en_simular = set(re.findall(r'case "(\w+)"', simular))
+# Acciones solo del computador: arrastrar fotos o PDF e instalar una versión nueva (el teléfono no tiene ninguna de las dos).
+SOLO_ESCRITORIO = {"soltarMaterial": "arrastrar material a «Nuevo tema»", "actualizar": "instalar una versión nueva"}
 en_host = set(re.findall(r"^  (?:async )?(\w+)(?:\(|: |,$)", HOST[HOST.index("const ACCIONES = {"):HOST.index("\n};", HOST.index("const ACCIONES = {"))], re.M))
-for a in sorted(acciones - en_host):
+for a in sorted(acciones - en_host - set(SOLO_ESCRITORIO)):
     problemas.append(f"La acción «{a}» no está en movil/host/host.js (ACCIONES).")
 for a in sorted(acciones - en_simular):
     problemas.append(f"La acción «{a}» no está simulada en simular() (ui/app.js).")
-for nombre, patron in (("Mac (Ventana.swift)", "app/**/Ventana.swift"), ("Windows/Linux (escritorio/)", "escritorio/src/**/*.js")):
+MAC = leer("app", "Sources", "Repasa", "Ventana.swift")
+casos_mac = set(re.findall(r'"(\w+)"', " ".join(re.findall(r"case ([^:\n]+):", MAC))))
+for a in sorted(acciones - casos_mac):
+    problemas.append(f"La acción «{a}» no está en la app de Mac (un case en Ventana.swift).")
+for a in sorted(set(SOLO_ESCRITORIO) - acciones):
+    problemas.append(f"SOLO_ESCRITORIO tiene «{a}», que la interfaz ya no manda (sácala del contrato).")
+for patron in ["escritorio/src/**/*.js"]:
     archivos = glob.glob(os.path.join(RAIZ, patron), recursive=True)
     if not archivos:
-        continue  # esa app todavía no existe en el repo
+        continue  # la app de Windows/Linux todavía no existe en el repo
     codigo = "\n".join(open(f, encoding="utf-8").read() for f in archivos)
     for a in sorted(acciones - set(SOLO_MOVIL)):
         if not re.search(rf'["\']{a}["\']|\b{a}\s*[:(]', codigo):
-            problemas.append(f"La acción «{a}» no está en la app de {nombre}.")
+            problemas.append(f"La acción «{a}» no está en la app de Windows/Linux (escritorio/).")
 
 # 2) Funciones de la interfaz que llama el celular
 interfaz = APP[APP.index("window.Repasa = {"):APP.index("// ───────────── Vista previa")]
 en_interfaz = set(re.findall(r"^    (?:async )?(\w+)\(", interfaz, re.M))
 for f in sorted(set(re.findall(r"A\(\)\.(\w+)", HOST)) - en_interfaz):
     problemas.append(f"movil/host/host.js llama window.Repasa.{f}, que no existe en ui/app.js.")
+SWIFT = {os.path.basename(f): open(f, encoding="utf-8").read() for f in glob.glob(os.path.join(RAIZ, "app", "Sources", "Repasa", "*.swift"))}
+TODO_SWIFT = "\n".join(SWIFT.values())
+for f in sorted(set(re.findall(r'llamar\("(\w+)"', TODO_SWIFT)) - en_interfaz):
+    problemas.append(f"La app de Mac llama window.Repasa.{f}, que no existe en ui/app.js.")
+for script in sorted(set(re.findall(r'(?:correrJSON|conEntrada|guardarEnFila)\("(\w+\.py)"', TODO_SWIFT))):
+    if not os.path.exists(os.path.join(RAIZ, "bin", script)):
+        problemas.append(f"La app de Mac llama bin/{script}, que no existe.")
 
 # 3) Métodos nativos
 PLUGINS = {
@@ -113,7 +131,30 @@ if permisos - {"android.permission.INTERNET"}:
 if "NSAppTransportSecurity" in leer("movil", "ios", "App", "App", "Info.plist"):
     problemas.append("Info.plist: sin excepciones de App Transport Security (NSAppTransportSecurity).")
 
+# Mac: lo que ya está endurecido no se pierde sin que alguien lo note.
+for archivo, texto, por_que in [
+    ("Ventana.swift", "frameInfo.isMainFrame, mensaje.frameInfo.securityOrigin.protocol == \"file\"", "el puente solo para la interfaz local"),
+    ("Ventana.swift", "decidePolicyFor", "la ventana no navega fuera de ui/"),
+    ("Ventana.swift", "hasPrefix(carpetaUI)", "la ventana no navega fuera de ui/"),
+    ("Ventana.swift", "elegidos.contains", "crear y guardar un tema solo con archivos que eligió la persona"),
+    ("Ventana.swift", "Rutas.permitidaEnCopia(ruta)", "lo que trae una copia solo escribe rutas permitidas"),
+    ("Actualizaciones.swift", "esDescargaNuestra(zip), esDescargaNuestra(huella)", "descargas solo de los Releases de Repasa"),
+    ("Actualizaciones.swift", "shasum -a 256", "la versión nueva se verifica con su huella"),
+    ("Servicios.swift", "\"--disallowedTools\", \"*\"", "la prueba de la IA corre sin herramientas"),
+]:
+    if texto not in SWIFT.get(archivo, ""):
+        problemas.append(f"app/Sources/Repasa/{archivo}: falta «{texto}» ({por_que}).")
+for linea in re.findall(r'"""(.*?)"""', SWIFT.get("Actualizaciones.swift", ""), re.S):
+    for interpolado in re.findall(r"\\\(([^)]*(?:\([^)]*\))?[^)]*)\)", linea):
+        if not interpolado.startswith("comillas(") and interpolado != "pid":
+            problemas.append(f"Actualizaciones.swift: «\\({interpolado})» va en el guion sin comillas().")
+PLIST = leer("app", "Info.plist")
+if "<string>app.repasa.mac</string>" not in PLIST or 'identifier "app.repasa.mac"' not in leer("herramientas", "empaquetar.sh"):
+    problemas.append("El identificador de la app de Mac (app.repasa.mac) no coincide entre Info.plist y la firma de empaquetar.sh.")
+if "NSAppTransportSecurity" in PLIST:
+    problemas.append("app/Info.plist: sin excepciones de App Transport Security.")
+
 if problemas:
     print("✗ Contrato:\n  " + "\n  ".join(problemas))
     sys.exit(1)
-print(f"✓ Contrato: {len(acciones)} acciones de la interfaz, {len(llamadas)} métodos nativos, celular y vista previa al día")
+print(f"✓ Contrato: {len(acciones)} acciones de la interfaz, {len(llamadas)} métodos nativos, celular, Mac y vista previa al día")

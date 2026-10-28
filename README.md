@@ -35,8 +35,25 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 
 ## Estado
 Versión 0.1, recién nacida. Ya funcionan el motor (crear temas con la IA, explicar de nuevo, validar, escribir temas a mano) y la
-interfaz completa, que puedes [probar con datos ficticios](https://repasa-app.github.io/repasa/demo/). Las apps de Mac, Windows y
-Linux vienen en camino. La app del celular está en su primera fase (abajo).
+interfaz completa, que puedes [probar con datos ficticios](https://repasa-app.github.io/repasa/demo/). La **app de Mac** está en
+pruebas (abajo); las de Windows y Linux vienen en camino. La app del celular está en su primera fase.
+
+## En el Mac (en pruebas)
+Una app normal de Mac (macOS 15 o más nuevo, Mac con Apple Silicon) con la misma interfaz. Trae todo adentro (también Python): no
+hay que instalar nada más que la IA de un adulto (Claude Code, Codex o Gemini, [cómo instalarla](https://repasa-app.github.io/repasa/ia.html)).
+- **Fotos del cuaderno o PDF:** con «Elegir fotos o PDF» o arrastrándolos a «Nuevo tema».
+- **Todo queda en `~/Repasa`** (solo tu cuenta del computador puede abrir esa carpeta). Copia cifrada para llevar el avance al
+  celular o a otro computador, la misma que en el teléfono.
+- **Actualizaciones** desde «Para adultos»: la app revisa sola y nunca interrumpe a los niños.
+
+Mientras no haya una versión publicada, se arma desde el código en un Mac con las herramientas de línea de comandos de Xcode
+(`xcode-select --install`):
+```bash
+git clone https://github.com/repasa-app/repasa ~/Developer/repasa   # en ~/Developer: ~/repasa chocaría con la carpeta de datos ~/Repasa
+cd ~/Developer/repasa && bash build.sh                               # compila e instala en ~/Applications/Repasa.app
+```
+La primera vez, macOS puede pedir confirmar que quieres abrirla (clic derecho → Abrir): la app va firmada solo en tu Mac, todavía
+sin firma de Apple.
 
 ## En el celular (fase 1, en pruebas)
 Repasa también corre en iPhone y Android, con la misma interfaz y **la IA del propio teléfono**: gratis, privada y sin internet.
@@ -78,7 +95,7 @@ Todo vive en `~/Repasa/` (en Windows, `C:\Users\<tú>\Repasa`; en el celular, `R
 | `temas/<id>/material/` | Copias de las fotos o PDF de donde salió el tema. |
 | `progreso/<perfil>.json` | `{"puntos", "racha", "ultimo_dia", "preguntas": {"<tema>/<pregunta>": {"caja", "proxima"}}, "sesiones": [...]}` |
 | `pruebas.json` | `[{"id", "perfil", "ramo", "temas": [...], "fecha"}]` |
-| `.repasa/temporal/` | Solo en el celular: las fotos de un tema que todavía no se guarda (se borran al abrir la app). |
+| `.repasa/temporal/` | Las fotos de un tema que todavía no se guarda (en el celular, y en el computador las que se arrastran); se borran al abrir la app. |
 | `.repasa/` | Ajustes de la app y temas descargados del catálogo. |
 
 ## Desarrollo
@@ -87,6 +104,7 @@ Necesitas Python 3 (solo biblioteca estándar) y Node para las pruebas de la int
 cd ui && python3 -m http.server 8765      # interfaz con datos ficticios: http://localhost:8765 (?idioma=en, ?bienvenida, ?vacio)
 python3 bin/crear_tema.py 6b historia "" foto.jpg /tmp/tema.json   # crear un tema con tu IA (no guarda nada)
 bash pruebas/correr.sh                    # todas las pruebas
+bash build.sh                             # app de Mac (solo en un Mac; ver «En el Mac»)
 cd movil && npm ci && npm run sync        # app del celular (luego: npx cap open ios / npx cap open android; ver movil/README.md)
 ```
 Lee [`AGENTS.md`](AGENTS.md) antes de cambiar algo: sirve igual para personas y para tu IA.
@@ -103,6 +121,10 @@ the school notebook or worksheet (or add a PDF or text) and a grown-up's own AI 
 an easy summary, test-style questions and flashcards. Daily spaced-repetition reviews bring back what's hard until it's learned, a test
 date makes Repasa prioritize those topics, and points and streaks keep it fun. No accounts, no ads, no servers: everything stays on the
 computer in open files. Spanish-first, English included. Licensed under AGPL-3.0.
+
+**On the Mac (testing):** a native app (macOS 15+, Apple Silicon) with everything inside, Python included; add notebook photos or
+PDFs with a button or by dragging them in. Until a release is published, build it on a Mac with
+`git clone https://github.com/repasa-app/repasa ~/Developer/repasa && cd ~/Developer/repasa && bash build.sh`.
 
 **On the phone (phase 1, testing):** an iPhone and Android app with the same interface and the phone's own AI (Apple
 Intelligence or Gemini Nano: free, private, offline). Without on-device AI, topics can be written by hand or picked from the

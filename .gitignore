@@ -14,6 +14,7 @@
 !/pruebas/
 !/README.md
 !/AGENTS.md
+!/build.sh
 !/CLAUDE.md
 !/GEMINI.md
 !/CONTRIBUTING.md
@@ -23,3 +24,5 @@
 __pycache__/
 .terminos-privados
 capturas/
+.build/
+/dist/

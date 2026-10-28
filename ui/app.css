@@ -172,6 +172,9 @@ h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -.01em; }
 select, input.texto, textarea { width: 100%; padding: 11px 13px; border-radius: 14px; border: 2px solid var(--linea); background: var(--panel); color: var(--texto); }
 textarea { resize: vertical; }
 .soltar { border: 2px dashed var(--linea); border-radius: 18px; padding: 22px; text-align: center; display: grid; gap: 10px; justify-items: center; margin-bottom: 14px; }
+.soltar.encima { border-color: var(--acento); }
+.barra-act { display: block; height: 8px; margin-top: 8px; border-radius: 99px; background: var(--linea); overflow: hidden; }
+.barra-act i { display: block; height: 100%; background: var(--acento); border-radius: 99px; }
 .archivos { display: flex; gap: 8px; flex-wrap: wrap; }
 .archivo { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; border-radius: 99px; background: var(--acento-suave); font-weight: 650; font-size: 13.5px; }
 .archivo button { border: 0; background: transparent; color: var(--suave); }

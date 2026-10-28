@@ -11,7 +11,7 @@
     hoy: "", perfiles: [], temas: [], progreso: {}, pruebas: [], config: {}, ias: [], version: "", carpeta: "", actualizacion: { hay: false },
     perfil: null, vista: "inicio", temaSel: null, pestana: "resumen", volteadas: {}, sesion: null, nuevo: null, prueba: null, perfilEdit: null,
     adultos: false, probando: {}, resultadoIA: {}, bv: null, bvCerrada: false, buscando: null, idioma: "es", textos: {},
-    capacidades: {}, catalogo: null, copia: { frase: "", estado: "", error: "" },
+    capacidades: {}, catalogo: null, copia: { frase: "", estado: "", error: "" }, act: null,
   };
   const ENLACES = { sitio: "https://repasa-app.github.io/repasa/", codigo: "https://github.com/repasa-app/repasa",
     comunidad: "https://github.com/repasa-app/repasa/discussions", guiaIA: "https://repasa-app.github.io/repasa/ia.html" };
@@ -367,7 +367,7 @@
       ? `<div class="botones-foto"><button class="boton principal" data-accion="elegir-material" data-origen="camara">📷 Sacar foto</button><button class="boton" data-accion="elegir-material" data-origen="galeria">🖼️ De la galería</button></div>
         <small style="color:var(--suave)">Una foto por página: de cerca, derecha y con buena luz.</small>`
       : `<button class="boton principal" data-accion="elegir-material">Elegir fotos o PDF</button>
-        <small style="color:var(--suave)">Fotos (JPG, PNG) o PDF. Que se lea bien y con buena luz.</small>`;
+        <small style="color:var(--suave)">${HOST === "web" ? "Fotos (JPG, PNG) o PDF. Que se lea bien y con buena luz." : "Fotos (JPG, PNG) o PDF; también puedes arrastrarlos aquí. Que se lea bien y con buena luz."}</small>`;
     return `<h2 id="t-d">Nuevo tema</h2>${pestanas}${frase("Sácale fotos a tu cuaderno o a la guía, o pega el texto. {ia} arma el resumen, las preguntas y las tarjetas.", { ia }, "p")}
       <div class="soltar"><span style="font-size:30px" aria-hidden="true">📸</span>${elegir}
         ${n.archivos.length ? `<div class="archivos">${n.archivos.map((a, k) => `<span class="archivo"><span data-sin-traducir>${esc(a.nombre)}</span><button data-quitar="${k}" aria-label="Quitar" title="Quitar">✕</button></span>`).join("")}</div>` : ""}</div>
@@ -426,9 +426,25 @@
         ${MOVIL ? "" : `<div class="fila"><div class="txt"><b>Carpeta de Repasa</b><small data-sin-traducir>${esc(E.carpeta)}</small></div><button class="boton" data-accion="abrir-carpeta">Abrir</button></div>`}</div>
       ${E.capacidades.copia ? seccionCopia() : ""}
       <div class="seccion"><h3>Acerca de Repasa</h3><p style="margin:0 0 8px;color:var(--suave)">${frase("Repasa {v} · Gratis y de código abierto (AGPL-3.0).", { v: esc(E.version) })}</p>
-        ${MOVIL ? "" : `<div class="fila"><div class="txt"><b>Actualizaciones</b><small>${E.buscando === "buscando" ? "Buscando…" : E.buscando === "alDia" ? "Estás en la última versión." : "Repasa revisa sola cada 6 horas."}</small></div><button class="boton" data-accion="buscar-act" ${E.buscando === "buscando" ? "disabled" : ""}>Buscar actualizaciones</button></div>`}
+        ${MOVIL ? "" : filaActualizaciones()}
         <div class="enlaces"><a href="#" data-enlace="${ENLACES.sitio}">Sitio web</a><a href="#" data-enlace="${ENLACES.codigo}">Código</a><a href="#" data-enlace="${ENLACES.comunidad}">Comunidad</a></div></div>
       <div class="pie-dialogo"><button class="boton principal" data-accion="cerrar">Listo</button></div>`;
+  }
+  /** Versiones nuevas (computador): solo aquí, en «Para adultos», nunca en la pantalla de los niños ni con una alerta del sistema.
+   *  Al actualizar, el avance por pasos (`actualizacionProgreso`: {paso: "1"…"3" | "error", texto, pct?}). */
+  function filaActualizaciones() {
+    const a = E.act, error = a?.paso === "error";
+    if (a && !error) {
+      const pct = Math.round(a.pct ?? (Number(a.paso) || 0) / 3 * 100);
+      return `<div class="fila" role="status"><div class="txt"><b>Actualizando Repasa</b><small data-sin-traducir>${esc(tr(a.texto || ""))}</small>
+        <span class="barra-act"><i style="width:${pct}%"></i></span></div></div>`;
+    }
+    const hay = E.actualizacion?.hay;
+    const texto = error ? `<small class="error-txt" data-sin-traducir>${esc(tr(a.texto || "No se pudo actualizar."))}</small>`
+      : `<small>${E.buscando === "buscando" ? "Buscando…" : hay ? "Hay una versión nueva." : E.buscando === "alDia" ? "Estás en la última versión." : E.buscando === "sinConexion" ? "No pude revisar: ¿hay internet?" : "Repasa revisa sola cada 6 horas."}</small>`;
+    const boton = hay ? `<button class="boton principal" data-accion="actualizar">${error ? "Reintentar" : "Actualizar"}</button>`
+      : `<button class="boton" data-accion="buscar-act" ${E.buscando === "buscando" ? "disabled" : ""}>Buscar actualizaciones</button>`;
+    return `<div class="fila"><div class="txt"><b>Actualizaciones</b>${texto}</div>${boton}</div>`;
   }
   /** Copia cifrada en la nube de la familia (celular, fase 1: se guarda y se trae a mano con el selector del sistema). */
   function seccionCopia() {
@@ -438,7 +454,8 @@
         : c.estado === "guardada" ? frase("Copia guardada ({n} archivos). Nadie puede abrirla sin la frase.", { n: c.cantidad || 0 }, "small")
           : c.estado === "traida" ? frase("Listo: se juntaron {t} temas nuevos y el avance de {p} perfiles. Nada se borró.", { t: c.resumen?.temas || 0, p: c.resumen?.progreso || 0 }, "small") : "";
     return `<div class="seccion"><h3>Copia en tu nube</h3>
-      <p class="nota" style="margin:0 0 10px">Guarda una copia cifrada en iCloud Drive o Google Drive y tráela a otro teléfono. Solo se abre con la frase de su familia: anótenla en un lugar seguro, porque nadie la puede recuperar.</p>
+      <p class="nota" style="margin:0 0 10px">${MOVIL ? "Guarda una copia cifrada en iCloud Drive o Google Drive y tráela a otro teléfono. Solo se abre con la frase de su familia: anótenla en un lugar seguro, porque nadie la puede recuperar."
+        : "Guarda una copia cifrada en iCloud Drive o en otra carpeta y tráela a otro computador o teléfono. Solo se abre con la frase de su familia: anótenla en un lugar seguro, porque nadie la puede recuperar."}</p>
       <label class="campo"><span>Frase de la familia</span><input class="texto" type="password" id="frase-copia" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(c.frase)}" placeholder="${esc(tr("Por ejemplo, cuatro palabras que solo ustedes sepan"))}" data-sin-traducir></label>
       <div class="botones-copia"><button class="boton" data-accion="guardar-copia" ${ocupado ? "disabled" : ""}>☁️ Guardar copia…</button><button class="boton" data-accion="traer-copia" ${ocupado ? "disabled" : ""}>📥 Traer copia…</button></div>
       <div class="estado-copia" role="status">${estado}</div></div>`;
@@ -562,6 +579,7 @@
       case "cerrar": if (E.nuevo?.paso !== "creando") E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false; return pintar();
       case "abrir-carpeta": return host.enviar("abrirCarpeta", {});
       case "buscar-act": E.buscando = "buscando"; host.enviar("buscarActualizacion"); return mantener();
+      case "actualizar": E.act = { paso: "1", texto: "Descargando la versión nueva…" }; host.enviar("actualizar"); return mantener();
       case "bv-fin": E.bv = null; E.bvCerrada = true; host.enviar("config", { bienvenida: true }); return pintar();
       case "guardar-copia": case "traer-copia": {
         const frase = $("#frase-copia")?.value || "";
@@ -573,6 +591,32 @@
     }
   });
   document.addEventListener("input", (ev) => { if (ev.target.id === "frase-copia") E.copia.frase = ev.target.value; });
+
+  // Arrastrar fotos o PDF a «Nuevo tema» (computador). La app los guarda en .repasa/temporal/ y responde materialElegido, igual que
+  // al elegirlos. Fuera de ese diálogo, soltar un archivo no hace nada (nunca abre el archivo dentro de la ventana).
+  const SOLTABLES = /\.(jpe?g|png|webp|heic|gif|pdf)$/i, MAX_SOLTAR = 25 * 1024 * 1024;
+  const puedeSoltar = () => !MOVIL && E.nuevo?.paso === "elegir" && (E.nuevo.modo || "ia") === "ia" && E.capacidades.ia !== false;
+  document.addEventListener("dragover", (ev) => {
+    ev.preventDefault();
+    const ok = puedeSoltar();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = ok ? "copy" : "none";
+    $(".soltar")?.classList.toggle("encima", ok);
+  });
+  document.addEventListener("dragleave", (ev) => { if (!ev.relatedTarget) $(".soltar")?.classList.remove("encima"); });
+  document.addEventListener("drop", (ev) => {
+    ev.preventDefault();
+    $(".soltar")?.classList.remove("encima");
+    if (!puedeSoltar()) return;
+    leerNuevo();
+    const archivos = [...(ev.dataTransfer?.files || [])];
+    const sirven = archivos.filter((f) => SOLTABLES.test(f.name) && f.size > 0 && f.size <= MAX_SOLTAR).slice(0, 10);
+    if (sirven.length < archivos.length) toast("Solo fotos (JPG, PNG) o PDF de hasta 25 MB.");
+    for (const f of sirven) {
+      const r = new FileReader();
+      r.onload = () => host.enviar("soltarMaterial", { nombre: f.name, base64: String(r.result).split(",")[1] || "" });
+      r.readAsDataURL(f);
+    }
+  });
   document.addEventListener("submit", (ev) => { if (ev.target.matches("[data-form-completar]")) { ev.preventDefault(); const v = $("#respuesta").value; if (v.trim()) responder(v); } });
   document.addEventListener("change", async (ev) => {
     const ds = ev.target.dataset || {};
@@ -615,7 +659,8 @@
     iaProbada(r) { delete E.probando[r.id]; E.resultadoIA[r.id] = r; if (r.ok) { E.config.ia = r.id; toast("Lista para usar"); } mantener(); },
     copiaLista(r) { E.copia = r.ok ? { frase: "", estado: "guardada", cantidad: r.cantidad, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
     copiaTraida(r) { E.copia = r.ok ? { frase: "", estado: "traida", resumen: r.resumen, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
-    actualizacionRevisada(r) { E.buscando = r.hay ? null : "alDia"; if (r.hay) E.actualizacion = r; mantener(); },
+    actualizacionRevisada(r) { E.buscando = r.hay ? null : r.sinConexion ? "sinConexion" : "alDia"; if (r.hay) E.actualizacion = r; mantener(); },
+    actualizacionProgreso(d) { E.act = d; mantener(); },
     _probar(f) { f(E); pintar(); },
     _pruebas: { actualizarCaja, esCorrecta, elegirSesion, actualizarRacha, sumarDias, normalizar },
   };
@@ -650,6 +695,8 @@
       case "abrirEnlace": return window.open(d.url, "_blank", "noopener");
       case "abrirCarpeta": return toast("En la app, aquí se abre la carpeta");
       case "buscarActualizacion": return luego(500, () => A.actualizacionRevisada({ hay: false }));
+      case "actualizar": return luego(500, () => A.actualizacionProgreso({ paso: "error", texto: "En la vista previa no hay nada que actualizar." }));
+      case "soltarMaterial": return luego(200, () => A.materialElegido([{ ruta: `/demo/${d.nombre}`, nombre: d.nombre }]));
     }
   }
 

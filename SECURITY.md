@@ -24,6 +24,8 @@ Qué puedes esperar:
   deje ver nombres o temas.
 - La app del celular: el puente entre la página y los plugins nativos (`movil/plugins`), permisos, archivos de la app expuestos,
   respaldos o cualquier dato que salga del teléfono sin cifrar.
+- La app de Mac: el puente entre la página y la app (`app/Sources/Repasa/Ventana.swift`), leer o escribir fuera de `~/Repasa`, correr
+  comandos con lo que manda la interfaz, o colar una actualización que no venga de los Releases de Repasa con su huella.
 - Cualquier cosa que mande datos de la familia afuera, muestre publicidad o contenido inapropiado para la edad, o permita contactar
   a un niño.
 - Problemas en los workflows de GitHub o en cómo se arma la app que permitan colar código.
@@ -46,5 +48,5 @@ computador o del teléfono; o pedir encabezados que GitHub Pages no deja configu
 **fictional data only**), the version or commit and your OS. We reply within **7 days**, keep you posted, publish a GitHub Security
 Advisory with the fix and credit you if you want. Please don't disclose details until a fix is out (90 days at most as a general rule).
 
-In scope: code execution or HTML injection through topics, encrypted copies or translations; weaknesses in the backup encryption; the WebView ↔ native bridge, permissions, backups or app files on the phone; anything that sends family data out, shows ads or age-inappropriate content, or lets someone contact a child; CI/build issues that let code slip in. Out of scope: bugs in your own AI CLI or in Apple Intelligence, Gemini Nano or Capacitor, attacks that already require full control of the
+In scope: code execution or HTML injection through topics, encrypted copies or translations; weaknesses in the backup encryption; the WebView ↔ native bridge, permissions, backups or app files on the phone; the Mac app's bridge, file access outside `~/Repasa` or updates that don't come from Repasa's own releases with a matching checksum; anything that sends family data out, shows ads or age-inappropriate content, or lets someone contact a child; CI/build issues that let code slip in. Out of scope: bugs in your own AI CLI or in Apple Intelligence, Gemini Nano or Capacitor, attacks that already require full control of the
 device, and headers GitHub Pages can't set.
