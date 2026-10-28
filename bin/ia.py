@@ -75,9 +75,9 @@ def ejecutar_ia(prompt, timeout=600, archivos=()):
         if ia == "gemini":
             cmd = [comando, "-p", "Responde a las instrucciones de arriba. Entrega solo el resultado pedido.", "-o", "text"]
         else:
-            cmd = [comando, "-p", "--output-format", "text"]
-            if copias:
-                cmd += ["--allowedTools", "Read"]
+            # Sin servidores MCP de la persona; con material, solo puede leer (las copias en la carpeta temporal); sin material, nada.
+            cmd = [comando, "-p", "--output-format", "text", "--strict-mcp-config"]
+            cmd += ["--allowedTools", "Read"] if copias else ["--disallowedTools", "*"]
         return subprocess.run(cmd, input=prompt, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp)
 
 

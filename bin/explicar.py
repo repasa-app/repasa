@@ -1,6 +1,7 @@
 """«No entendí»: la IA explica una pregunta de otra forma, más simple y con un ejemplo. Solo biblioteca estándar.
 
   explicar.py <tema_id> <pregunta_id> "<lo que respondió el estudiante o vacío>" <salida.json>
+  explicar.py <entrada.json> <salida.json>          lo mismo, con {tema, pregunta, respondio} en un archivo (así lo llaman las apps)
 
 La IA solo ve el tema (resumen y esa pregunta). La respuesta se limita a texto plano corto; la interfaz la escapa al mostrarla.
 """
@@ -59,9 +60,14 @@ def explicar(tema_id, pregunta_id, respondio):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
+    if len(sys.argv) == 3:
+        d = datos.leer_json(sys.argv[1], None)
+        d = d if isinstance(d, dict) else {}
+        r = explicar(str(d.get("tema") or ""), str(d.get("pregunta") or ""), str(d.get("respondio") or "")[:300])
+    elif len(sys.argv) == 5:
+        r = explicar(sys.argv[1], sys.argv[2], sys.argv[3])
+    else:
         print(__doc__)
         sys.exit(2)
-    r = explicar(sys.argv[1], sys.argv[2], sys.argv[3])
-    datos.escribir_json(sys.argv[4], r)
+    datos.escribir_json(sys.argv[-1], r)
     print(json.dumps(r, ensure_ascii=False)[:300])

@@ -1,5 +1,5 @@
 {
- "_nota": "Casos compartidos Python ↔ JS. cajas/corregir/racha/sesion: lógica del repaso (ui/app.js, pruebas/interfaz.mjs). validar/id_de/lineas/conceptos/a_mano: el motor (bin/*.py en pruebas/test_python.py y motor/*.js en pruebas/motor.mjs).",
+ "_nota": "Casos compartidos Python ↔ JS. cajas/corregir/racha/sesion: lógica del repaso (ui/app.js, pruebas/interfaz.mjs). validar/id_de/lineas/conceptos/a_mano/datos: el motor (bin/*.py en pruebas/test_python.py y motor/*.js en pruebas/motor.mjs).",
  "cajas": [
   {
    "antes": null,
@@ -330,5 +330,30 @@
   [{"titulo": "Pocas", "ramo": "historia", "curso": "6b", "resumen": "Algo.", "preguntas": "¿Una?\n* Verdadero"}, "2026-10-26", {"ok": false, "error": "preguntas: entre 3 y 60.", "problemas": ["preguntas: entre 3 y 60."]}],
   [{"titulo": "Con errores", "ramo": "historia", "curso": "6b", "resumen": "Algo.", "preguntas": "1. ¿Qué se formó el 18 de septiembre de 1810?\n* La Primera Junta Nacional de Gobierno\n- El Congreso Nacional\n- El Ejército de los Andes\n> Ese día se formó la Primera Junta.\n\n**La Primera Junta gobernaba en nombre del rey Fernando VII.**\n* Verdadero\n\nEn 1814 los patriotas perdieron la batalla de ___.\n* Rancagua\n* rancagua\nFue una derrota dura.\nY terminó la Patria Vieja.\n\nPregunta 4: ¿Chacabuco fue en 1810?\n* Falso.\n\nSin respuesta marcada\n- algo\n\n¿Dos correctas?\n* a\n* b\n- c\n\n* sin enunciado\n\n¿Cuál es la capital?\n* Santiago\n"}, "2026-10-26", {"ok": false, "error": "Bloque 5: marca la respuesta correcta con *.", "problemas": ["Bloque 5: marca la respuesta correcta con *.", "Bloque 6: en alternativas va una sola correcta (*) y en total de 3 a 5 opciones.", "Bloque 7: falta la pregunta.", "Bloque 8: no sé qué tipo de pregunta es (agrega opciones con -, ___ para completar, o * Verdadero / * Falso)."]}],
   [{"titulo": "Ramo raro", "ramo": "magia", "curso": "6b", "resumen": "Algo.", "preguntas": "1. ¿Qué se formó el 18 de septiembre de 1810?\n* La Primera Junta Nacional de Gobierno\n- El Congreso Nacional\n- El Ejército de los Andes\n> Ese día se formó la Primera Junta.\n\n**La Primera Junta gobernaba en nombre del rey Fernando VII.**\n* Verdadero\n\nEn 1814 los patriotas perdieron la batalla de ___.\n* Rancagua\n* rancagua\nFue una derrota dura.\nY terminó la Patria Vieja.\n\nPregunta 4: ¿Chacabuco fue en 1810?\n* Falso.\n\n", "idioma": "en"}, "2026-10-26", {"ok": false, "error": "ramo debe ser uno de: lenguaje, matematica, historia, ciencias, ingles, biologia, quimica, fisica, filosofia, artes, tecnologia, musica, otro.", "problemas": ["ramo debe ser uno de: lenguaje, matematica, historia, ciencias, ingles, biologia, quimica, fisica, filosofia, artes, tecnologia, musica, otro."]}]
- ]
+ ],
+ "datos": {
+  "_nota": "perfil_valido / perfilValido y prueba_valida / pruebaValida (bin/datos.py = motor/datos.js): [valor, esperado]",
+  "perfil": [
+   [{"id": "martina", "nombre": "Martina", "curso": "6b", "avatar": "🦊"}, true],
+   [{"id": "diego-2", "nombre": "  Diego  ", "curso": "1m", "avatar": "🐢"}, true],
+   [{"id": "Martina", "nombre": "Martina", "curso": "6b", "avatar": "🦊"}, false],
+   [{"id": "martina", "nombre": "   ", "curso": "6b", "avatar": "🦊"}, false],
+   [{"id": "martina", "nombre": "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM", "curso": "6b", "avatar": "🦊"}, false],
+   [{"id": "martina", "nombre": "Martina", "curso": "9b", "avatar": "🦊"}, false],
+   [{"id": "martina", "nombre": "Martina", "curso": "6b", "avatar": "🦊🦊🦊🦊🦊🦊🦊🦊🦊"}, false],
+   [{"id": "../x", "nombre": "Martina", "curso": "6b", "avatar": "🦊"}, false],
+   [{"id": "martina", "nombre": 7, "curso": "6b", "avatar": "🦊"}, false],
+   [["martina"], false],
+   [null, false]
+  ],
+  "prueba": [
+   [{"id": "prueba-historia", "perfil": "martina", "ramo": "historia", "temas": ["independencia-de-chile"], "fecha": "2026-10-30"}, true],
+   [{"id": "p1", "perfil": "martina", "temas": [], "fecha": "2026-10-30"}, true],
+   [{"id": "p1", "perfil": "martina", "temas": [1], "fecha": "2026-10-30"}, false],
+   [{"id": "p1", "perfil": "martina", "temas": [], "fecha": "30-10-2026"}, false],
+   [{"id": "p1", "perfil": "../martina", "temas": [], "fecha": "2026-10-30"}, false],
+   [{"id": "p1", "perfil": "martina", "temas": "x", "fecha": "2026-10-30"}, false],
+   [{"perfil": "martina", "temas": [], "fecha": "2026-10-30"}, false]
+  ]
+ }
 }

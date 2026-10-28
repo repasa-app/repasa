@@ -97,6 +97,64 @@ class Casos(unittest.TestCase):
             self.assertEqual(crear_tema.a_mano(d, hoy), esperado, d.get("titulo"))
 
 
+    def test_datos(self):
+        for valor, esperado in self.C["datos"]["perfil"]:
+            self.assertEqual(datos.perfil_valido(valor), esperado, valor)
+        for valor, esperado in self.C["datos"]["prueba"]:
+            self.assertEqual(datos.prueba_valida(valor), esperado, valor)
+
+
+class Escritorio(unittest.TestCase):
+    """Lo que usan las apps de escritorio: estado.py, guardar.py y los pedidos con un archivo de entrada (nada como argumento)."""
+
+    def setUp(self):
+        shutil.rmtree(datos.BASE, ignore_errors=True)
+
+    def entrada(self, d):
+        ruta = os.path.join(TMP, "entrada.json")
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False)
+        return ruta
+
+    def test_estado_y_guardar(self):
+        e = correr("estado.py")
+        self.assertTrue(e["ok"])
+        self.assertEqual((e["perfiles"], e["temas"], e["progreso"], e["pruebas"]), ([], [], {}, []))
+        self.assertEqual(sorted(t["id"] for t in e["catalogo"]), ["fracciones", "independencia-de-chile", "sistema-digestivo", "sujeto-y-predicado"])
+        self.assertEqual(stat.S_IMODE(os.stat(datos.BASE).st_mode), 0o700, "~/Repasa solo para la persona")
+        perfil = {"id": "martina", "nombre": "  Martina  ", "curso": "6b", "avatar": "🦊", "extra": "no"}
+        self.assertTrue(correr("guardar.py", "perfil", self.entrada({"perfil": perfil}))["ok"])
+        self.assertFalse(correr("guardar.py", "perfil", self.entrada({"perfil": {**perfil, "id": "../x"}}))["ok"])
+        self.assertTrue(correr("guardar.py", "progreso", self.entrada({"perfil": "martina", "progreso": {"puntos": 10}}))["ok"])
+        self.assertFalse(correr("guardar.py", "progreso", self.entrada({"perfil": "../../x", "progreso": {}}))["ok"])
+        prueba = {"id": "p1", "perfil": "martina", "ramo": "historia", "temas": ["independencia-de-chile"], "fecha": "2026-10-30"}
+        self.assertTrue(correr("guardar.py", "pruebas", self.entrada({"pruebas": [prueba, {"id": "mala"}]}))["ok"])
+        self.assertFalse(correr("guardar.py", "otra", self.entrada({}))["ok"])
+        datos.escribir_json(os.path.join(datos.TEMAS, TEMA["id"], "tema.json"), TEMA)
+        datos.escribir_json(os.path.join(datos.TEMAS, "roto", "tema.json"), {"formato": 1})
+        e = correr("estado.py")
+        self.assertEqual(e["perfiles"], [{"id": "martina", "nombre": "Martina", "curso": "6b", "avatar": "🦊"}])
+        self.assertEqual(e["progreso"], {"martina": {"puntos": 10}})
+        self.assertEqual(e["pruebas"], [prueba])
+        self.assertEqual([t["id"] for t in e["temas"]], [TEMA["id"]], "un tema que no valida no llega a la interfaz")
+        self.assertNotIn(TEMA["id"], [t["id"] for t in e["catalogo"]], "lo ya agregado no se ofrece de nuevo")
+        archivo = os.path.join(datos.BASE, "perfiles.json")
+        self.assertEqual(stat.S_IMODE(os.stat(archivo).st_mode), 0o600)
+
+    def test_pedido_crear_y_explicar(self):
+        raro = os.path.join(TMP, "nota.txt")
+        with open(raro, "w", encoding="utf-8") as f:
+            f.write("x")
+        r = correr("crear_tema.py", "pedido", self.entrada({"curso": "6b", "ramo": "historia", "texto": "", "archivos": [FOTO, raro, "/no/existe.jpg"]}))
+        self.assertTrue(r["ok"], r)
+        self.assertNotEqual(r["tema"]["titulo"], "Sin material", "la foto llegó a la IA")
+        self.assertFalse(correr("crear_tema.py", "pedido", self.entrada({"curso": "6b", "ramo": "historia", "texto": " ", "archivos": [raro]}))["ok"])
+        datos.escribir_json(os.path.join(datos.TEMAS, TEMA["id"], "tema.json"), TEMA)
+        r = correr("explicar.py", self.entrada({"tema": TEMA["id"], "pregunta": "p4", "respondio": "Chacabuco"}))
+        self.assertTrue(r["ok"], r)
+        self.assertFalse(correr("explicar.py", self.entrada({"tema": "../x", "pregunta": "p1"}))["ok"])
+
+
 class Crear(unittest.TestCase):
     def setUp(self):
         shutil.rmtree(datos.BASE, ignore_errors=True)

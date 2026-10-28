@@ -27,7 +27,7 @@ const bloque = (nombre, f) => { const antes = errores.length; return Promise.res
 const copiaDe = (x) => JSON.parse(JSON.stringify(x));
 
 // ───────────── 1) Igual que Python ─────────────
-await bloque("validar, id_de, lineas, conceptos y a mano dan lo mismo que Python (casos.json)", () => {
+await bloque("validar, id_de, lineas, conceptos, a mano, perfiles y pruebas dan lo mismo que Python (casos.json)", () => {
   for (const [n, t, esperado] of casos.validar) { const r = temas.validar(t); if (!igual(r, esperado)) falla(`validar «${n}»: ${JSON.stringify(r)} ≠ ${JSON.stringify(esperado)}`); }
   for (const [t, esperado] of casos.id_de) if (temas.idDe(t) !== esperado) falla(`idDe(${JSON.stringify(t)}) = ${temas.idDe(t)} ≠ ${esperado}`);
   for (const [t, idioma, esperado] of casos.lineas) { const r = lineas.leerPreguntas(t, idioma); if (!igual(r, esperado)) falla(`leerPreguntas: ${JSON.stringify(r).slice(0, 300)}`); }
@@ -35,6 +35,8 @@ await bloque("validar, id_de, lineas, conceptos y a mano dan lo mismo que Python
     if (!igual(lineas.leerConceptos(t), c)) falla("leerConceptos: " + JSON.stringify(lineas.leerConceptos(t)));
     if (!igual(lineas.tarjetasDe(c, idioma), tj)) falla("tarjetasDe: " + JSON.stringify(lineas.tarjetasDe(c, idioma)));
   }
+  for (const [v, esperado] of casos.datos.perfil) if (datos.perfilValido(v) !== esperado) falla(`perfilValido(${JSON.stringify(v)}) ≠ ${esperado}`);
+  for (const [v, esperado] of casos.datos.prueba) if (datos.pruebaValida(v) !== esperado) falla(`pruebaValida(${JSON.stringify(v)}) ≠ ${esperado}`);
   for (const [d, hoy, esperado] of casos.a_mano) { const r = crear.temaAMano(d, hoy); if (!igual(r, esperado)) falla(`temaAMano «${d.titulo}»: ${JSON.stringify(r).slice(0, 300)}`); }
 });
 

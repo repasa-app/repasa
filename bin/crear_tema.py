@@ -1,6 +1,8 @@
 """Crear un tema de repaso con la IA, a partir de fotos del cuaderno, un PDF o texto. Solo biblioteca estándar.
 
   crear_tema.py <curso> <ramo> "<texto o vacío>" <archivo1> [archivo2 …] <salida.json>     no guarda nada: devuelve el tema
+  crear_tema.py pedido <entrada.json> <salida.json>                                         lo mismo, con {curso, ramo, texto, archivos}
+                                                                                            en un archivo (así lo llaman las apps)
   crear_tema.py amano <entrada.json> <salida.json>                                          tema escrito a mano (ver lineas.py), sin IA
   crear_tema.py guardar <tema.json> [archivo1 …] <salida.json>                              lo guarda en ~/Repasa/temas/<id>/
 
@@ -144,7 +146,14 @@ def guardar(tema, archivos):
 if __name__ == "__main__":
     a = sys.argv[1:]
     try:
-        if len(a) == 3 and a[0] == "amano":
+        if len(a) == 3 and a[0] == "pedido":
+            # El texto de la persona llega en un archivo, nunca como argumento (se vería en la lista de procesos).
+            d = datos.leer_json(a[1], None)
+            d = d if isinstance(d, dict) else {}
+            archivos = [x for x in d.get("archivos") or [] if isinstance(x, str) and os.path.isfile(x)
+                        and os.path.splitext(x)[1].lower() in EXT_MATERIAL]
+            r = crear(str(d.get("curso") or ""), str(d.get("ramo") or "auto"), str(d.get("texto") or ""), archivos[:20])
+        elif len(a) == 3 and a[0] == "amano":
             r = a_mano(datos.leer_json(a[1], None), time.strftime("%Y-%m-%d"))
         elif len(a) >= 3 and a[0] == "guardar":
             r = guardar(datos.leer_json(a[1], None), a[2:-1])

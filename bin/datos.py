@@ -8,6 +8,9 @@
   pruebas.json                  [{"id", "perfil", "ramo", "temas": [...], "fecha"}]
   .repasa/config.json           ajustes de la app (IA, idioma)
   .repasa/catalogo/             temas descargados del catálogo comunitario
+  .repasa/temporal/             fotos o PDF arrastrados a la app de escritorio para un tema que todavía no se guarda
+
+Las reglas de perfiles, pruebas y progreso son las mismas que motor/datos.js (pruebas/casos.json, sección «datos»).
 """
 import json
 import os
@@ -19,6 +22,18 @@ INTERNO = os.path.join(BASE, ".repasa")
 TEMAS = os.path.join(BASE, "temas")
 PROGRESO = os.path.join(BASE, "progreso")
 RECURSOS = os.environ.get("REPASA_RECURSOS") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ID = re.compile(r"[a-z0-9-]{1,80}")
+ID_TEMA = re.compile(r"[a-z0-9-]{2,60}")
+CURSOS = ("5b", "6b", "7b", "8b", "1m", "2m", "3m", "4m")
+
+
+def carpeta_privada():
+    """~/Repasa solo para la cuenta de la persona (0700): hay nombres de niños y su avance."""
+    os.makedirs(BASE, mode=0o700, exist_ok=True)
+    try:
+        os.chmod(BASE, 0o700)
+    except OSError:
+        pass
 
 
 def leer_json(ruta, defecto):
@@ -30,7 +45,10 @@ def leer_json(ruta, defecto):
 
 
 def escribir_json(ruta, valor):
-    """Escribe en un temporal y lo renombra: si algo se corta a la mitad, el archivo anterior queda intacto."""
+    """Escribe en un temporal y lo renombra: si algo se corta a la mitad, el archivo anterior queda intacto. El archivo queda 0600
+    (mkstemp) y ~/Repasa, 0700."""
+    if os.path.abspath(ruta).startswith(os.path.abspath(BASE) + os.sep):
+        carpeta_privada()
     os.makedirs(os.path.dirname(ruta) or ".", exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(ruta) or ".", prefix=".tmp-")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -61,3 +79,82 @@ def temas():
         if t:
             r.append(t)
     return r
+
+
+def _largo_js(texto):
+    """Largo como lo cuenta JavaScript (unidades UTF-16), para dar lo mismo que motor/datos.js."""
+    return len(texto.encode("utf-16-le")) // 2
+
+
+def perfil_valido(p):
+    """Igual que perfilValido en motor/datos.js: solo un nombre o apodo, un curso y un personaje."""
+    return (isinstance(p, dict) and isinstance(p.get("id"), str) and bool(ID.fullmatch(p["id"])) and isinstance(p.get("nombre"), str)
+            and len(p["nombre"].strip()) > 0 and _largo_js(p["nombre"]) <= 40 and p.get("curso") in CURSOS
+            and isinstance(p.get("avatar"), str) and len(p["avatar"]) <= 8)
+
+
+def prueba_valida(x):
+    """Igual que pruebaValida en motor/datos.js."""
+    return (isinstance(x, dict) and isinstance(x.get("id"), str) and bool(ID.fullmatch(x["id"])) and isinstance(x.get("perfil"), str)
+            and bool(ID.fullmatch(x["perfil"])) and isinstance(x.get("fecha"), str) and bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", x["fecha"]))
+            and isinstance(x.get("temas"), list) and all(isinstance(t, str) for t in x["temas"]))
+
+
+def perfiles():
+    p = leer_json(os.path.join(BASE, "perfiles.json"), [])
+    return [x for x in p if perfil_valido(x)] if isinstance(p, list) else []
+
+
+def guardar_perfil(p):
+    if not perfil_valido(p):
+        raise ValueError("Perfil no válido.")
+    limpio = {"id": p["id"], "nombre": p["nombre"].strip()[:20], "curso": p["curso"], "avatar": p["avatar"]}
+    escribir_json(os.path.join(BASE, "perfiles.json"), [x for x in perfiles() if x["id"] != p["id"]] + [limpio])
+
+
+def temas_validos():
+    """Los temas guardados que pasan temas.validar (igual que Almacen.temas en motor/datos.js)."""
+    import temas as formato
+    r = []
+    try:
+        nombres = sorted(os.listdir(TEMAS))
+    except OSError:
+        return r
+    for n in nombres:
+        if not ID_TEMA.fullmatch(n):
+            continue
+        t = leer_json(os.path.join(TEMAS, n, "tema.json"), None)
+        if t and not formato.validar(t):
+            r.append(t)
+    return r
+
+
+def progreso():
+    r = {}
+    try:
+        nombres = os.listdir(PROGRESO)
+    except OSError:
+        return r
+    for n in nombres:
+        if n.endswith(".json") and ID.fullmatch(n[:-5]):
+            p = leer_json(os.path.join(PROGRESO, n), None)
+            if isinstance(p, dict):
+                r[n[:-5]] = p
+    return r
+
+
+def guardar_progreso(perfil, valor):
+    if not (isinstance(perfil, str) and ID.fullmatch(perfil)) or not isinstance(valor, dict):
+        raise ValueError("Progreso no válido.")
+    escribir_json(os.path.join(PROGRESO, perfil + ".json"), valor)
+
+
+def pruebas():
+    p = leer_json(os.path.join(BASE, "pruebas.json"), [])
+    return [x for x in p if prueba_valida(x)] if isinstance(p, list) else []
+
+
+def guardar_pruebas(lista):
+    if not isinstance(lista, list):
+        raise ValueError("Pruebas no válidas.")
+    escribir_json(os.path.join(BASE, "pruebas.json"), [x for x in lista if prueba_valida(x)])
