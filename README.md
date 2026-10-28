@@ -6,12 +6,19 @@
 Le sacas una foto al cuaderno y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas para memorizar.<br>
 Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abierto y sin cuentas.</p>
 
-<p align="center"><a href="https://repasa-app.github.io/repasa/">Sitio</a> ·
-<a href="https://repasa-app.github.io/repasa/demo/">Vista previa</a> ·
+<p align="center"><a href="https://repasa-app.github.io/repasa/"><b>Página</b></a> ·
+<a href="https://repasa-app.github.io/repasa/demo/"><b>Pruébala en el navegador</b></a> ·
+<a href="#instalar">Instalar</a> ·
 <a href="https://github.com/repasa-app/repasa/discussions">Comunidad</a> ·
-<a href="CONTRIBUTING.md">Cómo aportar</a> ·
-<a href="SECURITY.md">Seguridad</a> ·
+<a href="#como-aportar">Cómo aportar</a> ·
 <a href="#english">English</a></p>
+
+<p align="center"><picture><source srcset="docs/img/app-inicio-oscuro.png" media="(prefers-color-scheme: dark)"><img src="docs/img/app-inicio.png" width="860" alt="El inicio de Repasa en el computador: el repaso de hoy, la próxima prueba, la racha y los temas (datos ficticios)"></picture></p>
+<p align="center">
+<picture><source srcset="docs/img/app-celular-oscuro.png" media="(prefers-color-scheme: dark)"><img src="docs/img/app-celular.png" width="250" alt="El inicio en el celular (datos ficticios)"></picture>
+<picture><source srcset="docs/img/app-pregunta-celular-oscuro.png" media="(prefers-color-scheme: dark)"><img src="docs/img/app-pregunta-celular.png" width="250" alt="Una pregunta de verdadero o falso respondida, con su explicación (datos ficticios)"></picture>
+</p>
+<p align="center"><sub>Datos ficticios. El inicio en el computador y en el celular, y una pregunta respondida.</sub></p>
 
 ---
 
@@ -25,6 +32,23 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 - **"No entendí":** si una explicación no basta, la IA lo explica de otra forma, con un ejemplo de la vida diaria.
 - **Ganas de volver:** puntos, racha de días seguidos y una celebración al terminar. Sin anuncios, sin compras dentro de la app.
 - **Para adultos:** cómo le va a cada hijo o hija por ramo y en la semana, qué IA se usa e idioma. Varios perfiles en un mismo computador.
+- **En el computador y en el celular:** app de Mac (en pruebas) y app de iPhone y Android con **la IA del propio teléfono**,
+  gratis y sin internet. El avance viaja en una copia cifrada con una frase que conoce la familia.
+- **Sin IA también se puede:** escribir un tema a mano o elegir uno del catálogo. Español e inglés; lo primero que pregunta es el idioma.
+
+<a id="instalar"></a>
+## Instalar
+
+| | Cómo | Estado |
+|---|---|---|
+| 🌐 **Navegador** | [Vista previa con datos ficticios](https://repasa-app.github.io/repasa/demo/): nada que instalar. | Para mirar cómo funciona |
+| 🍎 **Mac** | [Desde el código](#en-el-mac-en-pruebas) con `bash build.sh` (macOS 15, Apple Silicon). | En pruebas; aún sin versión publicada ni firma de Apple |
+| 📱 **iPhone y Android** | [Desde el código](movil/README.md), en modo de prueba. Usa la IA del teléfono. | Fase 1, en pruebas; todavía no está en las tiendas |
+| 🪟 🐧 **Windows y Linux** | La misma interfaz, en una app de escritorio. | En camino |
+
+En el computador, la IA es la de un adulto de la casa, con su cuenta: Claude Code, Codex (ChatGPT) o Gemini CLI
+([cómo instalarla](https://repasa-app.github.io/repasa/ia.html)). En GitHub, **Watch → Custom → Releases** avisa cuando salga la
+primera versión para descargar.
 
 ## Hecha para niñas y niños
 - **Sin cuentas ni correos.** Cada perfil es solo un nombre o apodo, un curso y un personaje.
@@ -32,6 +56,19 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 - **La IA es la de un adulto** y solo ve el material que se agrega, el curso (para ajustar el nivel) y las preguntas. Nunca el nombre
   ni el progreso de nadie.
 - **Respuestas validadas:** todo lo que viene de la IA o del catálogo se revisa (formato, largo, sin HTML) antes de mostrarse.
+
+<a id="como-aportar"></a>
+## Cómo aportar
+Repasa es gratis y abierta, y la hacemos entre todos: familias, profes, estudiantes y gente que programa. Casi nada exige programar:
+- 📚 **Escribe un tema para el catálogo** (por ejemplo «Fracciones equivalentes, 5° básico»), a mano o con tu IA y revisado por ti.
+  Formato en [`temas/README.md`](temas/README.md).
+- 🍎 **¿Eres profe?** Revisa que las preguntas y explicaciones estén bien y al nivel del curso.
+- 💬 **Conversa** en [Discussions](https://github.com/repasa-app/repasa/discussions): dudas, ideas o cómo la usan en tu casa.
+- 🐞 **Cuéntanos qué falla o qué te gustaría** en [issues](https://github.com/repasa-app/repasa/issues/new/choose).
+- 🛠️ **Programa, con o sin IA:** [`AGENTS.md`](AGENTS.md) es la guía para personas y para cualquier IA de programación. Empieza por
+  [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Al participar aceptas el [código de conducta](CODE_OF_CONDUCT.md). ¿Una falla de seguridad? Avísanos en privado: [SECURITY.md](SECURITY.md).
 
 ## Estado
 Versión 0.1, recién nacida. Ya funcionan el motor (crear temas con la IA, explicar de nuevo, validar, escribir temas a mano) y la
@@ -130,3 +167,7 @@ PDFs with a button or by dragging them in. Until a release is published, build i
 Intelligence or Gemini Nano: free, private, offline). Without on-device AI, topics can be written by hand or picked from the
 catalog — never an API key. Encrypted copies to iCloud Drive or Google Drive, opened only with a family passphrase. Not in the
 stores yet; build instructions in [`movil/README.md`](movil/README.md).
+
+**Try it** in your browser with made-up data: [live preview](https://repasa-app.github.io/repasa/demo/?idioma=en). Questions,
+ideas and topics for the catalog are welcome in [Discussions](https://github.com/repasa-app/repasa/discussions), in English or
+Spanish; see [CONTRIBUTING.md](CONTRIBUTING.md).
