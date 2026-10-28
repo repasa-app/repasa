@@ -18,7 +18,11 @@
 <meta property="og:description" content="Resumen fácil, preguntas tipo prueba y tarjetas desde una foto del cuaderno. Gratis, de código abierto y sin cuentas.">
 <meta property="og:image" content="https://repasa-app.github.io/repasa/img/compartir.png">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Repasa: de la foto del cuaderno a la prueba preparada, en el computador y en el celular (datos ficticios)">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Repasa — de la foto del cuaderno a la prueba preparada">
+<meta name="twitter:description" content="Resumen fácil, preguntas tipo prueba y tarjetas desde una foto del cuaderno. En el computador y en el celular. Gratis, abierta y sin cuentas.">
+<meta name="twitter:image" content="https://repasa-app.github.io/repasa/img/compartir.png">
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -30,7 +34,7 @@
    "image": "https://repasa-app.github.io/repasa/img/compartir.png",
    "description": "App de estudio para estudiantes de 5° básico a 4° medio que convierte fotos del cuaderno en resúmenes, preguntas tipo prueba y tarjetas, con repaso espaciado.",
    "applicationCategory": "EducationalApplication",
-   "operatingSystem": "macOS, Windows, Linux",
+   "operatingSystem": "macOS 15, iOS, Android",
    "license": "https://www.gnu.org/licenses/agpl-3.0.html",
    "isAccessibleForFree": true,
    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
@@ -42,7 +46,8 @@
    "@type": "FAQPage",
    "mainEntity": [
     { "@type": "Question", "name": "¿Repasa es gratis?", "acceptedAnswer": { "@type": "Answer", "text": "Sí. Es gratis y de código abierto (AGPL-3.0), sin publicidad, sin compras dentro de la app y sin cuentas. Usa la IA que ya tiene un adulto de la casa." } },
-    { "@type": "Question", "name": "¿Qué IA necesito?", "acceptedAnswer": { "@type": "Answer", "text": "Claude Code, Codex (ChatGPT) o Gemini CLI, instalada en el computador con la cuenta de un adulto. Hay una guía paso a paso. Sin IA igual se pueden repasar los temas que ya estén creados." } },
+    { "@type": "Question", "name": "¿Qué IA necesito?", "acceptedAnswer": { "@type": "Answer", "text": "Claude Code, Codex (ChatGPT) o Gemini CLI, instalada en el computador con la cuenta de un adulto. Hay una guía paso a paso. En el celular usa la IA del propio teléfono (Apple Intelligence o Gemini Nano). Sin IA se puede escribir un tema a mano o elegir uno del catálogo, y repasar los que ya estén creados." } },
+    { "@type": "Question", "name": "¿Hay app para el celular?", "acceptedAnswer": { "@type": "Answer", "text": "Sí, para iPhone y Android, en pruebas: saca fotos al cuaderno, el teléfono lee el texto y su propia IA arma el tema, gratis y sin internet. El avance viaja en una copia cifrada con una frase que conoce la familia. Todavía no está en las tiendas: se instala desde el código." } },
     { "@type": "Question", "name": "¿Qué ve la IA?", "acceptedAnswer": { "@type": "Answer", "text": "Solo el material que agregan (las fotos, el PDF o el texto), el curso para ajustar el nivel y, si piden otra explicación, esa pregunta. Nunca el nombre del perfil ni cómo le va." } },
     { "@type": "Question", "name": "¿Y si la IA se equivoca?", "acceptedAnswer": { "@type": "Answer", "text": "Antes de guardar un tema, Repasa muestra el resumen y las preguntas para revisar que calcen con el cuaderno. La IA tiene la instrucción de usar solo lo que dice el material, y todo lo que responde se valida." } },
     { "@type": "Question", "name": "¿Sirve para preparar una prueba?", "acceptedAnswer": { "@type": "Answer", "text": "Sí. Pones la fecha y los temas que entran, y los días antes Repasa les da prioridad en el repaso diario." } }
@@ -90,7 +95,7 @@
   .portada .acciones { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
   .aviso { font-size: 15px; color: var(--suave); margin-top: 16px; max-width: 62ch; }
   .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
-  .chips span { background: var(--papel); border: 2px solid var(--linea); border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 700; }
+  .chips > span { background: var(--papel); border: 2px solid var(--linea); border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 700; }
   .captura { margin-top: 48px; position: relative; }
   .captura img { width: 100%; display: block; border-radius: 22px; border: 2px solid var(--linea); box-shadow: 0 30px 70px rgba(29, 35, 51, .14); }
   .captura .nota { position: absolute; right: -10px; top: -26px; transform: rotate(3deg); background: var(--destacador); color: #1d2333; font-weight: 800; padding: 10px 16px; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.12); font-size: 15px; max-width: 260px; }
@@ -145,11 +150,12 @@
     <a class="boton principal" href="demo/"><span data-es>Probar la vista previa</span><span data-en>Try the live preview</span> →</a>
     <a class="boton" href="https://github.com/repasa-app/repasa"><span data-es>Ver el código</span><span data-en>See the code</span></a>
   </div>
-  <p class="aviso"><span data-es>Las apps para Mac, Windows y Linux vienen en camino. Mientras, la vista previa funciona en el navegador con datos inventados.</span><span data-en>The Mac, Windows and Linux apps are on the way. Meanwhile, the preview runs in your browser with made-up data.</span></p>
+  <p class="aviso"><span data-es>La app de Mac y la del celular (iPhone y Android, con la IA del teléfono) están en pruebas y se instalan <a href="https://github.com/repasa-app/repasa#instalar">desde el código</a>; Windows y Linux vienen en camino. Mientras, la vista previa funciona en el navegador con datos inventados.</span><span data-en>The Mac app and the phone app (iPhone and Android, with the phone's own AI) are in testing and install <a href="https://github.com/repasa-app/repasa#instalar">from source</a>; Windows and Linux are on the way. Meanwhile, the preview runs in your browser with made-up data.</span></p>
   <div class="chips">
     <span>🙅 <span data-es>Sin cuentas ni correos</span><span data-en>No accounts or emails</span></span>
     <span>🚫 <span data-es>Sin publicidad</span><span data-en>No ads</span></span>
-    <span>🏠 <span data-es>Todo queda en el computador</span><span data-en>Everything stays on the computer</span></span>
+    <span>🏠 <span data-es>Todo queda en casa</span><span data-en>Everything stays at home</span></span>
+    <span>📱 <span data-es>También en el celular</span><span data-en>On phones too</span></span>
     <span>✦ <span data-es>Con Claude, ChatGPT o Gemini</span><span data-en>With Claude, ChatGPT or Gemini</span></span>
   </div>
   <div class="captura">
@@ -197,12 +203,18 @@
   <span class="etiqueta"><span data-es>Para familias</span><span data-en>For families</span></span>
   <h2><span data-es>Hecha para niñas y niños, con un adulto cerca.</span><span data-en>Made for kids, with a grown-up nearby.</span></h2>
   <div class="rejilla">
-    <article class="tarjeta"><span class="emoji">🏠</span><h3><span data-es>Todo en el computador</span><span data-en>All on the computer</span></h3>
-      <p><span data-es>Sin cuentas, sin servidores de Repasa, sin publicidad ni telemetría. Los temas y el progreso son archivos abiertos en una carpeta.</span><span data-en>No accounts, no Repasa servers, no ads or telemetry. Topics and progress are open files in a folder.</span></p></article>
+    <article class="tarjeta"><span class="emoji">🏠</span><h3><span data-es>Todo queda en casa</span><span data-en>Everything stays at home</span></h3>
+      <p><span data-es>Sin cuentas, sin servidores de Repasa, sin publicidad ni telemetría. Los temas y el progreso son archivos abiertos en el computador o en el celular.</span><span data-en>No accounts, no Repasa servers, no ads or telemetry. Topics and progress are open files on the computer or the phone.</span></p></article>
     <article class="tarjeta"><span class="emoji">✦</span><h3><span data-es>La IA de un adulto</span><span data-en>A grown-up's AI</span></h3>
       <p><span data-es>Usa Claude, ChatGPT o Gemini con la cuenta de un adulto. Solo ve el material, el curso y la pregunta; nunca el nombre ni el progreso.</span><span data-en>It uses Claude, ChatGPT or Gemini with a grown-up's account. It only sees the material, the grade and the question; never the name or progress.</span></p></article>
     <article class="tarjeta"><span class="emoji">👀</span><h3><span data-es>Cómo van, de un vistazo</span><span data-en>How they're doing, at a glance</span></h3>
       <p><span data-es>Varios perfiles en el mismo computador. En «Para adultos» ves la semana de cada uno y cómo va por ramo.</span><span data-en>Several profiles on the same computer. In "For grown-ups" you see each kid's week and how they're doing by subject.</span></p></article>
+    <article class="tarjeta"><span class="emoji">📱</span><h3><span data-es>En el celular, con su IA</span><span data-en>On the phone, with its own AI</span></h3>
+      <p><span data-es>iPhone y Android: el teléfono lee la foto y su propia IA (Apple Intelligence o Gemini Nano) arma el tema, gratis y sin internet. En pruebas.</span><span data-en>iPhone and Android: the phone reads the photo and its own AI (Apple Intelligence or Gemini Nano) builds the topic, free and offline. In testing.</span></p></article>
+    <article class="tarjeta"><span class="emoji">🔐</span><h3><span data-es>Copia con candado</span><span data-en>Locked copy</span></h3>
+      <p><span data-es>El avance viaja en una copia cifrada en iCloud Drive o Google Drive, que solo se abre con una frase que conoce la familia.</span><span data-en>Progress travels in an encrypted copy in iCloud Drive or Google Drive that only opens with a passphrase the family knows.</span></p></article>
+    <article class="tarjeta"><span class="emoji">✍️</span><h3><span data-es>Sin IA también</span><span data-en>No AI? No problem</span></h3>
+      <p><span data-es>Si no hay IA, se escribe un tema a mano o se elige uno del catálogo. Nunca pide una llave de API ni una cuenta.</span><span data-en>Without an AI, write a topic by hand or pick one from the catalog. It never asks for an API key or an account.</span></p></article>
   </div>
 </div></section>
 
@@ -213,7 +225,9 @@
     <details><summary><span data-es>¿Es gratis de verdad?</span><span data-en>Is it really free?</span></summary>
       <p><span data-es>Sí. Es de código abierto (AGPL-3.0), sin publicidad, sin compras y sin cuentas. Lo único que usa es la IA que ya tiene un adulto de la casa.</span><span data-en>Yes. It's open source (AGPL-3.0), with no ads, purchases or accounts. The only thing it uses is the AI a grown-up at home already has.</span></p></details>
     <details><summary><span data-es>¿Qué IA necesito?</span><span data-en>Which AI do I need?</span></summary>
-      <p><span data-es>Claude Code, Codex (ChatGPT) o Gemini CLI, instalada con la cuenta de un adulto. Hay una <a href="ia.html">guía paso a paso</a>. Sin IA igual se pueden repasar los temas ya creados.</span><span data-en>Claude Code, Codex (ChatGPT) or Gemini CLI, installed with a grown-up's account. There's a <a href="ia.html">step-by-step guide</a>. Without an AI you can still review topics already created.</span></p></details>
+      <p><span data-es>Claude Code, Codex (ChatGPT) o Gemini CLI, instalada con la cuenta de un adulto. Hay una <a href="ia.html">guía paso a paso</a>. En el celular usa la IA del propio teléfono. Sin IA se puede escribir un tema a mano o elegir uno del catálogo.</span><span data-en>Claude Code, Codex (ChatGPT) or Gemini CLI, installed with a grown-up's account. There's a <a href="ia.html">step-by-step guide</a>. On the phone it uses the phone's own AI. Without an AI you can write a topic by hand or pick one from the catalog.</span></p></details>
+    <details><summary><span data-es>¿Hay app para el celular?</span><span data-en>Is there a phone app?</span></summary>
+      <p><span data-es>Sí, para iPhone y Android, en pruebas: saca fotos al cuaderno, el teléfono lee el texto y su propia IA arma el tema, gratis y sin internet (Apple Intelligence en iPhone 15 Pro o más nuevo con iOS 26; Gemini Nano en algunos Android recientes). El avance viaja en una copia cifrada con una frase que conoce la familia. Todavía no está en las tiendas: se instala <a href="https://github.com/repasa-app/repasa/blob/main/movil/README.md">desde el código</a>.</span><span data-en>Yes, for iPhone and Android, in testing: snap the notebook, the phone reads the text and its own AI builds the topic, free and offline (Apple Intelligence on iPhone 15 Pro or newer with iOS 26; Gemini Nano on some recent Android phones). Progress travels in an encrypted copy with a passphrase the family knows. It isn't in the stores yet: it installs <a href="https://github.com/repasa-app/repasa/blob/main/movil/README.md">from source</a>.</span></p></details>
     <details><summary><span data-es>¿Y si la IA se equivoca?</span><span data-en>What if the AI gets something wrong?</span></summary>
       <p><span data-es>Antes de guardar un tema ves el resumen y las preguntas para revisar que calcen con el cuaderno. La IA tiene la instrucción de usar solo lo que dice el material, y Repasa valida todo lo que responde.</span><span data-en>Before saving a topic you see the summary and questions to check they match the notebook. The AI is told to use only what's in the material, and Repasa validates everything it returns.</span></p></details>
     <details><summary><span data-es>¿Sirve para cualquier ramo?</span><span data-en>Does it work for any subject?</span></summary>
