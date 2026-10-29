@@ -59,11 +59,12 @@ jobs:
       - name: "Celular: dependencias exactas, auditoría y cap sync"
         # npm ci instala solo lo de package-lock.json; movil/.npmrc deja fuera los scripts de instalación.
         working-directory: movil
+        # npm run sync = node armar.mjs && cap sync: www/ no se versiona, así que hay que armarla antes.
         run: |
           npm ci
           npm audit --audit-level=high
           npx cap telemetry off
-          npx cap sync
+          npm run sync
       - name: Capturas para revisar a ojo
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
