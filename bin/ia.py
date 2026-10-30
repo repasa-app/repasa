@@ -41,6 +41,20 @@ def nombre():
     return IAS[elegida()][1]
 
 
+def _entorno():
+    """La IA no recibe las variables de Repasa (rutas, recursos): solo lo necesario para correr."""
+    return {k: v for k, v in os.environ.items() if not k.startswith("REPASA_")}
+
+
+#: Claude Code carga la memoria de la persona (CLAUDE.md, memoria automática) aunque corra sin herramientas. Esto la apaga y mantiene
+#: su sesión: la IA solo ve lo que Repasa le manda.
+SIN_MEMORIA_CLAUDE = {"CLAUDE_CODE_DISABLE_CLAUDE_MDS": "1", "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
+
+#: Con material, Claude solo puede leer las copias: nada que escriba, ejecute, salga a internet o lance otros agentes, aunque la
+#: configuración de la persona lo permita.
+PROHIBIDAS_CON_MATERIAL = ["Bash", "Edit", "Write", "MultiEdit", "NotebookEdit", "WebFetch", "WebSearch", "Task"]
+
+
 def ejecutar_ia(prompt, timeout=600, archivos=()):
     """Le pasa el prompt (y copias de los archivos) a la IA y devuelve un CompletedProcess (stdout = respuesta)."""
     ia = elegida()
@@ -61,8 +75,11 @@ def ejecutar_ia(prompt, timeout=600, archivos=()):
                 if c.endswith(IMAGENES):
                     cmd += ["-i", c]
             cmd.append("-")
-            r = subprocess.run(cmd, input=prompt, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp)
-            texto = open(salida, encoding="utf-8").read() if os.path.exists(salida) else ""
+            r = subprocess.run(cmd, input=prompt, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp, env=_entorno())
+            texto = ""
+            if os.path.exists(salida):
+                with open(salida, encoding="utf-8") as f:
+                    texto = f.read()
             return subprocess.CompletedProcess(cmd, r.returncode, texto, r.stderr)
         es_agy = os.path.basename(comando).lower().split(".")[0] in ("agy", "antigravity")
         if ia == "gemini" and es_agy:
@@ -71,14 +88,16 @@ def ejecutar_ia(prompt, timeout=600, archivos=()):
             pedido = ("Lee el archivo instrucciones.md de esta carpeta (y el material que menciona) y haz exactamente lo que pide. "
                       "Entrega solo el resultado pedido, sin comentarios. No modifiques ni crees archivos.")
             cmd = [comando, "--output-format", "text", "--sandbox", "--add-dir", tmp, "-p", pedido]
-            return subprocess.run(cmd, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp)
+            return subprocess.run(cmd, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp, env=_entorno())
         if ia == "gemini":
             cmd = [comando, "-p", "Responde a las instrucciones de arriba. Entrega solo el resultado pedido.", "-o", "text"]
-        else:
-            # Sin servidores MCP de la persona; con material, solo puede leer (las copias en la carpeta temporal); sin material, nada.
-            cmd = [comando, "-p", "--output-format", "text", "--strict-mcp-config"]
-            cmd += ["--allowedTools", "Read"] if copias else ["--disallowedTools", "*"]
-        return subprocess.run(cmd, input=prompt, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp)
+            return subprocess.run(cmd, input=prompt, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp, env=_entorno())
+        # Sin servidores MCP ni la memoria de la persona; con material, solo puede leer (las copias en la carpeta temporal); sin
+        # material, nada.
+        cmd = [comando, "-p", "--output-format", "text", "--strict-mcp-config"]
+        cmd += ["--allowedTools", "Read", "--disallowedTools", ",".join(PROHIBIDAS_CON_MATERIAL)] if copias else ["--disallowedTools", "*"]
+        return subprocess.run(cmd, input=prompt, text=True, encoding="utf-8", capture_output=True, timeout=timeout, cwd=tmp,
+                              env={**_entorno(), **SIN_MEMORIA_CLAUDE})
 
 
 def preguntar(prompt, timeout=600, archivos=()):
