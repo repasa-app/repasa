@@ -16,7 +16,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATOS = os.path.join(RAIZ, "pruebas", "datos")
 TMP = tempfile.mkdtemp(prefix="repasa-pruebas-")
 os.environ["REPASA_CARPETA"] = os.path.join(TMP, "Repasa")
-os.environ["REPASA_TEMA_FALSO"] = os.path.join(DATOS, "independencia-de-chile.json")
+os.environ["PRUEBA_TEMA_FALSO"] = os.path.join(DATOS, "independencia-de-chile.json")
 BIN_FALSO = os.path.join(TMP, "bin")
 os.makedirs(BIN_FALSO)
 destino = os.path.join(BIN_FALSO, "claude")
@@ -31,7 +31,7 @@ import lineas  # noqa: E402
 import temas  # noqa: E402
 
 FOTO = os.path.join(DATOS, "cuaderno.jpg")
-with open(os.environ["REPASA_TEMA_FALSO"], encoding="utf-8") as f:
+with open(os.environ["PRUEBA_TEMA_FALSO"], encoding="utf-8") as f:
     TEMA = json.load(f)
 
 
@@ -185,7 +185,7 @@ class Crear(unittest.TestCase):
         self.assertEqual(os.listdir(os.path.join(datos.TEMAS, g3["tema"]["id"], "material")), ["material-1.jpg"])
 
     def test_respuesta_mala_de_la_ia_no_se_usa(self):
-        r = correr("crear_tema.py", "6b", "auto", "La Patria Vieja…", env={"REPASA_IA_MALA": "1"})
+        r = correr("crear_tema.py", "6b", "auto", "La Patria Vieja…", env={"PRUEBA_IA_MALA": "1"})
         self.assertFalse(r["ok"])
         self.assertIn("no sirve", r["error"])
 
@@ -218,7 +218,72 @@ class Explicar(unittest.TestCase):
 
 
 class Seguridad(unittest.TestCase):
-    """Content-Security-Policy de la interfaz y de la página pública (docs/)."""
+    """Content-Security-Policy de la interfaz y de la página pública (docs/), lo que recibe la IA y cómo se arma el HTML."""
+
+    def _con_ia(self, id_ia, nombre, archivos=()):
+        """Corre ia.ejecutar_ia con un CLI falso que anota sus argumentos, su entorno y los archivos de su carpeta."""
+        import ia
+        carpeta = tempfile.mkdtemp(dir=TMP)
+        anotado = os.path.join(carpeta, "anotado.json")
+        ruta = os.path.join(carpeta, nombre)
+        with open(ruta, "w", encoding="utf-8") as f:
+            f.write("#!" + sys.executable + "\nimport json, os, sys\n"
+                    f"json.dump({{'argv': sys.argv[1:], 'env': dict(os.environ), 'archivos': os.listdir('.')}}, open({anotado!r}, 'w'))\n"
+                    "print('listo')\n")
+        os.chmod(ruta, 0o755)
+        antes_path, antes_elegida = os.environ["PATH"], ia.elegida
+        os.environ["PATH"] = carpeta + os.pathsep + antes_path
+        os.environ["REPASA_SECRETO_PRUEBA"] = "no-debe-llegar"
+        ia.elegida = lambda: id_ia
+        try:
+            r = ia.ejecutar_ia("PEDIDO-SECRETO de la familia", timeout=60, archivos=archivos)
+        finally:
+            os.environ["PATH"], ia.elegida = antes_path, antes_elegida
+            del os.environ["REPASA_SECRETO_PRUEBA"]
+        self.assertEqual(r.returncode, 0, r.stderr)
+        with open(anotado, encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_ia_no_recibe_variables_de_repasa(self):
+        for id_ia, nombre in (("claude", "claude"), ("codex", "codex"), ("gemini", "agy")):
+            x = self._con_ia(id_ia, nombre)
+            self.assertFalse([k for k in x["env"] if k.startswith("REPASA_")], f"{id_ia}: las variables REPASA_* no llegan a la IA")
+        x = self._con_ia("claude", "claude")
+        self.assertEqual((x["env"].get("CLAUDE_CODE_DISABLE_CLAUDE_MDS"), x["env"].get("CLAUDE_CODE_DISABLE_AUTO_MEMORY")), ("1", "1"),
+                         "Claude corre sin la memoria de la persona")
+        self.assertEqual(x["argv"][x["argv"].index("--disallowedTools") + 1], "*", "sin material, ninguna herramienta")
+
+    def test_con_material_claude_solo_lee(self):
+        x = self._con_ia("claude", "claude", archivos=[FOTO])
+        self.assertEqual(x["argv"][x["argv"].index("--allowedTools") + 1], "Read")
+        prohibidas = x["argv"][x["argv"].index("--disallowedTools") + 1].split(",")
+        for h in ("Bash", "Edit", "Write", "MultiEdit", "NotebookEdit", "WebFetch", "WebSearch", "Task"):
+            self.assertIn(h, prohibidas)
+        self.assertIn("material-1.jpg", x["archivos"])
+
+    def test_pedido_a_antigravity_va_en_archivo(self):
+        x = self._con_ia("gemini", "agy")
+        self.assertFalse(any("PEDIDO-SECRETO" in a for a in x["argv"]), "el pedido nunca va en los argumentos (los ve cualquier programa)")
+        self.assertIn("instrucciones.md", x["archivos"])
+
+    def test_T_escapa_los_valores(self):
+        import re
+        js = open(os.path.join(RAIZ, "ui", "app.js"), encoding="utf-8").read()
+        if not shutil.which("node"):
+            self.skipTest("falta node")
+        esc = re.search(r"^  const esc = .*;$", js, re.M).group(0)
+        t = re.search(r"^  function T\(plantilla, valores = \{\}\) \{.*?^  \}$", js, re.M | re.S).group(0)
+        th = re.search(r"^  function Thtml\(.*?^  \}$", js, re.M | re.S).group(0)
+        prueba = (f"const E = {{ idioma: 'es', textos: {{}} }};\n{esc}\n{t}\n{th}\n"
+                  "console.log(T('¡Hola, {n}! **{x}**', { n: '<img src=x onerror=alert(1)>', x: 'a&b' }));"
+                  "console.log(Thtml('¡Hola, {n}!', { n: '<span>Ana</span>' }));")
+        r = subprocess.run(["node", "-e", prueba], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.strip().splitlines(), ["¡Hola, &lt;img src=x onerror=alert(1)&gt;! <b>a&amp;b</b>", "¡Hola, <span>Ana</span>!"])
+        self.assertNotRegex(js, r"esc\((T|frase)\(", "T ya escapa: no escapar dos veces")
+        for m in re.finditer(r"Thtml\(", js):
+            if "function Thtml" not in js[m.start() - 9:m.end()]:
+                self.assertIn("esc(", js[m.end():js.index(")", js.index("}", m.end()))], "Thtml solo con lo de la persona pasado por esc()")
 
     def csp(self, html):
         import re

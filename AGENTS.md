@@ -107,7 +107,9 @@ el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
   (`callAsyncJavaScript`, con los datos como argumentos) y lo que hay que escribir se revisa otra vez (`Rutas.permitidaEnCopia`).
   Probado en `pruebas/escritorio.mjs`.
 - **IA del adulto:** `bin/ia.py` y la prueba de `IA.probar`: Claude sin MCP (`--strict-mcp-config`) y sin herramientas
-  (`--disallowedTools "*"`; con material, solo `Read` de las copias), Codex `-s read-only`.
+  (`--disallowedTools "*"`; con material, solo `Read` de las copias y `--disallowedTools` con Bash, Edit, Write, MultiEdit,
+  NotebookEdit, WebFetch, WebSearch y Task), sin la memoria de la persona (`SIN_MEMORIA_CLAUDE`), Codex `-s read-only`. Ninguna
+  IA recibe las variables `REPASA_*` (`ia._entorno`); las de las pruebas se llaman `PRUEBA_*`.
 - **Arranque:** menús y ventana de inmediato; lo que corre solo (revisar actualizaciones, al abrir y cada 6 horas) parte con
   `RepasaApp.iniciarTareas()` recién cuando hay idioma elegido. Una versión nueva se ofrece solo en «Para adultos» (nunca en la
   pantalla de los niños ni con alertas del sistema) y no se instala mientras la IA arma un tema.
@@ -124,7 +126,8 @@ el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
 ## Reglas al cambiar cosas
 - Código, comentarios, commits y textos en **español** (de Chile neutro). Todo texto nuevo visible va con su traducción en
   `ui/idiomas/en.json` en el mismo cambio, como frase completa con marcadores (`T("Acertaste {a} de {n}…", {a, n})`), nunca pedazos.
-- Contenido del usuario y de la IA con `esc()` y `data-sin-traducir`.
+- Contenido del usuario y de la IA con `esc()` y `data-sin-traducir`. `T()` ya escapa sus valores (no les pongas `esc()`); para
+  meter HTML armado por el código (con lo de la persona ya escapado) está `Thtml()`.
 - Textos para niños: cortos, cálidos, sin sarcasmo; un error nunca se marca como "malo" (ver `BIEN` y `CASI` en `app.js`).
 - Accesible: se puede usar entero con teclado (1–5 para alternativas, Enter para seguir), contraste AA, botones grandes.
 - No cambies el formato de los datos (README, "Formato de los datos") sin compatibilidad.

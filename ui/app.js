@@ -44,10 +44,15 @@
     return t;
   }
   function T(plantilla, valores = {}) {
+    // Los valores son texto: se escapan aquí (un nombre o un título nunca entra como HTML).
+    return Thtml(plantilla, Object.fromEntries(Object.entries(valores).map(([k, v]) => [k, esc(String(v))])));
+  }
+  /** Como T(), pero los valores van tal cual: SOLO para HTML que arma el propio código, con lo de la persona ya pasado por esc(). */
+  function Thtml(plantilla, html = {}) {
     let t = plantilla;
     if (E.idioma !== "es") { if (E.textos[plantilla]) t = E.textos[plantilla]; else if (window._faltantes) window._faltantes.add(plantilla); }
     t = esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-    for (const [k, v] of Object.entries(valores)) t = t.split(`{${k}}`).join(String(v));
+    for (const [k, v] of Object.entries(html)) t = t.split(`{${k}}`).join(String(v));
     return t;
   }
   const frase = (plantilla, valores, etiqueta = "span") => `<${etiqueta} data-sin-traducir>${T(plantilla, valores)}</${etiqueta}>`;
@@ -195,7 +200,7 @@
     const tarjetasTema = temas.map((t) => `<button class="tema" data-tema="${esc(t.id)}" style="--c:${color(t.ramo)}">
       <span class="ramo" data-sin-traducir>${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo]))}</span><b data-sin-traducir>${esc(t.titulo)}</b>
       <span class="barra-dom"><i style="width:${dominio(t, p)}%"></i></span><small data-sin-traducir>${T("{n} % dominado", { n: dominio(t, p) })}</small></button>`).join("");
-    return `<div class="contenido"><div class="saludo"><h1 data-sin-traducir>${T(saludo, { n: `<span>${esc(pf.nombre)}</span>` })}</h1></div>
+    return `<div class="contenido"><div class="saludo"><h1 data-sin-traducir>${Thtml(saludo, { n: `<span>${esc(pf.nombre)}</span>` })}</h1></div>
       <div class="hoy">${tarjetaHoy}${tarjetaPrueba}</div>
       <div class="cifras"><div class="cifra"><b data-sin-traducir>🔥 ${esc(p.racha || 0)}</b><small>días seguidos</small></div>
         <div class="cifra"><b data-sin-traducir>⭐ ${esc(p.puntos || 0)}</b><small>puntos</small></div>
@@ -247,8 +252,8 @@
     }
     const correcta = p.tipo === "alternativas" ? p.opciones[p.correcta] : p.tipo === "vf" ? tr(p.correcta ? "Verdadero" : "Falso") : p.correcta[0];
     const retro = !respondida ? "" : `<div class="retro ${s.correcta ? "bien" : "mal"}" role="status"><b data-sin-traducir>${esc(tr(s.correcta ? elegir(BIEN, s.claves[s.i]) : elegir(CASI, s.claves[s.i])))}</b>
-      ${s.correcta ? "" : frase("La respuesta es: **{r}**.", { r: esc(correcta) }, "div")}<span data-sin-traducir>${esc(p.explicacion)}</span>
-      ${s.explicacion ? `<div class="otra" data-sin-traducir>${s.explicacion === "cargando" ? T("{ia} está pensando otra forma de explicarlo…", { ia: esc(nombreIA()) }) : esc(s.explicacion)}</div>` : ""}</div>
+      ${s.correcta ? "" : frase("La respuesta es: **{r}**.", { r: correcta }, "div")}<span data-sin-traducir>${esc(p.explicacion)}</span>
+      ${s.explicacion ? `<div class="otra" data-sin-traducir>${s.explicacion === "cargando" ? T("{ia} está pensando otra forma de explicarlo…", { ia: nombreIA() }) : esc(s.explicacion)}</div>` : ""}</div>
       <div class="acciones-pregunta">${!s.correcta && !s.explicacion ? `<button class="boton" data-accion="no-entendi">🤔 <span>No entendí, explícamelo de otra forma</span></button>` : ""}
         <button class="boton principal grande der" data-accion="siguiente" id="siguiente">${s.i + 1 < s.claves.length ? "Siguiente →" : "Terminar 🎉"}</button></div>`;
     return `<div class="sesion"><div class="progreso-sesion"><button class="icono" data-accion="salir-sesion" title="Salir" aria-label="Salir">✕</button>
@@ -307,7 +312,7 @@
   /** Los problemas de un tema escrito a mano, en palabras de la persona («Bloque 2: …» → «Pregunta 2: …»). */
   function problemaLegible(p) {
     const m = /^(?:Bloque|pregunta) (\d+): (.+)$/.exec(p);
-    return m ? T("Pregunta {n}: {x}", { n: esc(m[1]), x: esc(tr(m[2])) }) : esc(mensaje(p));
+    return m ? T("Pregunta {n}: {x}", { n: m[1], x: tr(m[2]) }) : esc(mensaje(p));
   }
   /** Un mensaje del anfitrión o del motor (vienen en español), traducido si se puede; «Lo que armó X no sirve…» lleva el nombre de la IA. */
   function mensaje(t) {
@@ -425,7 +430,7 @@
       <div class="seccion"><h3>General</h3><div class="fila"><div class="txt"><b>Idioma de la app</b></div><select data-config="idioma_ui"><option value="es" ${E.idioma === "es" ? "selected" : ""}>Español</option><option value="en" ${E.idioma === "en" ? "selected" : ""}>English</option></select></div>
         ${MOVIL ? "" : `<div class="fila"><div class="txt"><b>Carpeta de Repasa</b><small data-sin-traducir>${esc(E.carpeta)}</small></div><button class="boton" data-accion="abrir-carpeta">Abrir</button></div>`}</div>
       ${E.capacidades.copia ? seccionCopia() : ""}
-      <div class="seccion"><h3>Acerca de Repasa</h3><p style="margin:0 0 8px;color:var(--suave)">${frase("Repasa {v} · Gratis y de código abierto (AGPL-3.0).", { v: esc(E.version) })}</p>
+      <div class="seccion"><h3>Acerca de Repasa</h3><p style="margin:0 0 8px;color:var(--suave)">${frase("Repasa {v} · Gratis y de código abierto (AGPL-3.0).", { v: E.version })}</p>
         ${MOVIL ? "" : filaActualizaciones()}
         <div class="enlaces"><a href="#" data-enlace="${ENLACES.sitio}">Sitio web</a><a href="#" data-enlace="${ENLACES.codigo}">Código</a><a href="#" data-enlace="${ENLACES.comunidad}">Comunidad</a></div></div>
       <div class="pie-dialogo"><button class="boton principal" data-accion="cerrar">Listo</button></div>`;

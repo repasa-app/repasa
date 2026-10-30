@@ -7,11 +7,11 @@ import sys
 pedido = sys.stdin.read()
 if "arma un tema de repaso" in pedido:
     hay_material = any(n.startswith("material-") for n in os.listdir("."))
-    with open(os.environ["REPASA_TEMA_FALSO"], encoding="utf-8") as f:
+    with open(os.environ["PRUEBA_TEMA_FALSO"], encoding="utf-8") as f:
         tema = json.load(f)
     if not hay_material:
         tema["titulo"] = "Sin material"
-    if os.environ.get("REPASA_IA_MALA"):
+    if os.environ.get("PRUEBA_IA_MALA"):
         tema["preguntas"] = tema["preguntas"][:1]
     print("Aquí está:\n```json\n" + json.dumps(tema, ensure_ascii=False) + "\n```")
 elif "no entendió esta pregunta" in pedido:
