@@ -130,55 +130,21 @@ enum IA {
     static var paraJS: [[String: Any]] {
         conocidas.map { ["id": $0.id, "nombre": $0.nombre, "instalada": buscar($0.comandos) != nil] }
     }
-
-    /// Prueba real: le pide una palabra. Así sabemos que está instalada y con la sesión iniciada. Sin herramientas ni MCP.
-    static func probar(_ id: String, _ fin: @escaping @MainActor (Bool, String) -> Void) {
-        guard let ia = conocidas.first(where: { $0.id == id }), let ruta = buscar(ia.comandos) else { fin(false, Idioma.t("No está instalada.")); return }
-        let pedido = "Responde solo con la palabra: listo"
-        let esAgy = (ruta as NSString).lastPathComponent == "agy"
-        let args: [String]
-        switch id {
-        case "codex": args = ["exec", "--skip-git-repo-check", "-s", "read-only", "-"]
-        case "gemini" where esAgy: args = ["--output-format", "text", "--sandbox", "-p", pedido]
-        case "gemini": args = ["-p", "Responde a las instrucciones de arriba.", "-o", "text"]
-        default: args = ["-p", "--output-format", "text", "--strict-mcp-config", "--disallowedTools", "*"]
-        }
-        let p = Process(), salida = Pipe(), error = Pipe(), entrada = Pipe()
-        p.executableURL = URL(fileURLWithPath: ruta)
-        p.arguments = args
-        p.environment = Procesador.entorno(paraIA: true)
-        p.currentDirectoryURL = FileManager.default.temporaryDirectory
-        p.standardInput = entrada; p.standardOutput = salida; p.standardError = error
-        p.terminationHandler = { pr in
-            let texto = String(data: salida.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            let err = String(data: error.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            let estado = pr.terminationStatus
-            Task { @MainActor in
-                let ok = estado == 0 && !texto.isEmpty
-                fin(ok, ok ? texto.trimmingCharacters(in: .whitespacesAndNewlines) : String(err.suffix(300)))
-            }
-        }
-        do { try p.run() } catch { fin(false, error.localizedDescription); return }
-        entrada.fileHandleForWriting.write(pedido.data(using: .utf8)!)
-        try? entrada.fileHandleForWriting.close()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 90) { if p.isRunning { p.terminate() } }
-    }
+    // Probar la IA: lo hace bin/ia.py (pieza «ia», `ia.py probar`), con las mismas protecciones que al crear un tema.
 }
 
 // MARK: - Scripts de bin/ (contrato: el último argumento es la ruta del JSON de salida)
 
 @MainActor
 enum Procesador {
-    /// El entorno de los scripts y de la IA: nada que venga de afuera con nombre REPASA_* (p. ej. una carpeta o un modo de prueba
-    /// puesto por otro programa) y el PATH donde suelen quedar los CLI de IA.
-    nonisolated static func entorno(paraIA: Bool = false) -> [String: String] {
+    /// El entorno de los scripts: nada que venga de afuera con nombre REPASA_* (p. ej. una carpeta o un modo de prueba puesto por
+    /// otro programa) y el PATH donde suelen quedar los CLI de IA. La IA la corre bin/ia.py, que además le quita las REPASA_*.
+    nonisolated static func entorno() -> [String: String] {
         var env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("REPASA_") }
         env["PATH"] = (IA.dirs() + ["/bin", "/usr/sbin", "/sbin"]).joined(separator: ":")
-        if !paraIA {
-            env["REPASA_RECURSOS"] = Bundle.main.resourceURL!.appendingPathComponent("repasa").path
-            env["PYTHONIOENCODING"] = "utf-8"
-            env["PYTHONDONTWRITEBYTECODE"] = "1"  // nada de __pycache__ dentro de la app (rompería su firma)
-        }
+        env["REPASA_RECURSOS"] = Bundle.main.resourceURL!.appendingPathComponent("repasa").path
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONDONTWRITEBYTECODE"] = "1"  // nada de __pycache__ dentro de la app (rompería su firma)
         return env
     }
 

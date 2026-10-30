@@ -29,17 +29,40 @@ Android (`movil/`, fase 1) con la IA del propio teléfono.
 
 | Ruta | Qué es |
 |---|---|
-| `bin/` | Python **solo biblioteca estándar**. `datos.py` (carpetas, escritura atómica, ids, perfiles, progreso y pruebas con las reglas de `motor/datos.js`), `temas.py` (`validar`, ramos y cursos), `ia.py` (`preguntar()` con la IA del adulto; pasa fotos y PDF como copias), `crear_tema.py` (material → tema validado; `pedido`; `amano`; `guardar`), `lineas.py` (preguntas y conceptos en texto simple), `explicar.py` (explicar de nuevo una pregunta). Scripts que llaman las apps de escritorio: `estado.py` (todo lo que pinta la interfaz, más el catálogo incluido) y `guardar.py` (perfil, progreso, pruebas). Lo que manda la interfaz llega en un archivo de entrada, nunca como argumento. El último argumento de cada script es la ruta del JSON de salida. |
+| `bin/` | Python **solo biblioteca estándar**. `nucleo.py` (pieza «nucleo»: `app.json`, config validada, escritura atómica), `datos.py` (lo propio de Repasa sobre `nucleo`: carpetas, ids, perfiles, progreso y pruebas con las reglas de `motor/datos.js`), `temas.py` (`validar`, ramos y cursos), `ia.py` (pieza «ia»: `preguntar()` con la IA del adulto, fotos y PDF como copias de solo lectura, `probar`; errores como `{codigo, valores}` que `ia.frase()` pasa a texto), `crear_tema.py` (material → tema validado; `pedido`; `amano`; `guardar`), `lineas.py` (preguntas y conceptos en texto simple), `explicar.py` (explicar de nuevo una pregunta). Scripts que llaman las apps de escritorio: `estado.py` (todo lo que pinta la interfaz, más el catálogo incluido) y `guardar.py` (perfil, progreso, pruebas). Lo que manda la interfaz llega en un archivo de entrada, nunca como argumento. El último argumento de cada script es la ruta del JSON de salida. |
 | `motor/` | El motor en **JavaScript** (ES modules, sin dependencias) para el celular: lo mismo que `bin/` (`temas.js`, `lineas.js`, `crear_tema.js`, `explicar.js`, `datos.js` sobre un adaptador de almacenamiento) más `cifrado.js` (WebCrypto), `copia.js` (copia cifrada y juntar) y `carpeta.js` (formato de la carpeta de la fase 2). |
 | `app/` | App de Mac (SwiftPM, macOS 15, sin proyecto de Xcode). `RepasaApp.swift` (arranque y menús), `Ventana.swift` (WKWebView + puente: un `case` por acción; material por `repasa://material/…`; copia cifrada), `Servicios.swift` (rutas, config, idioma, IA del adulto, `Procesador` con la fila de archivos), `Actualizaciones.swift` (GitHub Releases o `git pull` en un checkout de desarrollo). `web/escritorio.js` (copia cifrada con el motor JS, en el WebView), `Info.plist`, `Repasa.icns` (sale de `herramientas/icono_mac.mjs`). |
 | `build.sh`, `herramientas/empaquetar.sh` | Arman `dist/Repasa.app` (Python portátil verificado por SHA-256; `bin/`, `temas/` y `ui/` con `motor/` y `escritorio.js` adentro) + zip + `.sha256`; `build.sh` la instala en `~/Applications`. |
 | `movil/` | App de iPhone y Android con Capacitor 7: `armar.mjs` (arma `www/` con `ui/` + `motor/` + `host/`), `host/` (el anfitrión del teléfono), `plugins/ia-local` (Swift: Foundation Models + Vision; Kotlin: Gemini Nano + ML Kit), `plugins/carpeta` (selector de archivos del sistema), `ios/` y `android/` (proyectos nativos). Comandos en `movil/README.md`. |
 | `temas/` | Temas de ejemplo incluidos (vista previa y primeras pruebas) y `README.md` con el formato. |
-| `ui/` | Interfaz web única (`app.js`, `app.css`), `demo.json` (ficticio, se genera con `herramientas/generar_demo.py`) e `idiomas/en.json`. |
+| `ui/` | Interfaz web única (`app.js`, `i18n.js` (pieza «i18n»: `T`, `Thtml`, `tr`, `frase`, `traducirDOM`, paquetes de idioma validados), `app.css`), `demo.json` (ficticio, se genera con `herramientas/generar_demo.py`) e `idiomas/en.json`. |
 | `docs/` | Página pública (GitHub Pages). `pagina.yml` la publica junto a `ui/` en `/demo/`. |
 | `CHANGELOG.md` | Lo que cambia para quien usa la app, en palabras simples (ver «Lo que rodea a un cambio»). |
 | `pruebas/` | `correr.sh` (todo), `test_python.py`, `motor.mjs` (motor JS: igual que Python, cifrado, copia), `escritorio.mjs` (copia cifrada del escritorio), `contrato.py` (puente, plugins y app de Mac), `interfaz.mjs` (Playwright; `MOVIL=1` con el anfitrión del teléfono), `movil.mjs` (la app del celular de punta a punta), `capacitor_falso.js`, `casos.json` (casos compartidos Python ↔ JS), `ia_falsa.py`, `datos/` (material ficticio). |
+| `app.json`, `piezas.json` | **Pieza** (ver «Piezas» abajo): `app.json` describe la app para las piezas (id, nombre, datos, plataformas, claves de config); `piezas.json` lo escribe `pieza.py` (versión y huella de cada archivo copiado). |
 | `herramientas/` | `revisar_privacidad.sh`, `generar_demo.py`, `empaquetar.sh` (app de Mac), `icono_mac.mjs`, `imagenes.mjs` (imágenes de la página). |
+
+## Piezas (de [Pieza](https://github.com/pieza-app/pieza))
+Repasa usa piezas de Pieza, la base de la familia de apps: código probado que se copia a la app (modelo «copiar y adueñarse»).
+
+| Pieza | Archivos | Qué usa Repasa |
+|---|---|---|
+| `nucleo` | `bin/nucleo.py` | `app.json` (`"datos": "visible"` → `~/Repasa/.repasa`, la carpeta de siempre), config validada por `app.json`, `escribir_atomico` (siempre 0600 para lo de la familia), `leer_json`, `recursos()`. `datos.py` lo envuelve con lo propio de Repasa (`~/Repasa` 0700, perfiles, progreso, pruebas, temas). |
+| `ia` | `bin/ia.py` | La IA del adulto (`preguntar` con `archivos=` para fotos y PDF, `nombre`, `frase`, `probar`). Los prompts (temas, «No entendí») siguen en `crear_tema.py` y `explicar.py`, que responden `{"ok": false, "error": ia.frase(error), "codigo"}`. La IA del teléfono (plugins `ia-local`) no es esta pieza. |
+| `i18n` | `ui/i18n.js` | `T`, `Thtml`, `tr`, `frase`, `traducirDOM` en la misma interfaz del computador y del celular (`movil/armar.mjs` copia `ui/` entero y revisa que esté). `ui/idiomas/en.json` lleva `codigo` y `nombre`. |
+
+- **No edites a mano los archivos de una pieza.** Se actualizan con «Pieza al día» (`.github/workflows/pieza-al-dia.yml`, una vez por
+  semana abre un PR o un issue) o con `python3 <pieza>/herramientas/pieza.py actualizar .`. Si hay que cambiar algo, el cambio va
+  primero a Pieza (`pieza.py diferencias . <pieza>` lo muestra) y vuelve desde allá; `pieza.py estado .` dice si algo quedó distinto.
+- `app.json` va dentro de la app de Mac (`herramientas/empaquetar.sh` lo copia a `Contents/Resources/repasa/`): `bin/nucleo.py` lo
+  busca junto a `bin/`. Sus claves de config son las mismas que acepta `Config.guardar` en Swift (`ia`, `idioma_ui`, `bienvenida`,
+  `ultimo_perfil`); lo demás se descarta al leer. En las pruebas, `REPASA_CARPETA` también mueve la carpeta de `nucleo`
+  (`datos.py` pone `REPASA_DATOS`).
+- `.gitignore` es una lista blanca: `app.json` y `piezas.json` están en ella. `app.json` → `plataformas`: `mac`, `ios`, `android`
+  (Windows y Linux, cuando existan).
+- No adoptadas todavía: `bienvenida` (la de Repasa es para niños, con teclas 1 y 2, «Para adultos» y la IA del teléfono; se
+  revisará cuando la pieza termine de mejorarse) y `actualizaciones` (en Mac pide un target propio de SwiftPM, y en el celular no
+  hay actualizaciones dentro de la app).
 
 ## Cómo funciona
 - **Crear un tema:** `crear_tema.py <curso> <ramo|auto> "<texto>" [archivos…] <salida.json>` copia el material a una carpeta temporal
@@ -106,10 +129,15 @@ el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
   que se carga como módulo en el WebView. La app lee `~/Repasa`, `RepasaEscritorio.armar/traer` cifra, descifra y junta en memoria
   (`callAsyncJavaScript`, con los datos como argumentos) y lo que hay que escribir se revisa otra vez (`Rutas.permitidaEnCopia`).
   Probado en `pruebas/escritorio.mjs`.
-- **IA del adulto:** `bin/ia.py` y la prueba de `IA.probar`: Claude sin MCP (`--strict-mcp-config`) y sin herramientas
-  (`--disallowedTools "*"`; con material, solo `Read` de las copias y `--disallowedTools` con Bash, Edit, Write, MultiEdit,
-  NotebookEdit, WebFetch, WebSearch y Task), sin la memoria de la persona (`SIN_MEMORIA_CLAUDE`), Codex `-s read-only`. Ninguna
-  IA recibe las variables `REPASA_*` (`ia._entorno`); las de las pruebas se llaman `PRUEBA_*`.
+- **IA del adulto:** solo la corre `bin/ia.py` (pieza «ia»), también al probarla: «Usar» en la interfaz → `ia.py probar
+  <entrada {ia}> <salida>` (`Procesador.conEntrada`); ningún Swift arma el comando de una IA (`pruebas/contrato.py` lo revisa).
+  Siempre en una carpeta temporal; Claude sin MCP (`--strict-mcp-config`), sin herramientas (`--disallowedTools "*"`; con material,
+  solo `Read,Glob,Grep` de las copias y `--disallowedTools` con Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch y
+  Task), sin la memoria de la persona (`SIN_MEMORIA_CLAUDE`) y, si su versión los conoce, con `--tools`, `--safe-mode` y
+  `--setting-sources user`; un Claude que no conoce `--strict-mcp-config` o `--disallowedTools` nunca recibe el pedido (código
+  `actualizar`: «Actualiza Claude para usarla con Repasa…»);
+  Codex `-s read-only`; Antigravity con el pedido en `instrucciones.md`. Ninguna IA recibe las variables `REPASA_*` (`ia._entorno`);
+  las de las pruebas se llaman `PRUEBA_*`.
 - **Arranque:** menús y ventana de inmediato; lo que corre solo (revisar actualizaciones, al abrir y cada 6 horas) parte con
   `RepasaApp.iniciarTareas()` recién cuando hay idioma elegido. Una versión nueva se ofrece solo en «Para adultos» (nunca en la
   pantalla de los niños ni con alertas del sistema) y no se instala mientras la IA arma un tema.
@@ -127,7 +155,8 @@ el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
 - Código, comentarios, commits y textos en **español** (de Chile neutro). Todo texto nuevo visible va con su traducción en
   `ui/idiomas/en.json` en el mismo cambio, como frase completa con marcadores (`T("Acertaste {a} de {n}…", {a, n})`), nunca pedazos.
 - Contenido del usuario y de la IA con `esc()` y `data-sin-traducir`. `T()` ya escapa sus valores (no les pongas `esc()`); para
-  meter HTML armado por el código (con lo de la persona ya escapado) está `Thtml()`.
+  meter HTML armado por el código (con lo de la persona ya escapado) está `Thtml()`. Los dos son de la pieza «i18n» (`ui/i18n.js`).
+- Archivos de piezas (`bin/nucleo.py`, `bin/ia.py`, `ui/i18n.js`): no se editan aquí; ver «Piezas».
 - Textos para niños: cortos, cálidos, sin sarcasmo; un error nunca se marca como "malo" (ver `BIEN` y `CASI` en `app.js`).
 - Accesible: se puede usar entero con teclado (1–5 para alternativas, Enter para seguir), contraste AA, botones grandes.
 - No cambies el formato de los datos (README, "Formato de los datos") sin compatibilidad.
@@ -153,6 +182,7 @@ revisa cada fila ("no aplica" se decide, no se supone):
 | quita algo | bórralo de la página, el README y las guías: nada que prometa lo que ya no hace |
 | cambia el formato de datos o el puente | la documentación del formato, `ejemplos/` si existe y esta guía |
 | cambia carpetas, reglas o pruebas | esta guía (`AGENTS.md`) y `CONTRIBUTING.md` |
+| actualiza o agrega una pieza | `piezas.json` (lo escribe `pieza.py`), la tabla «Piezas» de esta guía y `app.json` si pide config |
 | resuelve un issue | ciérralo con «Resuelto en …» dando crédito y abre issues para lo que quedó pendiente |
 | lo nota quien usa Repasa | `CHANGELOG.md`: una línea en «Sin publicar», en lenguaje de persona («Ahora puedes…»), en español e inglés |
 

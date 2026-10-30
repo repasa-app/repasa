@@ -29,6 +29,8 @@ tar -xzf "$PY_TGZ" -C "$APP/Contents/Resources"   # → Resources/python/bin/pyt
 for d in bin ui temas; do ditto "$RAIZ/$d" "$CODIGO/$d"; done
 ditto "$RAIZ/motor" "$CODIGO/ui/motor"
 cp "$RAIZ/app/web/escritorio.js" "$CODIGO/ui/escritorio.js"
+# app.json: la descripción de la app que leen las piezas (bin/nucleo.py la busca junto a bin/; sin ella ningún script arranca).
+cp "$RAIZ/app.json" "$CODIGO/app.json"
 # La app usa los datos de la familia, nunca la demo ni sus imágenes; temas/README.md no hace falta adentro.
 rm -rf "$CODIGO/ui/demo.json" "$CODIGO/ui/demo" "$CODIGO/temas/README.md"
 find "$CODIGO" -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null || true

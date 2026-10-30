@@ -10,7 +10,7 @@
   const E = {
     hoy: "", perfiles: [], temas: [], progreso: {}, pruebas: [], config: {}, ias: [], version: "", carpeta: "", actualizacion: { hay: false },
     perfil: null, vista: "inicio", temaSel: null, pestana: "resumen", volteadas: {}, sesion: null, nuevo: null, prueba: null, perfilEdit: null,
-    adultos: false, probando: {}, resultadoIA: {}, bv: null, bvCerrada: false, buscando: null, idioma: "es", textos: {},
+    adultos: false, probando: {}, resultadoIA: {}, bv: null, bvCerrada: false, buscando: null, idioma: "es",
     capacidades: {}, catalogo: null, copia: { frase: "", estado: "", error: "" }, act: null,
   };
   const ENLACES = { sitio: "https://repasa-app.github.io/repasa/", codigo: "https://github.com/repasa-app/repasa",
@@ -34,51 +34,18 @@
     },
   };
 
-  // ───────────── Idiomas (las claves son el texto en español) ─────────────
-  function tr(t) {
-    if (E.idioma === "es" || !t) return t;
-    const limpio = String(t).replace(/\s+/g, " ").trim();
-    if (!limpio) return t;
-    if (E.textos[limpio]) return t.replace(limpio, E.textos[limpio]);
-    if (window._faltantes && /\p{L}{2}/u.test(limpio)) window._faltantes.add(limpio);
-    return t;
-  }
-  function T(plantilla, valores = {}) {
-    // Los valores son texto: se escapan aquí (un nombre o un título nunca entra como HTML).
-    return Thtml(plantilla, Object.fromEntries(Object.entries(valores).map(([k, v]) => [k, esc(String(v))])));
-  }
-  /** Como T(), pero los valores van tal cual: SOLO para HTML que arma el propio código, con lo de la persona ya pasado por esc(). */
-  function Thtml(plantilla, html = {}) {
-    let t = plantilla;
-    if (E.idioma !== "es") { if (E.textos[plantilla]) t = E.textos[plantilla]; else if (window._faltantes) window._faltantes.add(plantilla); }
-    t = esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-    for (const [k, v] of Object.entries(html)) t = t.split(`{${k}}`).join(String(v));
-    return t;
-  }
-  const frase = (plantilla, valores, etiqueta = "span") => `<${etiqueta} data-sin-traducir>${T(plantilla, valores)}</${etiqueta}>`;
-  function traducirDOM(raiz) {
-    if (E.idioma === "es") return;
-    const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
-    const nodos = []; let n; while ((n = w.nextNode())) nodos.push(n);
-    for (const t of nodos) {
-      const el = t.parentElement;
-      if (!el || el.closest("[data-sin-traducir], script, style") || !/\p{L}/u.test(t.nodeValue)) continue;
-      const v = tr(t.nodeValue); if (v !== t.nodeValue) t.nodeValue = v;
-    }
-    for (const el of raiz.querySelectorAll("[title],[aria-label],[placeholder]")) {
-      if (el.closest("[data-sin-traducir]")) continue;
-      for (const a of ["title", "aria-label", "placeholder"]) { const v = el.getAttribute(a); if (v) el.setAttribute(a, tr(v)); }
-    }
-  }
-  const idiomaSistema = () => ((navigator.language || "es").startsWith("es") ? "es" : "en");
+  // ───────────── Idiomas: pieza «i18n» (ui/i18n.js, de Pieza; las claves son el texto en español) ─────────────
+  // T() escapa la frase y sus valores (un nombre o un título nunca entra como HTML); Thtml() es SOLO para HTML que arma el propio
+  // código, con lo de la persona ya pasado por esc(); tr() traduce un texto ya armado y traducirDOM() lo ya pintado (nunca entra a
+  // [data-sin-traducir]). Los paquetes de idioma se validan antes de usarse (sin HTML, mismos marcadores).
+  const i18n = window.PiezaI18n.crear();
+  const { T, Thtml, tr, frase } = i18n;
+  const traducirDOM = (raiz) => i18n.traducirDOM(raiz);
+  const idiomaSistema = () => i18n.idiomaDelSistema();
   /** Carga los textos del idioma. `elegido` viene de la persona (bienvenida o Ajustes) y manda sobre ?idioma= de la vista previa. */
   async function cargarIdioma(elegido) {
-    const pedido = new URLSearchParams(location.search).get("idioma");
-    const codigo = elegido || pedido || E.config.idioma_ui || idiomaSistema();
-    if (codigo === E.idioma && (codigo === "es" || Object.keys(E.textos).length)) return;
-    E.idioma = codigo; E.textos = {};
-    if (codigo !== "es") { try { E.textos = (await (await fetch(`idiomas/${codigo}.json`)).json()).textos || {}; } catch { E.idioma = "es"; } }
-    document.documentElement.lang = E.idioma;
+    await i18n.cargar(i18n.elegir({ elegido, config: E.config.idioma_ui }));
+    E.idioma = i18n.idioma;
   }
 
   // ───────────── Lógica del repaso (casos en pruebas/casos.json) ─────────────

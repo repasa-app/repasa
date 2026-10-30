@@ -140,10 +140,15 @@ for archivo, texto, por_que in [
     ("Ventana.swift", "Rutas.permitidaEnCopia(ruta)", "lo que trae una copia solo escribe rutas permitidas"),
     ("Actualizaciones.swift", "esDescargaNuestra(zip), esDescargaNuestra(huella)", "descargas solo de los Releases de Repasa"),
     ("Actualizaciones.swift", "shasum -a 256", "la versión nueva se verifica con su huella"),
-    ("Servicios.swift", "\"--disallowedTools\", \"*\"", "la prueba de la IA corre sin herramientas"),
+    ("Ventana.swift", "Procesador.conEntrada(\"ia.py\", [\"probar\"], [\"ia\": id])",
+     "la prueba de la IA va por bin/ia.py (pieza «ia»), con la IA en un archivo de entrada"),
 ]:
     if texto not in SWIFT.get(archivo, ""):
         problemas.append(f"app/Sources/Repasa/{archivo}: falta «{texto}» ({por_que}).")
+# La IA solo la corre bin/ia.py (pieza «ia»): ningún Swift arma el comando de un CLI de IA por su cuenta.
+for archivo, codigo in SWIFT.items():
+    if re.search(r'"--disallowedTools"|"--skip-git-repo-check"|"--strict-mcp-config"', codigo):
+        problemas.append(f"app/Sources/Repasa/{archivo}: arma el comando de una IA; eso lo hace solo bin/ia.py (pieza «ia»).")
 for linea in re.findall(r'"""(.*?)"""', SWIFT.get("Actualizaciones.swift", ""), re.S):
     for interpolado in re.findall(r"\\\(([^)]*(?:\([^)]*\))?[^)]*)\)", linea):
         if not interpolado.startswith("comillas(") and interpolado != "pid":

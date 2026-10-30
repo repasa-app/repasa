@@ -1,5 +1,6 @@
 {
- "idioma": "English",
+ "codigo": "en",
+ "nombre": "English",
  "textos": {
   "1° medio": "9th grade",
   "2° medio": "10th grade",
@@ -302,6 +303,13 @@
   "No pude terminar. Intenta de nuevo.": "I couldn't finish. Try again.",
   "No está instalada.": "It isn't installed.",
   "Versión": "Version",
-  "La copia no está lista en esta app todavía. Prueba después de actualizar Repasa.": "Copies aren't ready in this app yet. Try again after updating Repasa."
+  "La copia no está lista en esta app todavía. Prueba después de actualizar Repasa.": "Copies aren't ready in this app yet. Try again after updating Repasa.",
+  "No encontré {ia} en este computador. Revisa en Ajustes → Tu IA.": "I couldn't find {ia} on this computer. Check Settings → Your AI.",
+  "{ia} se demoró demasiado en responder. Inténtalo de nuevo.": "{ia} took too long to answer. Please try again.",
+  "{ia} no respondió. {detalle}": "{ia} didn't answer. {detalle}",
+  "{ia} no respondió.": "{ia} didn't answer.",
+  "No conozco esa IA.": "I don't know that AI.",
+  "Idioma": "Language",
+  "Actualiza {ia} para usarla con {app}: tu versión no conoce las protecciones que necesitamos.": "Update {ia} to use it with {app}: your version doesn't know the protections we need."
  }
 }

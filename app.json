@@ -1,0 +1,24 @@
+{
+ "nombre": "Repasa",
+ "id": "repasa",
+ "datos": "visible",
+ "icono": "docs/favicon.svg",
+ "plataformas": [
+  "mac",
+  "ios",
+  "android"
+ ],
+ "config": {
+  "idioma_ui": [
+   "es",
+   "en"
+  ],
+  "bienvenida": "bool",
+  "ia": [
+   "claude",
+   "codex",
+   "gemini"
+  ],
+  "ultimo_perfil": "texto"
+ }
+}

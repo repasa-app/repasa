@@ -16,6 +16,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATOS = os.path.join(RAIZ, "pruebas", "datos")
 TMP = tempfile.mkdtemp(prefix="repasa-pruebas-")
 os.environ["REPASA_CARPETA"] = os.path.join(TMP, "Repasa")
+os.environ["REPASA_DATOS"] = os.path.join(TMP, "Repasa", ".repasa")  # la config de nucleo (pieza), en la misma carpeta temporal
 os.environ["PRUEBA_TEMA_FALSO"] = os.path.join(DATOS, "independencia-de-chile.json")
 BIN_FALSO = os.path.join(TMP, "bin")
 os.makedirs(BIN_FALSO)
@@ -217,28 +218,62 @@ class Explicar(unittest.TestCase):
         self.assertFalse(correr("explicar.py", TEMA["id"], "p99", "")["ok"])
 
 
+class Piezas(unittest.TestCase):
+    """Repasa usa las piezas nucleo, ia e i18n de Pieza sin mover los datos de la familia."""
+
+    def test_app_json_respeta_la_carpeta_de_siempre(self):
+        import nucleo
+        a = nucleo.app()
+        self.assertEqual((a["id"], a["nombre"], a["datos"]), ("repasa", "Repasa", "visible"), "~/Repasa/.repasa, como siempre")
+        self.assertEqual(os.path.realpath(nucleo.carpeta_datos()), os.path.realpath(datos.INTERNO))
+        self.assertEqual(os.path.realpath(datos.RECURSOS), RAIZ)
+
+    def test_config_solo_lo_que_dice_app_json(self):
+        shutil.rmtree(datos.BASE, ignore_errors=True)
+        os.makedirs(datos.INTERNO)
+        with open(os.path.join(datos.INTERNO, "config.json"), "w", encoding="utf-8") as f:
+            json.dump({"ia": "codex", "idioma_ui": "fr", "bienvenida": True, "otra": "<b>x</b>", "ultimo_perfil": "martina"}, f)
+        c = datos.config()
+        self.assertEqual(c, {"ia": "codex", "idioma_ui": "", "bienvenida": True, "ultimo_perfil": "martina"})
+        self.assertEqual(stat.S_IMODE(os.stat(datos.BASE).st_mode), 0o700, "~/Repasa sigue solo para la cuenta de la persona")
+
+    def test_escribir_siempre_privado(self):
+        ruta = os.path.join(datos.BASE, "perfiles.json")
+        datos.escribir_json(ruta, [])
+        os.chmod(ruta, 0o644)
+        datos.escribir_json(ruta, [])
+        self.assertEqual(stat.S_IMODE(os.stat(ruta).st_mode), 0o600, "lo de los niños queda 0600 aunque antes fuera otra cosa")
+
+    def test_app_json_va_dentro_de_la_app(self):
+        with open(os.path.join(RAIZ, "herramientas", "empaquetar.sh"), encoding="utf-8") as f:
+            self.assertIn('cp "$RAIZ/app.json" "$CODIGO/app.json"', f.read())
+        with open(os.path.join(RAIZ, "piezas.json"), encoding="utf-8") as f:
+            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n"})
+
+
 class Seguridad(unittest.TestCase):
     """Content-Security-Policy de la interfaz y de la página pública (docs/), lo que recibe la IA y cómo se arma el HTML."""
 
     def _con_ia(self, id_ia, nombre, archivos=()):
-        """Corre ia.ejecutar_ia con un CLI falso que anota sus argumentos, su entorno y los archivos de su carpeta."""
+        """Corre ia.ejecutar (pieza «ia») con un CLI falso que anota sus argumentos, su entorno y los archivos de su carpeta."""
         import ia
         carpeta = tempfile.mkdtemp(dir=TMP)
         anotado = os.path.join(carpeta, "anotado.json")
         ruta = os.path.join(carpeta, nombre)
         with open(ruta, "w", encoding="utf-8") as f:
             f.write("#!" + sys.executable + "\nimport json, os, sys\n"
+                    "if '--help' in sys.argv: print('--strict-mcp-config --allowedTools --disallowedTools --tools --safe-mode --setting-sources'); sys.exit(0)\n"
                     f"json.dump({{'argv': sys.argv[1:], 'env': dict(os.environ), 'archivos': os.listdir('.')}}, open({anotado!r}, 'w'))\n"
                     "print('listo')\n")
         os.chmod(ruta, 0o755)
-        antes_path, antes_elegida = os.environ["PATH"], ia.elegida
+        antes_path = os.environ["PATH"]
         os.environ["PATH"] = carpeta + os.pathsep + antes_path
         os.environ["REPASA_SECRETO_PRUEBA"] = "no-debe-llegar"
-        ia.elegida = lambda: id_ia
+        ia._ayuda.clear()  # cada CLI falso responde su propio --help
         try:
-            r = ia.ejecutar_ia("PEDIDO-SECRETO de la familia", timeout=60, archivos=archivos)
+            r = ia.ejecutar("PEDIDO-SECRETO de la familia", ia=id_ia, timeout=60, archivos=archivos)
         finally:
-            os.environ["PATH"], ia.elegida = antes_path, antes_elegida
+            os.environ["PATH"] = antes_path
             del os.environ["REPASA_SECRETO_PRUEBA"]
         self.assertEqual(r.returncode, 0, r.stderr)
         with open(anotado, encoding="utf-8") as f:
@@ -252,14 +287,52 @@ class Seguridad(unittest.TestCase):
         self.assertEqual((x["env"].get("CLAUDE_CODE_DISABLE_CLAUDE_MDS"), x["env"].get("CLAUDE_CODE_DISABLE_AUTO_MEMORY")), ("1", "1"),
                          "Claude corre sin la memoria de la persona")
         self.assertEqual(x["argv"][x["argv"].index("--disallowedTools") + 1], "*", "sin material, ninguna herramienta")
+        self.assertIn("--safe-mode", x["argv"])
+        self.assertEqual(x["argv"][x["argv"].index("--setting-sources") + 1], "user", "nunca la configuración de un proyecto")
 
     def test_con_material_claude_solo_lee(self):
         x = self._con_ia("claude", "claude", archivos=[FOTO])
-        self.assertEqual(x["argv"][x["argv"].index("--allowedTools") + 1], "Read")
+        self.assertEqual(x["argv"][x["argv"].index("--allowedTools") + 1], "Read,Glob,Grep", "solo leer (las copias en la carpeta temporal)")
+        self.assertNotIn("--add-dir", x["argv"], "con material no se agrega ninguna carpeta: solo la temporal con las copias")
         prohibidas = x["argv"][x["argv"].index("--disallowedTools") + 1].split(",")
         for h in ("Bash", "Edit", "Write", "MultiEdit", "NotebookEdit", "WebFetch", "WebSearch", "Task"):
             self.assertIn(h, prohibidas)
         self.assertIn("material-1.jpg", x["archivos"])
+
+    def test_ia_corre_en_carpeta_temporal_y_sin_pedido_en_argumentos(self):
+        for id_ia, nombre in (("claude", "claude"), ("codex", "codex"), ("gemini", "agy")):
+            x = self._con_ia(id_ia, nombre, archivos=[FOTO])
+            self.assertFalse(any("PEDIDO-SECRETO" in a for a in x["argv"]), f"{id_ia}: el pedido nunca va en los argumentos")
+            self.assertTrue(any(a.startswith("material-1") for a in x["archivos"]), f"{id_ia}: ve la copia del material")
+            self.assertLessEqual(set(x["archivos"]), {"material-1.jpg", "instrucciones.md", "respuesta.txt"},
+                                 f"{id_ia}: corre en una carpeta temporal con solo las copias (nunca en ~/Repasa ni en el código)")
+
+    def test_probar_con_archivo_de_entrada(self):
+        """La app de Mac prueba la IA con `ia.py probar <entrada {ia}> <salida>` (pieza «ia»), nunca con la IA como argumento."""
+        r = correr("ia.py", "probar", self.entrada({"ia": "claude"}))
+        self.assertEqual(r, {"ia": "claude", "ok": True})
+        r = correr("ia.py", "probar", self.entrada({"ia": "otra"}))
+        self.assertEqual((r["ok"], r["codigo"]), (False, "desconocida"))
+        r = correr("ia.py", "probar", self.entrada({"ia": "codex"}), env={"PATH": BIN_FALSO + os.pathsep + "/usr/bin:/bin"})
+        self.assertEqual((r["ok"], r["codigo"]), (False, "no_instalada"), "sin el CLI, lo dice con su código")
+        self.assertIn("ChatGPT (Codex)", r["error"])
+
+    def test_ia_vieja_nunca_corre_sin_protecciones(self):
+        carpeta = tempfile.mkdtemp(dir=TMP)
+        marca = os.path.join(carpeta, "corrio")
+        with open(os.path.join(carpeta, "claude"), "w", encoding="utf-8") as f:
+            f.write(f"#!{sys.executable}\nimport sys\nif '--help' in sys.argv: print('-p --print'); sys.exit(0)\n"
+                    f"open({marca!r}, 'w').write('x'); print('listo')\n")
+        os.chmod(os.path.join(carpeta, "claude"), 0o755)
+        r = correr("ia.py", "probar", self.entrada({"ia": "claude"}), env={"PATH": carpeta + os.pathsep + "/usr/bin:/bin"})
+        self.assertEqual((r["ok"], r["codigo"]), (False, "actualizar"), "pide actualizarla en vez de correrla sin protecciones")
+        self.assertFalse(os.path.exists(marca), "un CLI que no conoce las protecciones nunca recibe el pedido")
+
+    def entrada(self, d):
+        ruta = os.path.join(TMP, "entrada-ia.json")
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(d, f)
+        return ruta
 
     def test_pedido_a_antigravity_va_en_archivo(self):
         x = self._con_ia("gemini", "agy")
@@ -267,23 +340,29 @@ class Seguridad(unittest.TestCase):
         self.assertIn("instrucciones.md", x["archivos"])
 
     def test_T_escapa_los_valores(self):
+        """T() y Thtml() son los de la pieza «i18n» (ui/i18n.js): T escapa la frase y sus valores; Thtml solo con HTML del código."""
         import re
-        js = open(os.path.join(RAIZ, "ui", "app.js"), encoding="utf-8").read()
+        with open(os.path.join(RAIZ, "ui", "app.js"), encoding="utf-8") as f:
+            js = f.read()
         if not shutil.which("node"):
             self.skipTest("falta node")
-        esc = re.search(r"^  const esc = .*;$", js, re.M).group(0)
-        t = re.search(r"^  function T\(plantilla, valores = \{\}\) \{.*?^  \}$", js, re.M | re.S).group(0)
-        th = re.search(r"^  function Thtml\(.*?^  \}$", js, re.M | re.S).group(0)
-        prueba = (f"const E = {{ idioma: 'es', textos: {{}} }};\n{esc}\n{t}\n{th}\n"
+        self.assertIn("const { T, Thtml, tr, frase } = i18n;", js, "app.js usa T/Thtml/tr/frase de la pieza, no unas propias")
+        self.assertNotRegex(js, r"function (T|Thtml|tr)\(", "nada de T/Thtml/tr propios: son los de ui/i18n.js")
+        with open(os.path.join(RAIZ, "ui", "index.html"), encoding="utf-8") as f:
+            html = f.read()
+        self.assertLess(html.index('<script src="i18n.js">'), html.index('<script src="app.js">'), "i18n.js se carga antes que app.js")
+        prueba = ("const { T, Thtml } = require(process.argv[1]).crear({ documento: {} });"
                   "console.log(T('¡Hola, {n}! **{x}**', { n: '<img src=x onerror=alert(1)>', x: 'a&b' }));"
                   "console.log(Thtml('¡Hola, {n}!', { n: '<span>Ana</span>' }));")
-        r = subprocess.run(["node", "-e", prueba], capture_output=True, text=True)
+        r = subprocess.run(["node", "-e", prueba, os.path.join(RAIZ, "ui", "i18n.js")], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(r.stdout.strip().splitlines(), ["¡Hola, &lt;img src=x onerror=alert(1)&gt;! <b>a&amp;b</b>", "¡Hola, <span>Ana</span>!"])
         self.assertNotRegex(js, r"esc\((T|frase)\(", "T ya escapa: no escapar dos veces")
         for m in re.finditer(r"Thtml\(", js):
-            if "function Thtml" not in js[m.start() - 9:m.end()]:
-                self.assertIn("esc(", js[m.end():js.index(")", js.index("}", m.end()))], "Thtml solo con lo de la persona pasado por esc()")
+            linea = js[js.rindex("\n", 0, m.start()) + 1:m.start()]
+            if linea.lstrip().startswith("//") or js[m.start() - 2:m.start()] == "{ ":
+                continue  # comentarios y la línea que la toma de la pieza
+            self.assertIn("esc(", js[m.end():js.index(")", js.index("}", m.end()))], "Thtml solo con lo de la persona pasado por esc()")
 
     def csp(self, html):
         import re

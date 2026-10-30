@@ -4,6 +4,10 @@ import json
 import os
 import sys
 
+if "--help" in sys.argv:
+    # Como un Claude Code al día: la pieza «ia» nunca corre un CLI que no conoce sus protecciones.
+    print("-p --print --strict-mcp-config --allowedTools --disallowedTools --tools --safe-mode --setting-sources")
+    sys.exit(0)
 pedido = sys.stdin.read()
 if "arma un tema de repaso" in pedido:
     hay_material = any(n.startswith("material-") for n in os.listdir("."))
