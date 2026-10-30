@@ -171,3 +171,7 @@ stores yet; build instructions in [`movil/README.md`](movil/README.md).
 **Try it** in your browser with made-up data: [live preview](https://repasa-app.github.io/repasa/demo/?idioma=en). Questions,
 ideas and topics for the catalog are welcome in [Discussions](https://github.com/repasa-app/repasa/discussions), in English or
 Spanish; see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+[![Hecho con Pieza](https://pieza-app.github.io/pieza/sello.svg)](https://pieza-app.github.io/pieza/) · Las piezas comunes (tu IA, idiomas, actualizaciones…) viven en [Pieza](https://github.com/pieza-app/pieza).
