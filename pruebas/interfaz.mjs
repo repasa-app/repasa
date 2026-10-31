@@ -207,11 +207,18 @@ async function nuevaPagina(opciones) {
   // Borrar una prueba pregunta antes; «Dejarla» no borra nada.
   await p.evaluate(() => window.Repasa._probar((E) => { E.nuevo = null; E.prueba = { ...E.pruebas[0] }; }));
   const antes = await p.evaluate(() => { let n; window.Repasa._probar((E) => { n = E.pruebas.length; }); return n; });
+  await p.click('[data-accion="borrar-prueba"]'); await p.waitForSelector('[data-pz-confirmar="no"]'); await p.waitForTimeout(50);
+  // Borrar no se deshace: el foco empieza en «Dejarla», así un Enter apurado no borra (pieza «componentes» 0.2).
+  const focoConfirmar = await p.evaluate(() => document.activeElement?.dataset?.pzConfirmar);
+  if (focoConfirmar !== "no") falla("en «¿Borrar esta prueba?» el foco no empieza en «Dejarla»: " + focoConfirmar);
+  await p.keyboard.press("Enter"); await p.waitForTimeout(50);
+  const trasEnter = await p.evaluate(() => { let n; window.Repasa._probar((E) => { n = E.pruebas.length; }); return n; });
+  if (trasEnter !== antes) falla("Enter en «¿Borrar esta prueba?» borró la prueba");
   await p.click('[data-accion="borrar-prueba"]'); await p.waitForSelector('[data-pz-confirmar="no"]');
   await p.keyboard.press("Escape"); await p.waitForTimeout(50);
   const quedan = await p.evaluate(() => { let n; window.Repasa._probar((E) => { n = E.pruebas.length; }); return n; });
   if (quedan !== antes || !(await p.$('[data-accion="borrar-prueba"]'))) falla("Esc en «¿Borrar esta prueba?» borró la prueba o cerró su diálogo");
-  else console.log("  ✓ Borrar una prueba pregunta antes; Esc no borra");
+  else console.log("  ✓ Borrar una prueba pregunta antes; el foco va a «Dejarla» y ni Enter ni Esc borran");
   await p.close();
 }
 

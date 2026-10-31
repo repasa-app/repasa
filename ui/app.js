@@ -311,7 +311,7 @@
           <small>${T("{p} preguntas · {c} conceptos · {t} tarjetas", { p: t.preguntas.length, c: t.conceptos.length, t: t.tarjetas.length })}</small></div>
         ${(n.avisos || []).map((x) => `<p class="nota" data-sin-traducir>${esc(tr(x))}</p>`).join("")}
         ${n.error ? `<p class="pz-error-texto" data-sin-traducir>${esc(mensaje(n.error))}</p>` : ""}`,
-        `<button class="pz-boton pz-izq" data-accion="otra-vez">${n.desde === "mano" ? "Corregir" : "Intentar de nuevo"}</button><button class="pz-boton" data-accion="cerrar">Cancelar</button><button class="pz-boton pz-principal" data-accion="guardar-tema" data-autofoco>Guardar tema</button>`);
+        `<button class="pz-boton pz-izq" data-accion="otra-vez">${n.desde === "mano" ? "Corregir" : "Intentar de nuevo"}</button><button class="pz-boton" data-accion="cerrar">Cancelar</button><button class="pz-boton pz-principal" data-accion="guardar-tema">Guardar tema</button>`);
     }
     const modos = MODOS_NUEVO.filter(([id]) => id !== "catalogo" || Array.isArray(E.catalogo));
     const pestanas = `<div class="pestanas modos" role="tablist">${modos.map(([id, nombre]) => `<button class="pestana" role="tab" data-modo="${id}" aria-selected="${n.modo === id}">${nombre}</button>`).join("")}</div>`;
@@ -375,22 +375,13 @@
       ${x.error ? `<p class="pz-error-texto" data-sin-traducir>${esc(x.error)}</p>` : ""}`,
         `<button class="pz-boton" data-accion="cerrar">Cancelar</button><button class="pz-boton pz-principal" data-accion="guardar-perfil">Guardar</button>`);
   }
-  /** La IA, en Para adultos y en la bienvenida. En el computador son las filas de la pieza «componentes» (probarIA {ia}, el error
-   *  traducido y «Cómo instalarla»). En el celular, las mismas clases y el mismo estado de la pieza, pero con lo propio del teléfono:
-   *  `detalle` dice por qué la IA no está lista y la del teléfono se puede revisar de nuevo (al activar Apple Intelligence o al bajar
-   *  Gemini Nano queda lista después). */
+  /** La IA, en Para adultos y en la bienvenida: las filas de la pieza «componentes» (probarIA {ia}, el error traducido, `detalle`
+   *  con por qué no está lista y «Revisar de nuevo»: la del teléfono queda lista al activar Apple Intelligence o al bajar Gemini
+   *  Nano). En el celular los nombres vienen en español desde el anfitrión («El computador de la casa») y se traducen aquí; no hay
+   *  guía para instalar una IA de computador. */
   function filasIA() {
     if (!MOVIL) return ui.filasIA({ ias: E.ias, elegida: E.config.ia, guia: ENLACES.guiaIA });
-    return `<div class="pz-filas">${E.ias.map((x) => {
-      const r = ui.ia.resultados[x.id], probando = !!ui.ia.probando[x.id], enUso = E.config.ia === x.id && x.instalada;
-      const reintentar = x.id === "telefono" && !x.instalada;
-      const estado = r && !r.ok ? `<small class="pz-error-texto" data-sin-traducir>${esc(tr(r.texto || r.error || "No respondió."))}</small>`
-        : !x.instalada ? `<small data-sin-traducir>${esc(tr(x.detalle || "No está instalada"))}</small>`
-          : `<small>${enUso ? "En uso" : "Lista en este teléfono"}</small>`;
-      const boton = x.instalada || reintentar
-        ? `<button class="pz-boton${enUso ? "" : " pz-principal"}" data-pz-probar-ia="${esc(x.id)}" ${probando ? "disabled" : ""}>${probando ? "Probando…" : reintentar ? "Revisar de nuevo" : enUso ? "Probar otra vez" : "Usar y probar"}</button>` : "";
-      return `<div class="pz-fila"><span class="pz-txt"><b data-sin-traducir>${esc(tr(x.nombre))}</b>${estado}</span>${r?.ok ? `<span class="pz-ok">Lista</span>` : ""}${boton}</div>`;
-    }).join("")}</div>`;
+    return ui.filasIA({ ias: E.ias.map((x) => ({ ...x, nombre: tr(x.nombre || x.id) })), elegida: E.config.ia });
   }
   function dialogoAdultos() {
     const avance = E.perfiles.map((pf) => {
@@ -430,22 +421,24 @@
       <div class="estado-copia" role="status">${estado}</div></div>`;
   }
   // Paso 0: el idioma, antes que cualquier otra cosa. Cada opción va escrita en su propio idioma (no se traduce), por eso el título
-  // bilingüe va armado aquí y no por T(). Es un diálogo de la pieza (mismas clases, aria-modal, foco adentro) que no se cierra.
+  // bilingüe va armado aquí y no por T(). Es un diálogo de la pieza (`envolver`: aria-modal, foco adentro) que no se cierra; el foco
+  // empieza en el idioma sugerido (data-autofoco), así Enter lo elige.
   const IDIOMAS = [["es", "Español", "Sugerido"], ["en", "English", "Suggested"]];
   function pasoIdioma(puntos) {
     const sugerido = E.config.idioma_ui || idiomaSistema();
-    return `<div class="pz-capa" data-pz-capa><div class="pz-dialogo bv" role="dialog" aria-modal="true" aria-labelledby="t-idioma" tabindex="-1" data-pz-sin-esc>${puntos}
+    return ui.envolver(`${puntos}
       <h2 id="t-idioma" class="titulo-idioma" tabindex="-1" data-sin-traducir><span lang="es">Elige tu idioma</span> <span class="sep">·</span> <span lang="en">Choose your language</span></h2>
       <div class="opciones-idioma" role="group" aria-labelledby="t-idioma" data-sin-traducir>${IDIOMAS.map(([codigo, nombre, marca], k) => `
         <button class="idioma-op ${codigo === sugerido ? "sugerido" : ""}" id="idioma-${codigo}" data-idioma="${codigo}" lang="${codigo}" aria-keyshortcuts="${k + 1}"${codigo === sugerido ? " data-autofoco" : ""}>
-          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div></div></div>`;
+          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div>`,
+      { id: "t-idioma", clase: "bv", sinEsc: true });
   }
   async function elegirIdioma(codigo) {
     if (!IDIOMAS.some(([c]) => c === codigo)) return;
     E.config.idioma_ui = codigo;
     host.enviar("config", { idioma_ui: codigo });
     await cargarIdioma(codigo);
-    E.bv = 1; pintar(); // el paso siguiente es otro diálogo: el foco va a su «Siguiente» (data-autofoco)
+    E.bv = 1; pintar(); // el paso siguiente es otro diálogo: el foco va a su título
     for (const [texto, o] of avisosEnEspera.splice(0)) toast(texto, o);
   }
   function bienvenida() {
@@ -459,16 +452,17 @@
     const puntos = `<div class="pasos-bv">${pasos.map((_, i) => `<i class="${i <= E.bv ? "hecho" : ""}"></i>`).join("")}</div>`;
     if (E.bv === 0) return pasoIdioma(puntos); // sin «Lo hago después»: elegir es un solo toque
     const ultimo = E.bv >= pasos.length - 1;
-    // Un id por paso: al avanzar, el foco va al botón principal del paso nuevo. Esc no la cierra (está «Lo hago después»).
-    return dlg(`t-bv-${E.bv}`, titulo, puntos + cuerpo,
+    // Un id por paso: al avanzar, el foco va al título del paso nuevo (el lector de pantalla lo anuncia). Los puntos de avance van
+    // antes del título (`antes`). Esc no la cierra (está «Lo hago después»).
+    return dlg(`t-bv-${E.bv}`, titulo, cuerpo,
       `<button class="pz-boton pz-izq" data-bv="${E.bv - 1}">Atrás</button><button class="pz-boton" data-accion="bv-fin">Lo hago después</button>
-        ${ultimo ? `<button class="pz-boton pz-principal" data-accion="bv-fin" data-autofoco>Empezar</button>` : `<button class="pz-boton pz-principal" data-bv="${E.bv + 1}" ${puede ? "data-autofoco" : "disabled"}>Siguiente</button>`}`,
-      { clase: "bv", cerrable: false, sinEsc: true });
+        ${ultimo ? `<button class="pz-boton pz-principal" data-accion="bv-fin">Empezar</button>` : `<button class="pz-boton pz-principal" data-bv="${E.bv + 1}" ${puede ? "" : "disabled"}>Siguiente</button>`}`,
+      { antes: puntos, clase: "bv", cerrable: false, sinEsc: true });
   }
   /** Un diálogo de Repasa con la pieza «componentes»: id del título, título (frase en español), cuerpo y botones del pie. */
   const dlg = (id, titulo, cuerpo, pie = "", o = {}) => ({ id, titulo, cuerpo, pie, ...o });
   function dialogos() {
-    if (E.bv === 0) return bienvenida();
+    if (E.bv === 0) return bienvenida(); // la pantalla del idioma ya viene envuelta
     const d = E.nuevo ? dialogoNuevoTema() : E.prueba ? dialogoPrueba() : E.perfilEdit ? dialogoPerfil()
       : E.bv !== null ? bienvenida() : E.adultos ? dialogoAdultos() : null;
     return d ? ui.dialogo(d) : "";
@@ -615,15 +609,13 @@
   });
 
   // ───────────── Lo que manda la app (queda en window.Repasa) ─────────────
-  // La app de Mac manda `detalle` con la versión y sus notas; la pieza las llama `notas`.
-  const conNotas = (r) => ({ ...r, notas: r?.notas ?? r?.detalle ?? "" });
   host.responder({
     async estado(e) {
       Object.assign(E, { hoy: e.hoy, perfiles: e.perfiles || [], temas: e.temas || [], progreso: e.progreso || {}, pruebas: e.pruebas || [], config: e.config || {},
         ias: e.ias || [], version: e.version || "", carpeta: e.carpeta || "", actualizacion: e.actualizacion || { hay: false },
         capacidades: e.capacidades || {}, catalogo: Array.isArray(e.catalogo) ? e.catalogo : null });
       tema.aplicar(tema.elegir({ config: E.config.tema }));
-      ui.act.disponible = E.actualizacion?.hay ? conNotas(E.actualizacion) : null;
+      ui.actualizacionDisponible(E.actualizacion?.hay ? E.actualizacion : null, { pintar: false }); // `detalle` (Mac) = notas
       if (E.perfil && !E.perfiles.some((p) => p.id === E.perfil)) E.perfil = null;
       if (!E.config.bienvenida && E.bv === null && !E.bvCerrada) E.bv = 0;
       await cargarIdioma();
@@ -645,7 +637,7 @@
     iaProbada: (r) => ui.iaProbada(r),
     copiaLista(r) { E.copia = r.ok ? { frase: "", estado: "guardada", cantidad: r.cantidad, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
     copiaTraida(r) { E.copia = r.ok ? { frase: "", estado: "traida", resumen: r.resumen, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
-    actualizacionRevisada: (r) => ui.actualizacionRevisada(conNotas(r)),
+    actualizacionRevisada: (r) => ui.actualizacionRevisada(r), // la app de Mac manda `detalle`: la pieza lo acepta
     actualizacionProgreso: (a) => ui.actualizacionProgreso(a),
     /** Vista previa y pruebas: `f(E, ui)` cambia el estado (también el de la pieza: ui.act, ui.ia) y se vuelve a pintar. */
     _probar(f) { f(E, ui, tema); pintar(); },

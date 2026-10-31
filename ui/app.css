@@ -15,11 +15,13 @@
   --lenguaje: #e5484d; --matematica: #2f5bea; --historia: #c27b12; --ciencias: #1f9d5a; --ingles: #8e4ec6; --biologia: #12a594; --quimica: #d6409f;
   --fisica: #0b84c6; --filosofia: #6e56cf; --artes: #e5484d; --tecnologia: #5b6472; --musica: #c2410c; --otro: #646b7d;
   font-size: 15px;
+  /* Lo que se toca (pieza «componentes»): 44 px también en escritorio y 48 en pantallas táctiles, para dedos chicos. */
+  --pz-boton-alto: 44px; --pz-tactil: 48px;
 }
 @supports not (color: light-dark(#000, #fff)) {
   :root { --cuadricula: rgba(70, 110, 200, .07); --destacador: #ffd84d; }
-  @media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) { --cuadricula: rgba(120, 150, 255, .05); --destacador: #f5c940; } }
-  :root[data-tema="oscuro"] { --cuadricula: rgba(120, 150, 255, .05); --destacador: #f5c940; }
+  @media (prefers-color-scheme: dark) { :root:not([data-pz-modo="claro"]) { --cuadricula: rgba(120, 150, 255, .05); --destacador: #f5c940; } }
+  :root[data-pz-modo="oscuro"] { --cuadricula: rgba(120, 150, 255, .05); --destacador: #f5c940; }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100vh; }
@@ -43,7 +45,7 @@ h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -.01em; }
 .icono:hover { background: var(--acento-suave); color: var(--texto); }
 
 /* Botones: los de la pieza «componentes» (.pz-boton), más grandes y con su «escalón» abajo, para dedos chicos. */
-.pz-boton { border-width: 2px; border-radius: 14px; padding: 10px 16px; min-height: 44px; font-weight: 750; gap: 8px; white-space: normal; text-align: center; box-shadow: 0 2px 0 var(--linea); }
+.pz-boton { border-width: 2px; border-radius: 14px; padding: 10px 16px; font-weight: 750; gap: 8px; text-align: center; box-shadow: 0 2px 0 var(--linea); }
 .pz-boton:hover { background: var(--panel); border-color: var(--texto-suave); }
 .pz-boton:active { transform: translateY(1px); box-shadow: none; }
 .pz-boton.pz-principal { border-color: transparent; box-shadow: 0 3px 0 color-mix(in srgb, var(--acento) 70%, #000); }
@@ -175,9 +177,6 @@ h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -.01em; }
 .pz-dialogo { background: var(--papel); border-width: 2px; border-radius: 24px; width: min(620px, 100%); max-height: 92vh; padding: 26px 28px; box-shadow: 0 30px 80px rgba(0, 0, 0, .25); }
 .pz-dialogo h2 { font-size: 22px; margin-bottom: 6px; }
 .pz-dialogo > p { margin: 0 0 16px; line-height: 1.55; }
-.pz-dialogo .pz-error-texto { color: var(--rojo); } /* un error se lee en rojo también dentro de un párrafo del diálogo */
-.pz-dialogo.bv { display: flex; flex-direction: column; }
-.pz-dialogo.bv .pasos-bv { order: -1; }
 .campo { display: grid; gap: 6px; margin-bottom: 14px; }
 .campo > span { font-weight: 750; font-size: 14px; }
 .campo small { color: var(--texto-suave); }
@@ -258,9 +257,7 @@ html[data-host="mac"] .barra { padding-left: 84px; }
   .pz-dialogo { border-radius: 24px 24px 0 0; max-height: 94vh; padding: 22px calc(18px + env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) calc(18px + env(safe-area-inset-left, 0px)); border-bottom: 0; }
   /* El pie queda pegado abajo, al alcance del pulgar, aunque el diálogo sea largo. */
   .pz-pie { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom, 0px)); background: var(--papel); margin: 16px 0 calc(-18px - env(safe-area-inset-bottom, 0px)); padding: 10px 0 calc(18px + env(safe-area-inset-bottom, 0px)); }
-  .pz-pie .pz-boton { min-height: 48px; }
   .pz-pie .pz-izq { margin-right: 0; }
-  .accion-inferior .pz-boton, .botones-foto .pz-boton { min-height: 52px; }
+  .accion-inferior, .botones-foto { --pz-boton-alto: 52px; }
 }
 
-.pz-dialogo .pz-seg { background: var(--fondo); } /* sobre el papel del diálogo, el selector se ve hundido */

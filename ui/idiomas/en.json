@@ -337,6 +337,8 @@
   "Se abrió GitHub: revisa y publica": "GitHub is open: review and post",
   "¿Borrar esta prueba?": "Delete this test?",
   "Los temas siguen aquí; solo se quita la fecha de la prueba.": "The topics stay here; only the test date is removed.",
-  "Dejarla": "Keep it"
+  "Dejarla": "Keep it",
+  "Detuviste a {ia}.": "You stopped {ia}.",
+  "Hay cambios nuevos en el código de {app}": "There are new changes in {app}'s code"
  }
 }

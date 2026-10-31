@@ -12,6 +12,10 @@ Lo que cambia para quien usa Repasa, en palabras simples. Las versiones anterior
   *You can now choose in «For grown-ups» whether Repasa looks light, dark or matches the system. The red and green of answers are
   easier to read, deleting a test asks first, Esc closes any window and «About» has «Send feedback» (opens GitHub with the message
   ready; never required).*
+- Al abrir una ventana, el lector de pantalla anuncia su título primero; al borrar una prueba, el botón elegido es «Dejarla», así un
+  Enter apurado no borra nada. En el celular, si la IA del teléfono no está lista, «Revisar de nuevo» la vuelve a buscar.
+  *When a window opens, the screen reader announces its title first; when deleting a test, «Keep it» is selected, so a hurried
+  Enter deletes nothing. On the phone, if the phone's AI isn't ready, «Check again» looks for it again.*
 - **Por dentro, piezas de Pieza:** la IA, los ajustes y los idiomas ahora usan las piezas compartidas de la familia (`nucleo`, `ia`,
   `i18n`). Al tocar «Usar», la IA se prueba con las mismas protecciones que cuando arma un tema, y los ajustes solo guardan lo que
   Repasa conoce. Tus temas y el avance de cada perfil siguen donde estaban.
