@@ -342,12 +342,6 @@
   "El archivo está dañado o se está copiando todavía. Prueba en un rato.": "The file is damaged or still being copied. Try again in a while.",
   "Este archivo viene de una versión más nueva de {app}. Actualiza la app.": "This file comes from a newer version of {app}. Update the app.",
   "Ese archivo no es una copia de {app}.": "That file isn't a {app} copy.",
-  "Ese archivo no es una copia de Repasa.": "That file isn't a Repasa copy.",
-  "Este archivo viene de una versión más nueva de Repasa. Actualiza la app.": "This file comes from a newer version of Repasa. Update the app.",
-  "Este equipo no puede cifrar.": "This device can't encrypt.",
-  "Muy corta": "Too short",
-  "Aceptable": "Acceptable",
-  "Buena": "Good",
-  "Muy buena": "Very good"
+  "Este equipo no puede cifrar.": "This device can't encrypt."
  }
 }

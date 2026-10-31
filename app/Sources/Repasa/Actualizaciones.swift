@@ -46,7 +46,8 @@ enum Actualizaciones {
     /// Revisa si hay versión nueva: (hay, detalle). Si no pudo consultar, detalle = sinConexion.
     static func revisar(_ fin: @escaping @MainActor (Bool, String) -> Void) {
         let terminar: @MainActor (Bool, String) -> Void = { hay, detalle in
-            disponible = ["hay": hay, "detalle": hay ? detalle : ""]
+            // desarrollo: las notas son los commits nuevos del checkout (la pieza «componentes» lo dice así solo con esta marca).
+            disponible = ["hay": hay, "detalle": hay ? detalle : "", "desarrollo": checkout != nil]
             fin(hay, detalle)
         }
         if let raiz = checkout {
@@ -85,7 +86,7 @@ enum Actualizaciones {
     /// Al abrir y cada 6 horas. Solo avisa si hay algo (sin volver a mandar todo el estado a la interfaz).
     static func revisarCadaRato() {
         let avisar: @MainActor (Bool, String) -> Void = { hay, detalle in
-            if hay { Ventana.shared.llamar("actualizacionRevisada", ["hay": true, "detalle": detalle]) }
+            if hay { Ventana.shared.llamar("actualizacionRevisada", ["hay": true, "detalle": detalle, "desarrollo": checkout != nil]) }
         }
         revisar(avisar)
         Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { _ in

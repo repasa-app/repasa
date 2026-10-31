@@ -18,6 +18,8 @@
   /* Lo que se toca (pieza «componentes»): 44 px también en escritorio y 48 en pantallas táctiles, para dedos chicos. */
   --pz-boton-alto: 44px; --pz-tactil: 48px;
 }
+/* Desde componentes 0.3 --pz-tactil solo sube los componentes de la pieza: en Repasa (dedos chicos) todos los botones y chips crecen. */
+@media (pointer: coarse), (max-width: 760px) { :root { --pz-boton-alto: var(--pz-tactil); --pz-chip-alto: var(--pz-tactil); } }
 @supports not (color: light-dark(#000, #fff)) {
   :root { --cuadricula: rgba(70, 110, 200, .07); --destacador: #ffd84d; }
   @media (prefers-color-scheme: dark) { :root:not([data-pz-modo="claro"]) { --cuadricula: rgba(120, 150, 255, .05); --destacador: #f5c940; } }

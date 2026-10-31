@@ -14,18 +14,19 @@ import { validar, esObjeto } from "./temas.js";
 import { perfilValido, pruebaValida, ID, ID_TEMA, EXT_MATERIAL } from "./datos.js";
 
 let pieza = null;
-/** La pieza «cifrado» con el contexto de Repasa. Errores: PiezaCifrado.ErrorCifrado con `codigo` (frase, danado, no_es, version…). */
+/** La pieza «cifrado» con el contexto y el formato de Repasa ({"repasa": "copia", "v": 1, …}). Errores: PiezaCifrado.ErrorCifrado
+ *  con `codigo` (frase, danado, no_es, version…), `plantilla`/`valores` y `frase` ya rellena. */
 export function cifrado() {
   if (pieza) return pieza;
   const P = globalThis.PiezaCifrado;
   if (!P) throw new Error("Falta ui/cifrado.js (pieza «cifrado») antes del motor.");
-  return (pieza = P.crear({ app: "Repasa", contexto: "repasa" }));
+  // Sin tope propio de tamaño: una copia con muchas fotos puede pasar los 100 MB de la pieza (antes no había tope).
+  return (pieza = P.crear({ app: "Repasa", contexto: "repasa", claveVersion: "v", maximo: 1024 * 1024 * 1024 }));
 }
-/** Un error de la pieza con su frase en español (la interfaz la traduce): «no_es», «danado», «version»… */
-export const errorCifrado = (codigo) => new globalThis.PiezaCifrado.ErrorCifrado(codigo, { app: "Repasa" });
+/** Un error de la pieza con la marca de Repasa: «no_es», «danado», «version»… */
+export const errorCifrado = (codigo) => cifrado().error(codigo);
 
 const AAD = "repasa:copia:v1";
-const VERSION = 1;
 /** Solo estas rutas entran y salen de una copia (nada de .repasa/: los ajustes son de cada teléfono). */
 export const RUTA_PERMITIDA = /^(perfiles\.json|pruebas\.json|progreso\/[a-z0-9-]{1,80}\.json|temas\/[a-z0-9-]{2,60}\/tema\.json|temas\/[a-z0-9-]{2,60}\/material\/material-[0-9]{1,3}\.(jpg|jpeg|png|webp|heic|gif|pdf))$/;
 
@@ -51,26 +52,18 @@ export async function armarCopia(almacen, frase, hoy, avance = () => {}) {
     avance(i + 1, rutas.length);
     const json = ruta.endsWith(".json");
     const contenido = json ? await almacen.leerJSON(ruta, null) : await almacen.a.leerBase64(ruta);
-    if (contenido == null) continue;
-    archivos.push(await C.cifrarJSON(llaves, { ruta, tipo: json ? "json" : "base64", contenido }, AAD));
+    if (contenido != null) archivos.push({ ruta, tipo: json ? "json" : "base64", contenido });
   }
-  return { texto: JSON.stringify({ repasa: "copia", v: VERSION, creada: hoy, ...cabecera, archivos }), cantidad: archivos.length };
+  const texto = await C.armarVarios(archivos, cabecera, llaves, { aad: AAD, extra: { creada: hoy } });
+  return { texto, cantidad: archivos.length };
 }
 
 /** Abre una copia con la frase: lista de {ruta, tipo, contenido}, solo con rutas permitidas. Lanza ErrorCifrado: `frase` (no es
  *  la correcta), `no_es` (no es una copia de Repasa), `version` (de una Repasa más nueva) o `danado`. */
 export async function abrirCopia(texto, frase) {
-  const C = cifrado();
-  let c;
-  try { c = JSON.parse(texto); } catch { throw errorCifrado(typeof texto === "string" && texto.trimStart().startsWith('{"repasa":"copia"') ? "danado" : "no_es"); }
-  if (!esObjeto(c) || c.repasa !== "copia") throw errorCifrado("no_es");
-  if (!Number.isInteger(c.v) || c.v < 1) throw errorCifrado("danado");
-  if (c.v > VERSION) throw errorCifrado("version");
-  if (!Array.isArray(c.archivos)) throw errorCifrado("danado");
-  const llaves = await C.abrirCabecera(c, { frase });
+  const { contenidos } = await cifrado().abrirVarios(texto, { frase }, { aad: AAD });
   const r = [];
-  for (const sobre of c.archivos) {
-    const e = await C.descifrarJSON(llaves, sobre, AAD);
+  for (const e of contenidos) {
     if (!esObjeto(e) || typeof e.ruta !== "string" || !RUTA_PERMITIDA.test(e.ruta)) continue;
     if (e.tipo === "json" || (e.tipo === "base64" && typeof e.contenido === "string")) r.push({ ruta: e.ruta, tipo: e.tipo, contenido: e.contenido });
   }
