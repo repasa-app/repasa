@@ -4,14 +4,17 @@
 // La lógica del repaso (cajas, qué preguntar hoy, corregir, puntos y racha) vive aquí y se prueba con pruebas/casos.json.
 (() => {
   "use strict";
-  const HOST = window.REPASA_HOST || "web";
-  const MOVIL = HOST === "movil"; // en el celular: textos de «este teléfono», cámara, copia cifrada y sin carpeta ni actualizaciones
-  document.documentElement.dataset.host = HOST;
+  // ───────────── Puente con la app: pieza «host-ui» (ui/host.js) ─────────────
+  // Mac (webkit.messageHandlers.repasa), celular (window.repasaMovil, de movil/host/) o el navegador (simular, más abajo). Deja
+  // <html data-host> puesto; las respuestas de la app quedan en window.Repasa (host.responder, al final).
+  const host = window.PiezaHost.crearHost({ nombre: "repasa", global: "Repasa", simular: (accion, d, c) => simular(accion, d, c) });
+  const HOST = host.plataforma;
+  const MOVIL = host.esMovil; // en el celular: textos de «este teléfono», cámara, copia cifrada y sin carpeta ni actualizaciones
   const E = {
     hoy: "", perfiles: [], temas: [], progreso: {}, pruebas: [], config: {}, ias: [], version: "", carpeta: "", actualizacion: { hay: false },
     perfil: null, vista: "inicio", temaSel: null, pestana: "resumen", volteadas: {}, sesion: null, nuevo: null, prueba: null, perfilEdit: null,
-    adultos: false, probando: {}, resultadoIA: {}, bv: null, bvCerrada: false, buscando: null, idioma: "es",
-    capacidades: {}, catalogo: null, copia: { frase: "", estado: "", error: "" }, act: null,
+    adultos: false, bv: null, bvCerrada: false, idioma: "es",
+    capacidades: {}, catalogo: null, copia: { frase: "", estado: "", error: "" },
   };
   const ENLACES = { sitio: "https://repasa-app.github.io/repasa/", codigo: "https://github.com/repasa-app/repasa",
     comunidad: "https://github.com/repasa-app/repasa/discussions", guiaIA: "https://repasa-app.github.io/repasa/ia.html" };
@@ -22,17 +25,6 @@
   const AVATARES = ["🦊", "🐼", "🐨", "🐸", "🦁", "🐯", "🐙", "🦄", "🐢", "🐧", "🦉", "🐶", "🐱", "🦖"];
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-  // ───────────── Puente con la app ─────────────
-  const host = {
-    enviar(accion, datos = {}) {
-      const msg = { accion, datos };
-      if (window.webkit?.messageHandlers?.repasa) return window.webkit.messageHandlers.repasa.postMessage(msg);
-      if (window.repasaEscritorio) return window.repasaEscritorio.enviar(msg);
-      if (window.repasaMovil) return window.repasaMovil.enviar(msg);
-      return simular(accion, datos);
-    },
-  };
 
   // ───────────── Idiomas: pieza «i18n» (ui/i18n.js, de Pieza; las claves son el texto en español) ─────────────
   // T() escapa la frase y sus valores (un nombre o un título nunca entra como HTML); Thtml() es SOLO para HTML que arma el propio
@@ -47,6 +39,22 @@
     await i18n.cargar(i18n.elegir({ elegido, config: E.config.idioma_ui }));
     E.idioma = i18n.idioma;
   }
+
+  // ───────────── Tema y componentes: piezas «tema» (ui/tema.js) y «componentes» (ui/componentes.js) ─────────────
+  // Sistema, claro u oscuro (Para adultos → General). Diálogos con el foco adentro y Esc, avisos en cola, las filas de la IA y de
+  // las actualizaciones. `mantener` es el pintar de Repasa (conserva el scroll); `cerrar` es Esc, el velo o ✕ sobre sus diálogos.
+  const tema = window.PiezaTema.crear({ guardar: (v) => { E.config.tema = v; host.enviar("config", { tema: v }); } });
+  const avisosEnEspera = [];
+  const ui = window.PiezaComponentes.crear({
+    i18n, host, app: "Repasa", repo: "repasa-app/repasa",
+    pintar: () => mantener(),
+    cerrar: () => cerrarDialogo(),
+    // La app nativa ya guardó la IA que probó bien (Config / almacén del teléfono): aquí solo se anota.
+    elegirIA: (id) => { E.config.ia = id; },
+    // Mientras se elige el idioma no se muestra nada más: los avisos esperan y salen ya en el idioma elegido.
+    retener: (texto, o) => { if (E.bv !== 0) return false; avisosEnEspera.push([texto, o]); return true; },
+  });
+  const toast = (texto, o) => ui.aviso(texto, o);
 
   // ───────────── Lógica del repaso (casos en pruebas/casos.json) ─────────────
   const INTERVALOS = [0, 1, 3, 7, 14, 30]; // días hasta volver a preguntar, según la caja (1 a 5)
@@ -101,7 +109,6 @@
   const temaPorId = (id) => E.temas.find((t) => t.id === id);
   const color = (ramo) => `var(--${RAMOS[ramo] ? ramo : "otro"})`;
   const nombreIA = () => tr(E.ias.find((i) => i.id === E.config.ia)?.nombre || "tu IA");
-  function toast(texto) { const t = $("#toast"); t.textContent = tr(texto); t.classList.add("visible"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("visible"), 2200); }
   function fechaLarga(f) { const [a, m, d] = f.split("-").map(Number); return new Date(a, m - 1, d).toLocaleDateString(E.idioma === "es" ? "es-CL" : "en-US", { weekday: "long", day: "numeric", month: "long" }); }
   const guardarProgreso = () => host.enviar("guardarProgreso", { perfil: E.perfil, progreso: prog() });
   const elegir = (lista, semilla) => lista[Math.abs([...semilla].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % lista.length];
@@ -111,10 +118,10 @@
     const raiz = $("#app"), activo = document.activeElement?.id, y = window.scrollY;
     // Primer uso: mientras se elige el idioma no se muestra nada más (ni perfiles ni ajustes), para no hablarle en otro idioma.
     const soloIdioma = E.bv === 0;
-    raiz.innerHTML = `${barra(soloIdioma)}<main>${soloIdioma ? "" : principal()}</main>${dialogos()}`;
+    raiz.innerHTML = `${barra(soloIdioma)}<main>${soloIdioma ? "" : principal()}</main>${dialogos()}${ui.capas()}`;
     traducirDOM(raiz);
     if (activo) document.getElementById(activo)?.focus();
-    if (soloIdioma && !document.activeElement?.closest?.(".dialogo")) $(".idioma-op.sugerido")?.focus();
+    ui.despuesDePintar(); // el foco entra al diálogo que se abrió, queda adentro y vuelve a donde estaba al cerrarlo
     if (E._mantener) window.scrollTo(0, y); else window.scrollTo(0, 0);
     E._mantener = false;
   }
@@ -152,16 +159,16 @@
     const tarjetaHoy = `<div class="repaso-hoy"><span class="deco" aria-hidden="true">✏️</span><h2>Tu repaso de hoy</h2>
       ${hoyClaves.length ? `<div class="grande" data-sin-traducir>${T(hoyClaves.length === 1 ? "1 pregunta" : "{n} preguntas", { n: hoyClaves.length })}</div>
         <p>${frase("Unos {m} minutos. ¡Tú puedes!", { m: Math.max(2, Math.round(hoyClaves.length * 0.6)) })}</p>
-        <button class="boton grande" data-accion="empezar">Empezar ▶</button>`
+        <button class="pz-boton grande" data-accion="empezar">Empezar ▶</button>`
         : temas.length ? `<div class="grande">¡Todo al día! 🎉</div><p>Vuelve mañana o practica un tema que quieras.</p>`
-          : `<div class="grande">Agrega tu primer tema</div><p>Saca una foto a tu cuaderno y Repasa arma las preguntas.</p><button class="boton grande" data-accion="nuevo-tema">＋ Nuevo tema</button>`}</div>`;
+          : `<div class="grande">Agrega tu primer tema</div><p>Saca una foto a tu cuaderno y Repasa arma las preguntas.</p><button class="pz-boton grande" data-accion="nuevo-tema">＋ Nuevo tema</button>`}</div>`;
     const tarjetaPrueba = prueba
-      ? `<div class="prueba-prox"><h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--suave)">Próxima prueba</h2>
+      ? `<div class="prueba-prox"><h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--texto-suave)">Próxima prueba</h2>
           <div class="dias" data-sin-traducir>${(() => { const d = diasEntre(E.hoy, prueba.fecha); return d === 0 ? T("¡Hoy!") : d === 1 ? T("Mañana") : `${d} <small>${T("días")}</small>`; })()}</div>
           <p data-sin-traducir>${esc(tr(RAMOS[prueba.ramo] || ""))} · ${esc(fechaLarga(prueba.fecha))}</p>
-          <button class="boton" data-accion="editar-prueba" data-prueba="${esc(prueba.id)}">Cambiar</button></div>`
-      : `<div class="prueba-prox"><h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--suave)">¿Tienes prueba?</h2>
-          <p style="margin-top:8px">Dime cuándo y te preparo un repaso para llegar listo.</p><button class="boton" data-accion="nueva-prueba">📅 Agregar prueba</button></div>`;
+          <button class="pz-boton" data-accion="editar-prueba" data-prueba="${esc(prueba.id)}">Cambiar</button></div>`
+      : `<div class="prueba-prox"><h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--texto-suave)">¿Tienes prueba?</h2>
+          <p style="margin-top:8px">Dime cuándo y te preparo un repaso para llegar listo.</p><button class="pz-boton" data-accion="nueva-prueba">📅 Agregar prueba</button></div>`;
     const porRamo = {};
     for (const t of temas) (porRamo[t.ramo] ||= []).push(t);
     const tarjetasTema = temas.map((t) => `<button class="tema" data-tema="${esc(t.id)}" style="--c:${color(t.ramo)}">
@@ -174,7 +181,7 @@
         <div class="cifra"><b data-sin-traducir>✅ ${esc(dominadas)}</b><small>preguntas dominadas</small></div></div>
       <div class="seccion-titulo"><h2>Mis temas</h2></div>
       <div class="rejilla-temas">${tarjetasTema}<button class="tema nuevo" data-accion="nuevo-tema"><span style="font-size:28px" aria-hidden="true">📸</span><b>Nuevo tema</b><small>Foto del cuaderno, guía o texto</small></button></div>
-      ${temas.length ? `<div class="accion-inferior"><button class="boton principal grande" data-accion="nuevo-tema">📸 Nuevo tema</button></div>` : ""}</div>`;
+      ${temas.length ? `<div class="accion-inferior"><button class="pz-boton pz-principal grande" data-accion="nuevo-tema">📸 Nuevo tema</button></div>` : ""}</div>`;
   }
 
   const PESTANAS = [["resumen", "Explicado fácil"], ["conceptos", "Conceptos"], ["tarjetas", "Tarjetas"], ["material", "Material"]];
@@ -187,10 +194,10 @@
     else if (E.pestana === "material") cuerpo = `<div class="tarjeta">${(t.fuente || []).length ? `<div class="material">${(t.fuente || []).filter((f) => /\.(jpe?g|png|webp|gif)$/i.test(f)).map((f) => `<img src="${esc(rutaMaterial(t, f))}" alt="${esc(tr("Material del tema"))}">`).join("")}</div>
       <p class="nota">${frase(MOVIL ? "{n} fotos guardadas en este teléfono." : "{n} archivos guardados en tu computador.", { n: t.fuente.length })}</p>` : `<p class="nota" style="margin:0">Este tema no tiene fotos ni archivos: vino del catálogo o se escribió a mano.</p>`}</div>`;
     else cuerpo = `<div class="tarjeta"><p class="resumen" data-sin-traducir style="margin:0">${esc(t.resumen)}</p></div>`;
-    return `<div class="contenido"><button class="boton sutil" data-accion="volver" style="margin:4px 0 8px">← <span>Volver</span></button>
+    return `<div class="contenido"><button class="pz-boton pz-plano" data-accion="volver" style="margin:4px 0 8px">← <span>Volver</span></button>
       <div class="cab-tema" style="--c:${color(t.ramo)}"><div><span class="ramo" data-sin-traducir>${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo]))} · ${esc(tr(CURSOS[t.curso]))}</span><h1 data-sin-traducir>${esc(t.titulo)}</h1>
         <p class="nota" data-sin-traducir>${T("{n} preguntas · {d} % dominado", { n: t.preguntas.length, d: dominio(t, p) })}</p></div>
-        <div class="acciones"><button class="boton principal grande" data-practicar="${esc(t.id)}">Practicar ▶</button></div></div>
+        <div class="acciones"><button class="pz-boton pz-principal grande" data-practicar="${esc(t.id)}">Practicar ▶</button></div></div>
       <div class="pestanas" role="tablist">${PESTANAS.map(([id, n]) => `<button class="pestana" role="tab" data-pestana="${id}" aria-selected="${E.pestana === id}">${n}</button>`).join("")}</div>${cuerpo}</div>`;
   }
   const rutaMaterial = (t, f) => (HOST === "web" ? `demo/${f}` : MOVIL ? window.repasaMovil?.rutaMaterial?.(t, f) || ""
@@ -215,14 +222,14 @@
       }).join("")}</div>`;
     } else {
       opciones = `<form class="completar" data-form-completar><input id="respuesta" class="${respondida ? (s.correcta ? "bien" : "mal") : ""}" autocomplete="off" placeholder="Escribe tu respuesta" value="${esc(respondida ? r : "")}" ${respondida ? "disabled" : ""} aria-label="Tu respuesta" data-sin-traducir>
-        ${respondida ? "" : `<button class="boton principal" type="submit">Revisar</button>`}</form>`;
+        ${respondida ? "" : `<button class="pz-boton pz-principal" type="submit">Revisar</button>`}</form>`;
     }
     const correcta = p.tipo === "alternativas" ? p.opciones[p.correcta] : p.tipo === "vf" ? tr(p.correcta ? "Verdadero" : "Falso") : p.correcta[0];
     const retro = !respondida ? "" : `<div class="retro ${s.correcta ? "bien" : "mal"}" role="status"><b data-sin-traducir>${esc(tr(s.correcta ? elegir(BIEN, s.claves[s.i]) : elegir(CASI, s.claves[s.i])))}</b>
       ${s.correcta ? "" : frase("La respuesta es: **{r}**.", { r: correcta }, "div")}<span data-sin-traducir>${esc(p.explicacion)}</span>
       ${s.explicacion ? `<div class="otra" data-sin-traducir>${s.explicacion === "cargando" ? T("{ia} está pensando otra forma de explicarlo…", { ia: nombreIA() }) : esc(s.explicacion)}</div>` : ""}</div>
-      <div class="acciones-pregunta">${!s.correcta && !s.explicacion ? `<button class="boton" data-accion="no-entendi">🤔 <span>No entendí, explícamelo de otra forma</span></button>` : ""}
-        <button class="boton principal grande der" data-accion="siguiente" id="siguiente">${s.i + 1 < s.claves.length ? "Siguiente →" : "Terminar 🎉"}</button></div>`;
+      <div class="acciones-pregunta">${!s.correcta && !s.explicacion ? `<button class="pz-boton" data-accion="no-entendi">🤔 <span>No entendí, explícamelo de otra forma</span></button>` : ""}
+        <button class="pz-boton pz-principal grande der" data-accion="siguiente" id="siguiente">${s.i + 1 < s.claves.length ? "Siguiente →" : "Terminar 🎉"}</button></div>`;
     return `<div class="sesion"><div class="progreso-sesion"><button class="icono" data-accion="salir-sesion" title="Salir" aria-label="Salir">✕</button>
         <div class="barra-prog" role="progressbar" aria-valuemin="0" aria-valuemax="${s.claves.length}" aria-valuenow="${s.i}"><i style="width:${(s.i + (respondida ? 1 : 0)) / s.claves.length * 100}%"></i></div>
         <span class="marcador" data-sin-traducir>${esc(s.i + 1)}/${esc(s.claves.length)}</span></div>
@@ -258,7 +265,7 @@
     return `<div class="sesion fin"><div class="emoji" aria-hidden="true">${emoji}</div><h1>${titulo}</h1>
       ${frase("Acertaste {a} de {n}. Las que fallaste vuelven pronto para que las aprendas.", { a: s.aciertos, n: s.claves.length }, "p")}
       <div class="premios"><div class="premio"><b data-sin-traducir>+${esc(s.puntos)}</b><small>puntos</small></div><div class="premio"><b data-sin-traducir>🔥 ${esc(prog().racha)}</b><small>días seguidos</small></div></div>
-      <button class="boton principal grande" data-accion="cerrar-sesion">Volver al inicio</button></div>`;
+      <button class="pz-boton pz-principal grande" data-accion="cerrar-sesion">Volver al inicio</button></div>`;
   }
   function confeti() {
     const c = document.createElement("div"); c.className = "confeti"; c.setAttribute("aria-hidden", "true");
@@ -293,32 +300,33 @@
       const av = n.avance;
       const paso = !av ? "" : av.texto === "leer" ? frase("Leyendo la foto {a} de {n}…", { a: av.paso, n: av.total }, "p")
         : frase("Escribiendo tu repaso: paso {a} de {n}…", { a: av.paso, n: av.total }, "p");
-      return `<h2 id="t-d">Armando tu repaso…</h2>${frase("{ia} está leyendo tu material y escribiendo las preguntas. Puede tomar un minuto.", { ia }, "p")}${paso}<div class="barra-prog-d"><i></i></div>`;
+      // Mientras la IA trabaja no se puede cerrar (ni con Esc ni con el velo): cerrarlo dejaría el tema a medias.
+      return dlg("t-creando", "Armando tu repaso…", `${frase("{ia} está leyendo tu material y escribiendo las preguntas. Puede tomar un minuto.", { ia }, "p")}${paso}<div class="barra-prog-d"><i></i></div>`, "", { cerrable: false, sinEsc: true });
     }
     if (n.paso === "vista") {
       const t = n.tema;
-      return `<h2 id="t-d">¡Listo! Revisa tu tema</h2><p>Si algo no calza con tu cuaderno, vuelve a intentarlo. Nada se guarda hasta que digas que sí.</p>
+      return dlg("t-vista", "¡Listo! Revisa tu tema", `<p>Si algo no calza con tu cuaderno, vuelve a intentarlo. Nada se guarda hasta que digas que sí.</p>
         <div class="vista-tema" style="--c:${color(t.ramo)}" data-sin-traducir><span class="ramo" style="color:var(--c);font-weight:800;font-size:12.5px">${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo]))}</span><b>${esc(t.titulo)}</b>
-          <p style="margin:6px 0;color:var(--suave);line-height:1.5">${esc(t.resumen.slice(0, 260))}${t.resumen.length > 260 ? "…" : ""}</p>
+          <p style="margin:6px 0;color:var(--texto-suave);line-height:1.5">${esc(t.resumen.slice(0, 260))}${t.resumen.length > 260 ? "…" : ""}</p>
           <small>${T("{p} preguntas · {c} conceptos · {t} tarjetas", { p: t.preguntas.length, c: t.conceptos.length, t: t.tarjetas.length })}</small></div>
         ${(n.avisos || []).map((x) => `<p class="nota" data-sin-traducir>${esc(tr(x))}</p>`).join("")}
-        ${n.error ? `<p class="error-txt" data-sin-traducir>${esc(mensaje(n.error))}</p>` : ""}
-        <div class="pie-dialogo"><button class="boton izq" data-accion="otra-vez">${n.desde === "mano" ? "Corregir" : "Intentar de nuevo"}</button><button class="boton" data-accion="cerrar">Cancelar</button><button class="boton principal" data-accion="guardar-tema">Guardar tema</button></div>`;
+        ${n.error ? `<p class="pz-error-texto" data-sin-traducir>${esc(mensaje(n.error))}</p>` : ""}`,
+        `<button class="pz-boton pz-izq" data-accion="otra-vez">${n.desde === "mano" ? "Corregir" : "Intentar de nuevo"}</button><button class="pz-boton" data-accion="cerrar">Cancelar</button><button class="pz-boton pz-principal" data-accion="guardar-tema" data-autofoco>Guardar tema</button>`);
     }
     const modos = MODOS_NUEVO.filter(([id]) => id !== "catalogo" || Array.isArray(E.catalogo));
     const pestanas = `<div class="pestanas modos" role="tablist">${modos.map(([id, nombre]) => `<button class="pestana" role="tab" data-modo="${id}" aria-selected="${n.modo === id}">${nombre}</button>`).join("")}</div>`;
-    const cancelar = `<button class="boton" data-accion="cerrar">Cancelar</button>`;
+    const cancelar = `<button class="pz-boton" data-accion="cerrar">Cancelar</button>`;
     if (n.modo === "catalogo") {
       const lista = (E.catalogo || []).filter((t) => !temaPorId(t.id));
-      return `<h2 id="t-d">Nuevo tema</h2>${pestanas}<p>Temas de ejemplo revisados a mano, listos para estudiar.</p>
-        <div class="seccion">${lista.map((t) => `<div class="fila"><div class="txt"><b data-sin-traducir>${esc(t.titulo)}</b><small data-sin-traducir>${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo] || ""))} · ${esc(tr(CURSOS[t.curso] || ""))}</small></div>
-          <button class="boton" data-catalogo="${esc(t.id)}" ${n.agregando ? "disabled" : ""}>${n.agregando === t.id ? "Agregando…" : "Agregar"}</button></div>`).join("") || `<p class="nota">Ya tienes todos los temas del catálogo.</p>`}</div>
-        ${n.error ? `<p class="error-txt" data-sin-traducir>${esc(mensaje(n.error))}</p>` : ""}
-        <div class="pie-dialogo">${cancelar}</div>`;
+      return dlg("t-nuevo", "Nuevo tema", `${pestanas}<p>Temas de ejemplo revisados a mano, listos para estudiar.</p>
+        <div class="seccion">${lista.map((t) => `<div class="pz-fila"><div class="pz-txt"><b data-sin-traducir>${esc(t.titulo)}</b><small data-sin-traducir>${EMOJI_RAMO[t.ramo] || "📝"} ${esc(tr(RAMOS[t.ramo] || ""))} · ${esc(tr(CURSOS[t.curso] || ""))}</small></div>
+          <button class="pz-boton" data-catalogo="${esc(t.id)}" ${n.agregando ? "disabled" : ""}>${n.agregando === t.id ? "Agregando…" : "Agregar"}</button></div>`).join("") || `<p class="nota">Ya tienes todos los temas del catálogo.</p>`}</div>
+        ${n.error ? `<p class="pz-error-texto" data-sin-traducir>${esc(mensaje(n.error))}</p>` : ""}`,
+        `${cancelar}`);
     }
     if (n.modo === "mano") {
       const m = n.mano, ej = (x) => esc(x[E.idioma] || x.es);
-      return `<h2 id="t-d">Nuevo tema</h2>${pestanas}<p>Escribe tú las preguntas, sin IA. Repasa arma el tema y lo revisa antes de guardarlo.</p>
+      return dlg("t-nuevo", "Nuevo tema", `${pestanas}<p>Escribe tú las preguntas, sin IA. Repasa arma el tema y lo revisa antes de guardarlo.</p>
         <label class="campo"><span>Título</span><input class="texto" id="mano-titulo" maxlength="80" value="${esc(m.titulo)}" data-sin-traducir></label>
         <div class="dos"><label class="campo"><span>Ramo</span><select id="mano-ramo">${Object.entries(RAMOS).map(([k, v]) => `<option value="${k}" ${m.ramo === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
           <label class="campo"><span>Curso</span><select id="mano-curso">${Object.entries(CURSOS).map(([k, v]) => `<option value="${k}" ${m.curso === k ? "selected" : ""}>${v}</option>`).join("")}</select></label></div>
@@ -326,102 +334,91 @@
           <small>Una pregunta por bloque, separadas por una línea en blanco. * marca la correcta, - las incorrectas y > la explicación. Con ___ es para completar.</small></label>
         <label class="campo"><span>Explicado fácil (opcional)</span><textarea id="mano-resumen" rows="2" data-sin-traducir>${esc(m.resumen)}</textarea></label>
         <label class="campo"><span>Conceptos (opcional)</span><textarea id="mano-conceptos" rows="2" placeholder="${ej(EJEMPLO_CONCEPTOS)}" data-sin-traducir>${esc(m.conceptos)}</textarea><small>Uno por línea: «Término: definición». También se vuelven tarjetas.</small></label>
-        ${n.problemas?.length ? `<ul class="problemas">${n.problemas.slice(0, 6).map((x) => `<li data-sin-traducir>${problemaLegible(x)}</li>`).join("")}</ul>` : n.error ? `<p class="error-txt" data-sin-traducir>${esc(tr(n.error))}</p>` : ""}
-        <div class="pie-dialogo">${cancelar}<button class="boton principal" data-accion="revisar-a-mano">Revisar tema</button></div>`;
+        ${n.problemas?.length ? `<ul class="problemas">${n.problemas.slice(0, 6).map((x) => `<li data-sin-traducir>${problemaLegible(x)}</li>`).join("")}</ul>` : n.error ? `<p class="pz-error-texto" data-sin-traducir>${esc(tr(n.error))}</p>` : ""}`,
+        `${cancelar}<button class="pz-boton pz-principal" data-accion="revisar-a-mano">Revisar tema</button>`);
     }
     if (E.capacidades.ia === false) {
-      return `<h2 id="t-d">Nuevo tema</h2>${pestanas}<div class="aviso-ia" role="note"><b>Este teléfono no tiene IA propia todavía.</b>
+      return dlg("t-nuevo", "Nuevo tema", `${pestanas}<div class="aviso-ia" role="note"><b>Este teléfono no tiene IA propia todavía.</b>
         ${E.capacidades.iaDetalle ? `<span data-sin-traducir>${esc(tr(E.capacidades.iaDetalle))}</span>` : ""} <span>Igual puedes escribir el tema a mano o elegir uno del catálogo.</span></div>
-        <div class="botones-foto"><button class="boton principal" data-modo="mano">✍️ Escribir a mano</button>${Array.isArray(E.catalogo) ? `<button class="boton" data-modo="catalogo">📚 Ver el catálogo</button>` : ""}</div>
-        <div class="pie-dialogo">${cancelar}</div>`;
+        <div class="botones-foto"><button class="pz-boton pz-principal" data-modo="mano">✍️ Escribir a mano</button>${Array.isArray(E.catalogo) ? `<button class="pz-boton" data-modo="catalogo">📚 Ver el catálogo</button>` : ""}</div>`,
+        `${cancelar}`);
     }
     const elegir = MOVIL
-      ? `<div class="botones-foto"><button class="boton principal" data-accion="elegir-material" data-origen="camara">📷 Sacar foto</button><button class="boton" data-accion="elegir-material" data-origen="galeria">🖼️ De la galería</button></div>
-        <small style="color:var(--suave)">Una foto por página: de cerca, derecha y con buena luz.</small>`
-      : `<button class="boton principal" data-accion="elegir-material">Elegir fotos o PDF</button>
-        <small style="color:var(--suave)">${HOST === "web" ? "Fotos (JPG, PNG) o PDF. Que se lea bien y con buena luz." : "Fotos (JPG, PNG) o PDF; también puedes arrastrarlos aquí. Que se lea bien y con buena luz."}</small>`;
-    return `<h2 id="t-d">Nuevo tema</h2>${pestanas}${frase("Sácale fotos a tu cuaderno o a la guía, o pega el texto. {ia} arma el resumen, las preguntas y las tarjetas.", { ia }, "p")}
+      ? `<div class="botones-foto"><button class="pz-boton pz-principal" data-accion="elegir-material" data-origen="camara">📷 Sacar foto</button><button class="pz-boton" data-accion="elegir-material" data-origen="galeria">🖼️ De la galería</button></div>
+        <small style="color:var(--texto-suave)">Una foto por página: de cerca, derecha y con buena luz.</small>`
+      : `<button class="pz-boton pz-principal" data-accion="elegir-material">Elegir fotos o PDF</button>
+        <small style="color:var(--texto-suave)">${HOST === "web" ? "Fotos (JPG, PNG) o PDF. Que se lea bien y con buena luz." : "Fotos (JPG, PNG) o PDF; también puedes arrastrarlos aquí. Que se lea bien y con buena luz."}</small>`;
+    return dlg("t-nuevo", "Nuevo tema", `${pestanas}${frase("Sácale fotos a tu cuaderno o a la guía, o pega el texto. {ia} arma el resumen, las preguntas y las tarjetas.", { ia }, "p")}
       <div class="soltar"><span style="font-size:30px" aria-hidden="true">📸</span>${elegir}
         ${n.archivos.length ? `<div class="archivos">${n.archivos.map((a, k) => `<span class="archivo"><span data-sin-traducir>${esc(a.nombre)}</span><button data-quitar="${k}" aria-label="Quitar" title="Quitar">✕</button></span>`).join("")}</div>` : ""}</div>
       <label class="campo"><span>O pega el texto (opcional)</span><textarea id="texto-tema" rows="3" placeholder="${esc(tr("Ej.: el resumen que dictó la profesora"))}" data-sin-traducir>${esc(n.texto || "")}</textarea></label>
       <div class="dos"><label class="campo"><span>Ramo</span><select id="ramo-tema"><option value="auto">Que lo adivine la IA</option>${Object.entries(RAMOS).map(([k, v]) => `<option value="${k}" ${n.ramo === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
         <label class="campo"><span>Curso</span><select id="curso-tema">${Object.entries(CURSOS).map(([k, v]) => `<option value="${k}" ${(n.curso || pf.curso) === k ? "selected" : ""}>${v}</option>`).join("")}</select></label></div>
-      ${n.error ? `<p class="error-txt" data-sin-traducir>${esc(mensaje(n.error))}</p>` : ""}
-      <div class="pie-dialogo">${cancelar}<button class="boton principal" data-accion="crear-tema">Armar mi repaso ✨</button></div>`;
+      ${n.error ? `<p class="pz-error-texto" data-sin-traducir>${esc(mensaje(n.error))}</p>` : ""}`,
+        `${cancelar}<button class="pz-boton pz-principal" data-accion="crear-tema">Armar mi repaso ✨</button>`);
   }
   function dialogoPrueba() {
     const x = E.prueba, pf = perfil(), temas = temasDe(pf).filter((t) => !x.ramo || t.ramo === x.ramo);
-    return `<h2 id="t-d">${x.id ? "Tu prueba" : "Agregar prueba"}</h2><p>Repasa va a darle prioridad a estos temas los días antes.</p>
+    return dlg("t-prueba", x.id ? "Tu prueba" : "Agregar prueba", `<p>Repasa va a darle prioridad a estos temas los días antes.</p>
       <div class="dos"><label class="campo"><span>Ramo</span><select id="ramo-prueba">${Object.entries(RAMOS).map(([k, v]) => `<option value="${k}" ${x.ramo === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
         <label class="campo"><span>Fecha</span><input class="texto" type="date" id="fecha-prueba" min="${esc(E.hoy)}" value="${esc(x.fecha || sumarDias(E.hoy, 7))}"></label></div>
       <div class="campo"><span>Temas que entran</span>${temas.length ? temas.map((t) => `<label style="display:flex;gap:8px;align-items:center;font-weight:650"><input type="checkbox" data-tema-prueba="${esc(t.id)}" ${x.temas.includes(t.id) ? "checked" : ""}><span data-sin-traducir>${esc(t.titulo)}</span></label>`).join("")
-        : `<small>Todavía no tienes temas de este ramo. Agrégalos con una foto del cuaderno.</small>`}</div>
-      <div class="pie-dialogo">${x.id ? `<button class="boton peligro izq" data-accion="borrar-prueba">Borrar</button>` : ""}<button class="boton" data-accion="cerrar">Cancelar</button><button class="boton principal" data-accion="guardar-prueba">Guardar</button></div>`;
+        : `<small>Todavía no tienes temas de este ramo. Agrégalos con una foto del cuaderno.</small>`}</div>`,
+        `${x.id ? `<button class="pz-boton pz-peligro pz-izq" data-accion="borrar-prueba">Borrar</button>` : ""}<button class="pz-boton" data-accion="cerrar">Cancelar</button><button class="pz-boton pz-principal" data-accion="guardar-prueba">Guardar</button>`);
   }
   function dialogoPerfil() {
     const x = E.perfilEdit;
-    return `<h2 id="t-d">${x.id ? "Editar perfil" : "Nuevo perfil"}</h2><p>Solo un nombre o apodo y el curso. Nada más.</p>
+    return dlg("t-perfil", x.id ? "Editar perfil" : "Nuevo perfil", `<p>Solo un nombre o apodo y el curso. Nada más.</p>
       <label class="campo"><span>Nombre o apodo</span><input class="texto" id="nombre-perfil" maxlength="20" value="${esc(x.nombre || "")}" data-sin-traducir></label>
       <label class="campo"><span>Curso</span><select id="curso-perfil">${Object.entries(CURSOS).map(([k, v]) => `<option value="${k}" ${x.curso === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
       <div class="campo"><span>Elige un personaje</span><div class="avatares">${AVATARES.map((a) => `<button data-avatar="${a}" aria-pressed="${x.avatar === a}" aria-label="${esc(a)}">${a}</button>`).join("")}</div></div>
-      ${x.error ? `<p class="error-txt" data-sin-traducir>${esc(x.error)}</p>` : ""}
-      <div class="pie-dialogo"><button class="boton" data-accion="cerrar">Cancelar</button><button class="boton principal" data-accion="guardar-perfil">Guardar</button></div>`;
+      ${x.error ? `<p class="pz-error-texto" data-sin-traducir>${esc(x.error)}</p>` : ""}`,
+        `<button class="pz-boton" data-accion="cerrar">Cancelar</button><button class="pz-boton pz-principal" data-accion="guardar-perfil">Guardar</button>`);
   }
+  /** La IA, en Para adultos y en la bienvenida. En el computador son las filas de la pieza «componentes» (probarIA {ia}, el error
+   *  traducido y «Cómo instalarla»). En el celular, las mismas clases y el mismo estado de la pieza, pero con lo propio del teléfono:
+   *  `detalle` dice por qué la IA no está lista y la del teléfono se puede revisar de nuevo (al activar Apple Intelligence o al bajar
+   *  Gemini Nano queda lista después). */
   function filasIA() {
-    return E.ias.map((ia) => {
-      const enUso = E.config.ia === ia.id, probando = E.probando[ia.id], r = E.resultadoIA[ia.id];
-      // `detalle` (celular): por qué no está lista, en palabras simples; en el computador, la guía para instalarla.
-      const estado = !ia.instalada ? (ia.detalle ? `<small data-sin-traducir>${esc(tr(ia.detalle))}</small>` : `<small>No está instalada · <a href="#" data-enlace="${ENLACES.guiaIA}#${ia.id}">Cómo instalarla</a></small>`)
-        : r && !r.ok ? `<small class="error-txt" data-sin-traducir>${esc(tr(r.texto || "No respondió."))}</small>` : `<small>${MOVIL ? "Lista en este teléfono" : "Instalada"}</small>`;
-      // En el celular, la IA del teléfono puede quedar lista después (al activar Apple Intelligence o al bajar Gemini Nano).
-      const otraVez = MOVIL && ia.id === "telefono" && !ia.instalada;
-      const accion = enUso && ia.instalada ? `<span class="ok">✓ En uso</span>` : ia.instalada || otraVez
-        ? `<button class="boton" data-probar="${esc(ia.id)}" ${probando ? "disabled" : ""}>${probando ? "Probando…" : otraVez ? "Revisar de nuevo" : "Usar"}</button>` : "";
-      return `<div class="fila"><div class="txt"><b data-sin-traducir>${esc(tr(ia.nombre))}</b>${estado}</div>${accion}</div>`;
-    }).join("");
+    if (!MOVIL) return ui.filasIA({ ias: E.ias, elegida: E.config.ia, guia: ENLACES.guiaIA });
+    return `<div class="pz-filas">${E.ias.map((x) => {
+      const r = ui.ia.resultados[x.id], probando = !!ui.ia.probando[x.id], enUso = E.config.ia === x.id && x.instalada;
+      const reintentar = x.id === "telefono" && !x.instalada;
+      const estado = r && !r.ok ? `<small class="pz-error-texto" data-sin-traducir>${esc(tr(r.texto || r.error || "No respondió."))}</small>`
+        : !x.instalada ? `<small data-sin-traducir>${esc(tr(x.detalle || "No está instalada"))}</small>`
+          : `<small>${enUso ? "En uso" : "Lista en este teléfono"}</small>`;
+      const boton = x.instalada || reintentar
+        ? `<button class="pz-boton${enUso ? "" : " pz-principal"}" data-pz-probar-ia="${esc(x.id)}" ${probando ? "disabled" : ""}>${probando ? "Probando…" : reintentar ? "Revisar de nuevo" : enUso ? "Probar otra vez" : "Usar y probar"}</button>` : "";
+      return `<div class="pz-fila"><span class="pz-txt"><b data-sin-traducir>${esc(tr(x.nombre))}</b>${estado}</span>${r?.ok ? `<span class="pz-ok">Lista</span>` : ""}${boton}</div>`;
+    }).join("")}</div>`;
   }
   function dialogoAdultos() {
     const avance = E.perfiles.map((pf) => {
       const p = E.progreso[pf.id] || { preguntas: {} }, temas = temasDe(pf), ramos = [...new Set(temas.map((t) => t.ramo))];
       const sem = (p.sesiones || []).filter((s) => diasEntre(s.fecha, E.hoy) < 7);
-      return `<div class="fila" style="display:block"><div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><span style="font-size:24px" aria-hidden="true">${esc(pf.avatar)}</span>
-          <b data-sin-traducir style="flex:1">${esc(pf.nombre)} · ${esc(tr(CURSOS[pf.curso]))}</b><button class="boton sutil" data-editar-perfil="${esc(pf.id)}">Editar</button></div>
+      return `<div class="pz-fila avance-perfil"><div class="avance-cab"><span class="avance-av" aria-hidden="true">${esc(pf.avatar)}</span>
+          <b data-sin-traducir>${esc(pf.nombre)} · ${esc(tr(CURSOS[pf.curso]))}</b><button class="pz-boton pz-plano" data-editar-perfil="${esc(pf.id)}">Editar</button></div>
         ${frase("Esta semana: {s} sesiones, {p} preguntas, {a} % de aciertos.", { s: sem.length, p: sem.reduce((a, x) => a + x.preguntas, 0), a: sem.length ? Math.round(sem.reduce((a, x) => a + x.aciertos, 0) / Math.max(1, sem.reduce((a, x) => a + x.preguntas, 0)) * 100) : 0 }, "small")}
         ${ramos.map((r) => { const ts = temas.filter((t) => t.ramo === r), d = Math.round(ts.reduce((a, t) => a + dominio(t, p), 0) / ts.length);
           return `<div class="ramo-avance"><span data-sin-traducir>${esc(tr(RAMOS[r]))}</span><span class="barra-dom"><i style="width:${d}%;background:${color(r)}"></i></span><span data-sin-traducir>${d}%</span></div>`; }).join("")}</div>`;
     }).join("");
-    return `<h2 id="t-d">Para adultos</h2><p>${MOVIL ? "Todo queda en este teléfono. La IA es la del propio teléfono: no usa internet y solo ve el material que agregan y las preguntas."
+    return dlg("t-adultos", "Para adultos", `<p>${MOVIL ? "Todo queda en este teléfono. La IA es la del propio teléfono: no usa internet y solo ve el material que agregan y las preguntas."
       : "Todo queda en este computador. La IA usa la cuenta de un adulto y solo ve el material que agregan y las preguntas."}</p>
       <div class="seccion"><h3>Cómo van</h3>${avance || `<small>Todavía no hay perfiles.</small>`}</div>
       <div class="seccion"><h3>La IA</h3>${filasIA()}</div>
-      <div class="seccion"><h3>General</h3><div class="fila"><div class="txt"><b>Idioma de la app</b></div><select data-config="idioma_ui"><option value="es" ${E.idioma === "es" ? "selected" : ""}>Español</option><option value="en" ${E.idioma === "en" ? "selected" : ""}>English</option></select></div>
-        ${MOVIL ? "" : `<div class="fila"><div class="txt"><b>Carpeta de Repasa</b><small data-sin-traducir>${esc(E.carpeta)}</small></div><button class="boton" data-accion="abrir-carpeta">Abrir</button></div>`}</div>
+      <div class="seccion"><h3>General</h3><div class="pz-fila"><div class="pz-txt"><b>Idioma de la app</b></div><select data-config="idioma_ui"><option value="es" ${E.idioma === "es" ? "selected" : ""}>Español</option><option value="en" ${E.idioma === "en" ? "selected" : ""}>English</option></select></div>
+        <div class="pz-fila envuelve"><div class="pz-txt"><b>Apariencia</b></div>${tema.selectorHTML()}</div>
+        ${MOVIL ? "" : `<div class="pz-fila"><div class="pz-txt"><b>Carpeta de Repasa</b><small data-sin-traducir>${esc(E.carpeta)}</small></div><button class="pz-boton" data-accion="abrir-carpeta">Abrir</button></div>`}</div>
       ${E.capacidades.copia ? seccionCopia() : ""}
-      <div class="seccion"><h3>Acerca de Repasa</h3><p style="margin:0 0 8px;color:var(--suave)">${frase("Repasa {v} · Gratis y de código abierto (AGPL-3.0).", { v: E.version })}</p>
-        ${MOVIL ? "" : filaActualizaciones()}
-        <div class="enlaces"><a href="#" data-enlace="${ENLACES.sitio}">Sitio web</a><a href="#" data-enlace="${ENLACES.codigo}">Código</a><a href="#" data-enlace="${ENLACES.comunidad}">Comunidad</a></div></div>
-      <div class="pie-dialogo"><button class="boton principal" data-accion="cerrar">Listo</button></div>`;
-  }
-  /** Versiones nuevas (computador): solo aquí, en «Para adultos», nunca en la pantalla de los niños ni con una alerta del sistema.
-   *  Al actualizar, el avance por pasos (`actualizacionProgreso`: {paso: "1"…"3" | "error", texto, pct?}). */
-  function filaActualizaciones() {
-    const a = E.act, error = a?.paso === "error";
-    if (a && !error) {
-      const pct = Math.round(a.pct ?? (Number(a.paso) || 0) / 3 * 100);
-      return `<div class="fila" role="status"><div class="txt"><b>Actualizando Repasa</b><small data-sin-traducir>${esc(tr(a.texto || ""))}</small>
-        <span class="barra-act"><i style="width:${pct}%"></i></span></div></div>`;
-    }
-    const hay = E.actualizacion?.hay;
-    const texto = error ? `<small class="error-txt" data-sin-traducir>${esc(tr(a.texto || "No se pudo actualizar."))}</small>`
-      : `<small>${E.buscando === "buscando" ? "Buscando…" : hay ? "Hay una versión nueva." : E.buscando === "alDia" ? "Estás en la última versión." : E.buscando === "sinConexion" ? "No pude revisar: ¿hay internet?" : "Repasa revisa sola cada 6 horas."}</small>`;
-    const boton = hay ? `<button class="boton principal" data-accion="actualizar">${error ? "Reintentar" : "Actualizar"}</button>`
-      : `<button class="boton" data-accion="buscar-act" ${E.buscando === "buscando" ? "disabled" : ""}>Buscar actualizaciones</button>`;
-    return `<div class="fila"><div class="txt"><b>Actualizaciones</b>${texto}</div>${boton}</div>`;
+      <div class="seccion"><h3>Acerca de Repasa</h3>
+        ${MOVIL ? "" : ui.filaActualizacion() /* versiones nuevas: solo aquí, nunca en la pantalla de los niños ni con una alerta del sistema */}
+        ${ui.acercaDe({ version: E.version, enlaces: { sitio: ENLACES.sitio, codigo: ENLACES.codigo, comunidad: ENLACES.comunidad } })}</div>`,
+        `<button class="pz-boton pz-principal" data-accion="cerrar">Listo</button>`);
   }
   /** Copia cifrada en la nube de la familia (celular, fase 1: se guarda y se trae a mano con el selector del sistema). */
   function seccionCopia() {
     const c = E.copia, ocupado = c.estado === "guardando" || c.estado === "trayendo";
-    const estado = c.error ? `<small class="error-txt" data-sin-traducir>${esc(tr(c.error))}</small>`
+    const estado = c.error ? `<small class="pz-error-texto" data-sin-traducir>${esc(tr(c.error))}</small>`
       : c.estado === "guardando" ? `<small>Cifrando y guardando…</small>` : c.estado === "trayendo" ? `<small>Abriendo la copia…</small>`
         : c.estado === "guardada" ? frase("Copia guardada ({n} archivos). Nadie puede abrirla sin la frase.", { n: c.cantidad || 0 }, "small")
           : c.estado === "traida" ? frase("Listo: se juntaron {t} temas nuevos y el avance de {p} perfiles. Nada se borró.", { t: c.resumen?.temas || 0, p: c.resumen?.progreso || 0 }, "small") : "";
@@ -429,48 +426,58 @@
       <p class="nota" style="margin:0 0 10px">${MOVIL ? "Guarda una copia cifrada en iCloud Drive o Google Drive y tráela a otro teléfono. Solo se abre con la frase de su familia: anótenla en un lugar seguro, porque nadie la puede recuperar."
         : "Guarda una copia cifrada en iCloud Drive o en otra carpeta y tráela a otro computador o teléfono. Solo se abre con la frase de su familia: anótenla en un lugar seguro, porque nadie la puede recuperar."}</p>
       <label class="campo"><span>Frase de la familia</span><input class="texto" type="password" id="frase-copia" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(c.frase)}" placeholder="${esc(tr("Por ejemplo, cuatro palabras que solo ustedes sepan"))}" data-sin-traducir></label>
-      <div class="botones-copia"><button class="boton" data-accion="guardar-copia" ${ocupado ? "disabled" : ""}>☁️ Guardar copia…</button><button class="boton" data-accion="traer-copia" ${ocupado ? "disabled" : ""}>📥 Traer copia…</button></div>
+      <div class="botones-copia"><button class="pz-boton" data-accion="guardar-copia" ${ocupado ? "disabled" : ""}>☁️ Guardar copia…</button><button class="pz-boton" data-accion="traer-copia" ${ocupado ? "disabled" : ""}>📥 Traer copia…</button></div>
       <div class="estado-copia" role="status">${estado}</div></div>`;
   }
-  // Paso 0: el idioma, antes que cualquier otra cosa. Cada opción va escrita en su propio idioma (no se traduce).
+  // Paso 0: el idioma, antes que cualquier otra cosa. Cada opción va escrita en su propio idioma (no se traduce), por eso el título
+  // bilingüe va armado aquí y no por T(). Es un diálogo de la pieza (mismas clases, aria-modal, foco adentro) que no se cierra.
   const IDIOMAS = [["es", "Español", "Sugerido"], ["en", "English", "Suggested"]];
-  function pasoIdioma() {
+  function pasoIdioma(puntos) {
     const sugerido = E.config.idioma_ui || idiomaSistema();
-    return `<h2 id="t-d" class="titulo-idioma" data-sin-traducir><span lang="es">Elige tu idioma</span> <span class="sep">·</span> <span lang="en">Choose your language</span></h2>
-      <div class="opciones-idioma" role="group" aria-labelledby="t-d" data-sin-traducir>${IDIOMAS.map(([codigo, nombre, marca], k) => `
-        <button class="idioma-op ${codigo === sugerido ? "sugerido" : ""}" id="idioma-${codigo}" data-idioma="${codigo}" lang="${codigo}" aria-keyshortcuts="${k + 1}">
-          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div>`;
+    return `<div class="pz-capa" data-pz-capa><div class="pz-dialogo bv" role="dialog" aria-modal="true" aria-labelledby="t-idioma" tabindex="-1" data-pz-sin-esc>${puntos}
+      <h2 id="t-idioma" class="titulo-idioma" tabindex="-1" data-sin-traducir><span lang="es">Elige tu idioma</span> <span class="sep">·</span> <span lang="en">Choose your language</span></h2>
+      <div class="opciones-idioma" role="group" aria-labelledby="t-idioma" data-sin-traducir>${IDIOMAS.map(([codigo, nombre, marca], k) => `
+        <button class="idioma-op ${codigo === sugerido ? "sugerido" : ""}" id="idioma-${codigo}" data-idioma="${codigo}" lang="${codigo}" aria-keyshortcuts="${k + 1}"${codigo === sugerido ? " data-autofoco" : ""}>
+          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div></div></div>`;
   }
   async function elegirIdioma(codigo) {
     if (!IDIOMAS.some(([c]) => c === codigo)) return;
     E.config.idioma_ui = codigo;
     host.enviar("config", { idioma_ui: codigo });
     await cargarIdioma(codigo);
-    E.bv = 1; pintar();
-    $(".dialogo .boton.principal:not([disabled])")?.focus();
+    E.bv = 1; pintar(); // el paso siguiente es otro diálogo: el foco va a su «Siguiente» (data-autofoco)
+    for (const [texto, o] of avisosEnEspera.splice(0)) toast(texto, o);
   }
   function bienvenida() {
     const pasos = [
-      ["", pasoIdioma(), true],
+      ["", "", true],
       ["Hola, esto es Repasa", `<p>Una app para estudiar con lo que pasan en el colegio. Le sacan una foto al cuaderno y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas para memorizar. Las preguntas que cuestan vuelven hasta que se aprenden.</p><p class="nota">${MOVIL ? "Gratis, sin cuentas y sin publicidad. Todo queda en este teléfono." : "Gratis, sin cuentas y sin publicidad. Todo queda en este computador."}</p>`, true],
       MOVIL ? ["La IA", `<p>En el celular, Repasa usa la IA del propio teléfono: gratis, privada y sin internet. Si este teléfono no la tiene, igual pueden escribir temas a mano o elegirlos del catálogo.</p><div class="seccion">${filasIA()}</div>`, true]
         : ["Elijan la IA", `<p>Repasa usa la IA que ya tiene un adulto de la casa (Claude, ChatGPT o Gemini), con su cuenta. La probamos con una pregunta corta.</p><div class="seccion">${filasIA()}</div>`, !!E.config.ia],
     ];
     const [titulo, cuerpo, puede] = pasos[E.bv];
     const puntos = `<div class="pasos-bv">${pasos.map((_, i) => `<i class="${i <= E.bv ? "hecho" : ""}"></i>`).join("")}</div>`;
-    if (E.bv === 0) return puntos + cuerpo; // sin «Lo hago después»: elegir es un solo toque
-    return `${puntos}<h2 id="t-d">${titulo}</h2>${cuerpo}
-      <div class="pie-dialogo"><button class="boton izq" data-bv="${E.bv - 1}">Atrás</button><button class="boton" data-accion="bv-fin">Lo hago después</button>
-        ${E.bv < pasos.length - 1 ? `<button class="boton principal" data-bv="${E.bv + 1}" ${puede ? "" : "disabled"}>Siguiente</button>` : `<button class="boton principal" data-accion="bv-fin">Empezar</button>`}</div>`;
+    if (E.bv === 0) return pasoIdioma(puntos); // sin «Lo hago después»: elegir es un solo toque
+    const ultimo = E.bv >= pasos.length - 1;
+    // Un id por paso: al avanzar, el foco va al botón principal del paso nuevo. Esc no la cierra (está «Lo hago después»).
+    return dlg(`t-bv-${E.bv}`, titulo, puntos + cuerpo,
+      `<button class="pz-boton pz-izq" data-bv="${E.bv - 1}">Atrás</button><button class="pz-boton" data-accion="bv-fin">Lo hago después</button>
+        ${ultimo ? `<button class="pz-boton pz-principal" data-accion="bv-fin" data-autofoco>Empezar</button>` : `<button class="pz-boton pz-principal" data-bv="${E.bv + 1}" ${puede ? "data-autofoco" : "disabled"}>Siguiente</button>`}`,
+      { clase: "bv", cerrable: false, sinEsc: true });
   }
+  /** Un diálogo de Repasa con la pieza «componentes»: id del título, título (frase en español), cuerpo y botones del pie. */
+  const dlg = (id, titulo, cuerpo, pie = "", o = {}) => ({ id, titulo, cuerpo, pie, ...o });
   function dialogos() {
-    const capa = (html) => `<div class="capa"><div class="dialogo" role="dialog" aria-modal="true" aria-labelledby="t-d">${html}</div></div>`;
-    if (E.nuevo) return capa(dialogoNuevoTema());
-    if (E.prueba) return capa(dialogoPrueba());
-    if (E.perfilEdit) return capa(dialogoPerfil());
-    if (E.bv !== null) return capa(bienvenida());
-    if (E.adultos) return capa(dialogoAdultos());
-    return "";
+    if (E.bv === 0) return bienvenida();
+    const d = E.nuevo ? dialogoNuevoTema() : E.prueba ? dialogoPrueba() : E.perfilEdit ? dialogoPerfil()
+      : E.bv !== null ? bienvenida() : E.adultos ? dialogoAdultos() : null;
+    return d ? ui.dialogo(d) : "";
+  }
+  /** Esc, el velo o ✕: cierra el diálogo de Repasa que está abierto (nunca mientras la IA arma un tema ni la bienvenida). */
+  function cerrarDialogo() {
+    if (E.nuevo?.paso === "creando" || (E.bv !== null && !E.nuevo && !E.prueba && !E.perfilEdit)) return;
+    E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false;
+    pintar();
   }
 
   // ───────────── Eventos ─────────────
@@ -483,11 +490,12 @@
     if (!claves.length) return toast("No hay preguntas por ahora");
     E.sesion = { claves, i: 0, aciertos: 0, puntos: 0 }; pintar();
   }
-  document.addEventListener("click", (ev) => {
-    const el = ev.target.closest("[data-accion],[data-perfil],[data-tema],[data-pestana],[data-flip],[data-practicar],[data-responder],[data-quitar],[data-avatar],[data-editar-perfil],[data-probar],[data-bv],[data-enlace],[data-idioma],[data-modo],[data-catalogo]");
+  document.addEventListener("click", async (ev) => {
+    if (tema.manejarClic(ev)) return mantener();
+    if (ui.manejarClic(ev)) return; // de la pieza: ✕, el velo, confirmar, probar la IA, actualizaciones, enlaces y comentarios
+    const el = ev.target.closest("[data-accion],[data-perfil],[data-tema],[data-pestana],[data-flip],[data-practicar],[data-responder],[data-quitar],[data-avatar],[data-editar-perfil],[data-bv],[data-idioma],[data-modo],[data-catalogo]");
     if (!el) return;
     const d = el.dataset;
-    if (d.enlace) { ev.preventDefault(); return host.enviar("abrirEnlace", { url: d.enlace }); }
     if (d.perfil) { E.perfil = d.perfil; E.vista = "inicio"; host.enviar("config", { ultimo_perfil: d.perfil }); return pintar(); }
     if (d.tema) { E.temaSel = d.tema; E.vista = "tema"; E.pestana = "resumen"; E.volteadas = {}; return pintar(); }
     if (d.pestana) { E.pestana = d.pestana; return mantener(); }
@@ -497,7 +505,6 @@
     if (d.quitar != null) { leerNuevo(); E.nuevo.archivos.splice(Number(d.quitar), 1); return mantener(); }
     if (d.avatar) { E.perfilEdit.nombre = $("#nombre-perfil")?.value ?? E.perfilEdit.nombre; E.perfilEdit.curso = $("#curso-perfil")?.value || E.perfilEdit.curso; E.perfilEdit.avatar = d.avatar; return mantener(); }
     if (d.editarPerfil) { E.adultos = false; E.perfilEdit = { ...E.perfiles.find((p) => p.id === d.editarPerfil) }; return pintar(); }
-    if (d.probar) { E.probando[d.probar] = true; delete E.resultadoIA[d.probar]; host.enviar("probarIA", { id: d.probar }); return mantener(); }
     if (d.idioma) return elegirIdioma(d.idioma);
     if (d.modo) { leerNuevo(); Object.assign(E.nuevo, { modo: d.modo, error: "", problemas: [] }); return mantener(); }
     if (d.catalogo) { E.nuevo.agregando = d.catalogo; E.nuevo.error = ""; host.enviar("agregarDelCatalogo", { id: d.catalogo }); return mantener(); }
@@ -546,12 +553,14 @@
         const p = { id: x.id || `prueba-${Date.now().toString(36)}`, perfil: E.perfil, ramo: x.ramo, temas: x.temas, fecha: x.fecha };
         E.pruebas = E.pruebas.filter((y) => y.id !== p.id).concat(p); host.enviar("guardarPruebas", { pruebas: E.pruebas }); E.prueba = null; pintar(); return toast("Prueba guardada");
       }
-      case "borrar-prueba": E.pruebas = E.pruebas.filter((y) => y.id !== E.prueba.id); host.enviar("guardarPruebas", { pruebas: E.pruebas }); E.prueba = null; return pintar();
+      case "borrar-prueba": {
+        const id = E.prueba.id;
+        if (!(await ui.confirmar({ titulo: "¿Borrar esta prueba?", texto: "Los temas siguen aquí; solo se quita la fecha de la prueba.", si: "Borrar", no: "Dejarla", peligro: true }))) return;
+        E.pruebas = E.pruebas.filter((y) => y.id !== id); host.enviar("guardarPruebas", { pruebas: E.pruebas }); E.prueba = null; return pintar();
+      }
       case "adultos": E.adultos = true; return pintar();
       case "cerrar": if (E.nuevo?.paso !== "creando") E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false; return pintar();
       case "abrir-carpeta": return host.enviar("abrirCarpeta", {});
-      case "buscar-act": E.buscando = "buscando"; host.enviar("buscarActualizacion"); return mantener();
-      case "actualizar": E.act = { paso: "1", texto: "Descargando la versión nueva…" }; host.enviar("actualizar"); return mantener();
       case "bv-fin": E.bv = null; E.bvCerrada = true; host.enviar("config", { bienvenida: true }); return pintar();
       case "guardar-copia": case "traer-copia": {
         const frase = $("#frase-copia")?.value || "";
@@ -596,20 +605,25 @@
     if (ds.config) { E.config[ds.config] = ev.target.value; host.enviar("config", { [ds.config]: ev.target.value }); if (ds.config === "idioma_ui") await cargarIdioma(ev.target.value); return mantener(); }
   });
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape") { if (E.nuevo?.paso !== "creando") E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false; return pintar(); }
+    if (ui.manejarTecla(ev)) return; // Esc cierra el diálogo de más arriba; Tab no se escapa de él
     if (E.bv === 0 && /^[12]$/.test(ev.key) && !ev.target.closest?.("input, textarea, select")) { ev.preventDefault(); return elegirIdioma(IDIOMAS[Number(ev.key) - 1][0]); }
     const s = E.sesion;
-    if (!s || s.fin || ev.target.closest?.("input, textarea, select")) return;
+    // Las teclas del repaso (1–5 y Enter) solo cuando no hay un diálogo encima.
+    if (!s || s.fin || ev.target.closest?.("input, textarea, select") || $(".pz-capa")) return;
     if (s.respuesta === undefined && /^[1-5]$/.test(ev.key)) { const b = document.querySelectorAll("[data-responder]")[Number(ev.key) - 1]; if (b) b.click(); }
     else if (s.respuesta !== undefined && ev.key === "Enter" && document.activeElement?.id !== "siguiente") { ev.preventDefault(); $("#siguiente")?.click(); }
   });
 
-  // ───────────── Lo que manda la app ─────────────
-  window.Repasa = {
+  // ───────────── Lo que manda la app (queda en window.Repasa) ─────────────
+  // La app de Mac manda `detalle` con la versión y sus notas; la pieza las llama `notas`.
+  const conNotas = (r) => ({ ...r, notas: r?.notas ?? r?.detalle ?? "" });
+  host.responder({
     async estado(e) {
       Object.assign(E, { hoy: e.hoy, perfiles: e.perfiles || [], temas: e.temas || [], progreso: e.progreso || {}, pruebas: e.pruebas || [], config: e.config || {},
         ias: e.ias || [], version: e.version || "", carpeta: e.carpeta || "", actualizacion: e.actualizacion || { hay: false },
         capacidades: e.capacidades || {}, catalogo: Array.isArray(e.catalogo) ? e.catalogo : null });
+      tema.aplicar(tema.elegir({ config: E.config.tema }));
+      ui.act.disponible = E.actualizacion?.hay ? conNotas(E.actualizacion) : null;
       if (E.perfil && !E.perfiles.some((p) => p.id === E.perfil)) E.perfil = null;
       if (!E.config.bienvenida && E.bv === null && !E.bvCerrada) E.bv = 0;
       await cargarIdioma();
@@ -628,20 +642,22 @@
       E.temas = E.temas.filter((t) => t.id !== r.tema.id).concat(r.tema); E.nuevo = null; E.temaSel = r.tema.id; E.vista = "tema"; E.pestana = "resumen"; pintar(); toast("Tema guardado");
     },
     explicado(r) { const s = E.sesion; if (!s) return; s.explicacion = r.ok ? r.texto : tr(r.error || "No se pudo explicar ahora."); mantener(); },
-    iaProbada(r) { delete E.probando[r.id]; E.resultadoIA[r.id] = r; if (r.ok) { E.config.ia = r.id; toast("Lista para usar"); } mantener(); },
+    iaProbada: (r) => ui.iaProbada(r),
     copiaLista(r) { E.copia = r.ok ? { frase: "", estado: "guardada", cantidad: r.cantidad, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
     copiaTraida(r) { E.copia = r.ok ? { frase: "", estado: "traida", resumen: r.resumen, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
-    actualizacionRevisada(r) { E.buscando = r.hay ? null : r.sinConexion ? "sinConexion" : "alDia"; if (r.hay) E.actualizacion = r; mantener(); },
-    actualizacionProgreso(d) { E.act = d; mantener(); },
-    _probar(f) { f(E); pintar(); },
-    _pruebas: { actualizarCaja, esCorrecta, elegirSesion, actualizarRacha, sumarDias, normalizar },
-  };
+    actualizacionRevisada: (r) => ui.actualizacionRevisada(conNotas(r)),
+    actualizacionProgreso: (a) => ui.actualizacionProgreso(a),
+    /** Vista previa y pruebas: `f(E, ui)` cambia el estado (también el de la pieza: ui.act, ui.ia) y se vuelve a pintar. */
+    _probar(f) { f(E, ui, tema); pintar(); },
+  });
+  window.Repasa._pruebas = { actualizarCaja, esCorrecta, elegirSesion, actualizarRacha, sumarDias, normalizar };
 
   // ───────────── Vista previa en el navegador (datos ficticios de demo.json) ─────────────
   let DEMO = null;
-  function simular(accion, d) {
+  const COMUNES = window.PiezaHost.simulacionesComunes({ espera: 500 }); // buscar y actualizar, abrir un enlace https
+  function simular(accion, d, c) {
     if (!DEMO) return;
-    const A = window.Repasa, luego = (ms, f) => setTimeout(f, ms);
+    const A = window.Repasa, luego = c.luego;
     switch (accion) {
       case "listo": return A.estado(JSON.parse(JSON.stringify(DEMO)));
       case "config": Object.assign(DEMO.config, d); return;
@@ -663,12 +679,10 @@
       case "guardarCopia": return luego(600, () => A.copiaLista({ ok: true, cantidad: 7 }));
       case "traerCopia": return luego(600, () => A.copiaTraida({ ok: true, resumen: { temas: 1, progreso: 2 } }));
       case "explicar": return luego(1100, () => A.explicado({ ok: true, texto: tr("Piensa en una carrera de postas: la Patria Vieja fue la primera vuelta, en Rancagua se cayó el bastón (la Reconquista) y con Chacabuco el equipo lo recuperó y siguió corriendo: la Patria Nueva. (En la vista previa esta explicación es de ejemplo; en la app la escribe tu IA para cada pregunta.)") }));
-      case "probarIA": return luego(500, () => { DEMO.config.ia = d.id; A.iaProbada({ id: d.id, ok: true }); });
-      case "abrirEnlace": return window.open(d.url, "_blank", "noopener");
+      case "probarIA": return luego(500, () => { DEMO.config.ia = d.ia; A.iaProbada({ ia: d.ia, ok: true }); });
       case "abrirCarpeta": return toast("En la app, aquí se abre la carpeta");
-      case "buscarActualizacion": return luego(500, () => A.actualizacionRevisada({ hay: false }));
-      case "actualizar": return luego(500, () => A.actualizacionProgreso({ paso: "error", texto: "En la vista previa no hay nada que actualizar." }));
       case "soltarMaterial": return luego(200, () => A.materialElegido([{ ruta: `/demo/${d.nombre}`, nombre: d.nombre }]));
+      default: return COMUNES[accion]?.(d, c);
     }
   }
 

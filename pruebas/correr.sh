@@ -3,7 +3,7 @@
 # Uso: bash pruebas/correr.sh   (la interfaz necesita Playwright: PLAYWRIGHT=/ruta/a/playwright si no está en node_modules)
 set -eo pipefail
 cd "$(dirname "$0")/.."
-echo "Sintaxis"; node --check ui/app.js; node --check ui/i18n.js; for f in motor/*.js movil/host/*.js movil/*.mjs app/web/*.js herramientas/*.mjs pruebas/*.mjs pruebas/capacitor_falso.js; do node --check "$f"; done; python3 -m py_compile bin/*.py pruebas/*.py; for f in herramientas/*.sh pruebas/*.sh build.sh; do bash -n "$f"; done
+echo "Sintaxis"; for f in ui/*.js motor/*.js movil/host/*.js movil/*.mjs app/web/*.js herramientas/*.mjs pruebas/*.mjs pruebas/capacitor_falso.js; do node --check "$f"; done; python3 -m py_compile bin/*.py pruebas/*.py; for f in herramientas/*.sh pruebas/*.sh build.sh; do bash -n "$f"; done
 python3 -c "import json, glob; [json.load(open(f, encoding='utf-8')) for f in glob.glob('ui/idiomas/*.json') + glob.glob('temas/*.json') + ['ui/demo.json', 'pruebas/casos.json']]"
 echo "Temas"; python3 -c "
 import sys, json, glob; sys.path.insert(0, 'bin'); import temas

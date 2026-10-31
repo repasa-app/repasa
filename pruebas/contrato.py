@@ -2,7 +2,7 @@
 
 Uso: python3 pruebas/contrato.py
 Revisa:
-1. Cada acción que manda la interfaz (host.enviar en ui/app.js) existe en el anfitrión del celular (movil/host/host.js), en la vista
+1. Cada acción que manda la interfaz (host.enviar en ui/app.js y lo que mandan las piezas de la interfaz: ui/componentes.js) existe en el anfitrión del celular (movil/host/host.js), en la vista
    previa (simular() en ui/app.js), en la app de Mac (app/Sources/Repasa/Ventana.swift) y, cuando exista, en la de Windows/Linux
    (escritorio/).
 2. Cada función de la interfaz que llaman el anfitrión del celular y la app de Mac (window.Repasa.<funcion>) existe en ui/app.js, y
@@ -28,6 +28,9 @@ def leer(*partes):
 
 
 APP = leer("ui", "app.js")
+# Las piezas de la interfaz (de Pieza) también mandan acciones: probarIA, buscarActualizacion, actualizar, abrirEnlace y config.
+PIEZAS_UI = leer("ui", "componentes.js") + leer("ui", "tema.js")
+PUENTE = leer("ui", "host.js")
 HOST = leer("movil", "host", "host.js")
 FALSO = leer("pruebas", "capacitor_falso.js")
 problemas = []
@@ -37,10 +40,14 @@ SOLO_MOVIL = {"guardarCopia": "copia cifrada (celular, fase 1)", "traerCopia": "
               "temaAMano": "en escritorio: crear_tema.py amano", "agregarDelCatalogo": "en escritorio: crear_tema.py guardar temas/<id>.json"}
 
 # 1) Acciones
-acciones = set(re.findall(r'host\.enviar\("(\w+)"', APP))
+acciones = set(re.findall(r'host\.enviar\("(\w+)"', APP)) | set(re.findall(r'\benviar\("(\w+)"', PIEZAS_UI))
 simular = APP[APP.index("function simular("):]
 simular = simular[:simular.index("\n  }\n")]
 en_simular = set(re.findall(r'case "(\w+)"', simular))
+# Lo que no está en el switch lo responde PiezaHost.simulacionesComunes() (pieza «host-ui»), si simular() lo usa.
+if "COMUNES[accion]" in simular:
+    comunes = PUENTE[PUENTE.index("function simulacionesComunes("):PUENTE.index("function crearHost(")]
+    en_simular |= set(re.findall(r"^      (\w+): \(d, c\)", comunes, re.M))
 # Acciones solo del computador: arrastrar fotos o PDF e instalar una versión nueva (el teléfono no tiene ninguna de las dos).
 SOLO_ESCRITORIO = {"soltarMaterial": "arrastrar material a «Nuevo tema»", "actualizar": "instalar una versión nueva"}
 en_host = set(re.findall(r"^  (?:async )?(\w+)(?:\(|: |,$)", HOST[HOST.index("const ACCIONES = {"):HOST.index("\n};", HOST.index("const ACCIONES = {"))], re.M))
@@ -64,8 +71,8 @@ for patron in ["escritorio/src/**/*.js"]:
             problemas.append(f"La acción «{a}» no está en la app de Windows/Linux (escritorio/).")
 
 # 2) Funciones de la interfaz que llama el celular
-interfaz = APP[APP.index("window.Repasa = {"):APP.index("// ───────────── Vista previa")]
-en_interfaz = set(re.findall(r"^    (?:async )?(\w+)\(", interfaz, re.M))
+interfaz = APP[APP.index("host.responder({"):APP.index("// ───────────── Vista previa")]
+en_interfaz = set(re.findall(r"^    (?:async )?(\w+)(?:\(|: \()", interfaz, re.M))
 for f in sorted(set(re.findall(r"A\(\)\.(\w+)", HOST)) - en_interfaz):
     problemas.append(f"movil/host/host.js llama window.Repasa.{f}, que no existe en ui/app.js.")
 SWIFT = {os.path.basename(f): open(f, encoding="utf-8").read() for f in glob.glob(os.path.join(RAIZ, "app", "Sources", "Repasa", "*.swift"))}
@@ -75,6 +82,16 @@ for f in sorted(set(re.findall(r'llamar\("(\w+)"', TODO_SWIFT)) - en_interfaz):
 for script in sorted(set(re.findall(r'(?:correrJSON|conEntrada|guardarEnFila)\("(\w+\.py)"', TODO_SWIFT))):
     if not os.path.exists(os.path.join(RAIZ, "bin", script)):
         problemas.append(f"La app de Mac llama bin/{script}, que no existe.")
+
+# Probar la IA es `probarIA {ia}` → `iaProbada {ia, …}` en todas las apps (pieza «host-ui»); antes Repasa mandaba {id}.
+caso_probar = MAC[MAC.index('case "probarIA":'):MAC.index("case ", MAC.index('case "probarIA":') + 10)]
+if 'd["ia"]' not in caso_probar or '"id":' in caso_probar:
+    problemas.append("Ventana.swift: probarIA lee d[\"ia\"] y responde iaProbada con «ia» (no «id»).")
+host_probar = HOST[HOST.index("async probarIA(d)"):HOST.index("abrirEnlace(d)")]
+if "d.id" in host_probar or "{ id:" in host_probar:
+    problemas.append("movil/host/host.js: probarIA lee d.ia y responde iaProbada con «ia» (no «id»).")
+if re.search(r'enviar\("probarIA", \{ id', APP + PIEZAS_UI):
+    problemas.append("La interfaz manda probarIA {id}: va {ia}.")
 
 # 3) Métodos nativos
 PLUGINS = {

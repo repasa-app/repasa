@@ -67,6 +67,7 @@ enum Config {
         if let ia = cambios["ia"] as? String, ["claude", "codex", "gemini"].contains(ia) { d["ia"] = ia }
         if let idioma = cambios["idioma_ui"] as? String, idioma == "es" || idioma == "en" { d["idioma_ui"] = idioma }
         if let b = cambios["bienvenida"] as? Bool { d["bienvenida"] = b }
+        if let t = cambios["tema"] as? String, ["sistema", "claro", "oscuro"].contains(t) { d["tema"] = t }  // pieza «tema»
         if let p = cambios["ultimo_perfil"] as? String, Rutas.cumple(p, "^[a-z0-9-]{1,80}$") { d["ultimo_perfil"] = p }
         Archivos.escribirJSON(Rutas.config, d)
     }

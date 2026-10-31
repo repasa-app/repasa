@@ -19,6 +19,11 @@
    "codex",
    "gemini"
   ],
-  "ultimo_perfil": "texto"
+  "ultimo_perfil": "texto",
+  "tema": [
+   "sistema",
+   "claro",
+   "oscuro"
+  ]
  }
 }

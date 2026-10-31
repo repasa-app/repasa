@@ -219,7 +219,7 @@ class Explicar(unittest.TestCase):
 
 
 class Piezas(unittest.TestCase):
-    """Repasa usa las piezas nucleo, ia e i18n de Pieza sin mover los datos de la familia."""
+    """Repasa usa las piezas de Pieza (nucleo, ia, i18n, host-ui, tema y componentes) sin mover los datos de la familia."""
 
     def test_app_json_respeta_la_carpeta_de_siempre(self):
         import nucleo
@@ -232,9 +232,12 @@ class Piezas(unittest.TestCase):
         shutil.rmtree(datos.BASE, ignore_errors=True)
         os.makedirs(datos.INTERNO)
         with open(os.path.join(datos.INTERNO, "config.json"), "w", encoding="utf-8") as f:
-            json.dump({"ia": "codex", "idioma_ui": "fr", "bienvenida": True, "otra": "<b>x</b>", "ultimo_perfil": "martina"}, f)
+            json.dump({"ia": "codex", "idioma_ui": "fr", "bienvenida": True, "otra": "<b>x</b>", "ultimo_perfil": "martina", "tema": "rosado"}, f)
         c = datos.config()
         self.assertEqual(c, {"ia": "codex", "idioma_ui": "", "bienvenida": True, "ultimo_perfil": "martina"})
+        with open(os.path.join(datos.INTERNO, "config.json"), "w", encoding="utf-8") as f:
+            json.dump({"tema": "oscuro"}, f)
+        self.assertEqual(datos.config().get("tema"), "oscuro", "Apariencia (pieza «tema») se guarda")
         self.assertEqual(stat.S_IMODE(os.stat(datos.BASE).st_mode), 0o700, "~/Repasa sigue solo para la cuenta de la persona")
 
     def test_escribir_siempre_privado(self):
@@ -248,7 +251,21 @@ class Piezas(unittest.TestCase):
         with open(os.path.join(RAIZ, "herramientas", "empaquetar.sh"), encoding="utf-8") as f:
             self.assertIn('cp "$RAIZ/app.json" "$CODIGO/app.json"', f.read())
         with open(os.path.join(RAIZ, "piezas.json"), encoding="utf-8") as f:
-            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n"})
+            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes"})
+
+    def test_piezas_de_la_interfaz_en_orden(self):
+        """Los estilos de las piezas van antes que app.css (Repasa los ajusta) y sus scripts antes que app.js (que los usa)."""
+        with open(os.path.join(RAIZ, "ui", "index.html"), encoding="utf-8") as f:
+            html = f.read()
+        css = [html.index(f'href="{x}"') for x in ("tema.css", "componentes.css", "app.css")]
+        js = [html.index(f'<script src="{x}">') for x in ("i18n.js", "host.js", "tema.js", "componentes.js", "app.js")]
+        self.assertEqual(css, sorted(css))
+        self.assertEqual(js, sorted(js))
+        with open(os.path.join(RAIZ, "ui", "app.js"), encoding="utf-8") as f:
+            app = f.read()
+        self.assertIn("PiezaHost.crearHost(", app, "el puente es el de la pieza «host-ui»")
+        self.assertNotIn("window.Repasa = {", app, "las respuestas van con host.responder (la pieza guarda la referencia)")
+        self.assertNotRegex(app, r'class="(?:[^"]* )?(capa|dialogo|boton|pie-dialogo)[ "]', "diálogos y botones son los de la pieza «componentes»")
 
 
 class Seguridad(unittest.TestCase):
