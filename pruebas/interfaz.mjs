@@ -207,6 +207,30 @@ for (const [idioma, consulta] of [["español", "idioma=es"], ["inglés", "idioma
   console.log(`  ✓ Vistas en ${idioma}`);
 }
 
+// 8) Pintar por partes: abrir un diálogo no rehace la pantalla de atrás, y un diálogo que se vuelve a pintar no salta arriba.
+{
+  const p = await nuevaPagina({ viewport: { width: 390, height: 600 } });
+  p.on("pageerror", (e) => falla(`error de JavaScript (pintar por partes): ${e.message}`));
+  await p.goto(BASE + "?perfil=martina"); await p.waitForSelector(".saludo");
+  const r = await p.evaluate(async () => {
+    const main = document.querySelector("#app main");
+    document.querySelector("[data-accion=adultos]").click();
+    const abierto = !!document.querySelector(".dialogo"), mismoMain = document.querySelector("#app main") === main;
+    const d = document.querySelector(".dialogo"); d.scrollTop = d.scrollHeight;
+    const arriba = d.scrollTop, probar = document.querySelector("[data-probar]:not([disabled])");
+    if (probar) probar.click();
+    const dDespues = document.querySelector(".dialogo"), repintado = dDespues !== d;
+    const quedo = dDespues.scrollTop;
+    document.querySelector(".dialogo [data-accion=cerrar]").click();
+    return { abierto, mismoMain, cerrado: !document.querySelector(".capa"), sigueMain: document.querySelector("#app main") === main, probar: !!probar, repintado, arriba, quedo };
+  });
+  if (!r.abierto || !r.cerrado) falla("«Para adultos» no se abrió o no se cerró: " + JSON.stringify(r));
+  else if (!r.mismoMain || !r.sigueMain) falla("abrir o cerrar un diálogo volvió a armar la pantalla de atrás");
+  else if (r.probar && (!r.repintado || r.arriba < 50 || Math.abs(r.quedo - r.arriba) > 2)) falla("el diálogo saltó arriba al volver a pintarse: " + JSON.stringify(r));
+  else console.log("  ✓ Pintar por partes: los diálogos no rehacen la pantalla ni saltan arriba");
+  await p.close();
+}
+
 // 5) Contraste del botón principal
 for (const esquema of ["light", "dark"]) {
   const p = await nuevaPagina({ colorScheme: esquema });
