@@ -421,17 +421,16 @@
       <div class="estado-copia" role="status">${estado}</div></div>`;
   }
   // Paso 0: el idioma, antes que cualquier otra cosa. Cada opción va escrita en su propio idioma (no se traduce), por eso el título
-  // bilingüe va armado aquí y no por T(). Es un diálogo de la pieza (`envolver`: aria-modal, foco adentro) que no se cierra; el foco
+  // bilingüe va armado aquí y no por T(). Es un diálogo de la pieza (`dialogo` con `tituloHTML` y `claseTitulo`: aria-modal, foco adentro) que no se cierra; el foco
   // empieza en el idioma sugerido (data-autofoco), así Enter lo elige.
   const IDIOMAS = [["es", "Español", "Sugerido"], ["en", "English", "Suggested"]];
   function pasoIdioma(puntos) {
     const sugerido = E.config.idioma_ui || idiomaSistema();
-    return ui.envolver(`${puntos}
-      <h2 id="t-idioma" class="titulo-idioma" tabindex="-1" data-sin-traducir><span lang="es">Elige tu idioma</span> <span class="sep">·</span> <span lang="en">Choose your language</span></h2>
-      <div class="opciones-idioma" role="group" aria-labelledby="t-idioma" data-sin-traducir>${IDIOMAS.map(([codigo, nombre, marca], k) => `
+    return ui.dialogo({ id: "t-idioma", antes: puntos, claseTitulo: "titulo-idioma", clase: "bv", cerrable: false, sinEsc: true,
+      tituloHTML: `<span lang="es">Elige tu idioma</span> <span class="sep">·</span> <span lang="en">Choose your language</span>`,
+      cuerpo: `<div class="opciones-idioma" role="group" aria-labelledby="t-idioma" data-sin-traducir>${IDIOMAS.map(([codigo, nombre, marca], k) => `
         <button class="idioma-op ${codigo === sugerido ? "sugerido" : ""}" id="idioma-${codigo}" data-idioma="${codigo}" lang="${codigo}" aria-keyshortcuts="${k + 1}"${codigo === sugerido ? " data-autofoco" : ""}>
-          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div>`,
-      { id: "t-idioma", clase: "bv", sinEsc: true });
+          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div>` });
   }
   async function elegirIdioma(codigo) {
     if (!IDIOMAS.some(([c]) => c === codigo)) return;
