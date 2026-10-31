@@ -90,7 +90,7 @@ async function preguntarLocal(prompt, { maxTokens = 800, temperatura = 0.3 } = {
 function iasParaLaInterfaz() {
   return [
     { id: "telefono", nombre: nombreIA(), instalada: !!ia.texto, detalle: detalleIA() },
-    { id: "computador", nombre: "El computador de la casa", instalada: false, detalle: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." },
+    { id: "computador", nombre: "El computador de la casa", instalada: false, revisable: false, detalle: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." },
   ];
 }
 

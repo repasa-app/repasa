@@ -6,6 +6,10 @@ Lo que cambia para quien usa Repasa, en palabras simples. Las versiones anterior
 
 ## Sin publicar · Unreleased
 
+- En pantallas táctiles todos los botones siguen siendo grandes, para dedos chicos. En el celular, «El computador de la casa» ya no
+  ofrece «Revisar de nuevo» (todavía no existe: llega muy pronto). Las copias en tu nube se guardan y se abren igual que antes.
+  *On touch screens every button stays large, for small fingers. On the phone, «The home computer» no longer offers «Check again»
+  (it doesn't exist yet: coming soon). Copies in your cloud are saved and opened just like before.*
 - Ahora puedes elegir en «Para adultos» si Repasa se ve clara, oscura o como el sistema. El rojo y el verde de las respuestas se leen
   mejor, borrar una prueba pregunta antes, Esc cierra cualquier ventana y «Acerca de» trae «Enviar comentarios» (abre GitHub con el
   mensaje listo; nunca es obligatorio).

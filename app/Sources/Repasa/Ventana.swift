@@ -212,7 +212,8 @@ final class Ventana: NSObject, NSWindowDelegate, WKScriptMessageHandler, WKNavig
             abrirCarpetaDatos()
         case "buscarActualizacion":
             Actualizaciones.revisar { hay, detalle in
-                Ventana.shared.llamar("actualizacionRevisada", ["hay": hay, "detalle": detalle, "sinConexion": detalle == Actualizaciones.sinConexion])
+                Ventana.shared.llamar("actualizacionRevisada", ["hay": hay, "detalle": detalle, "sinConexion": detalle == Actualizaciones.sinConexion,
+                                                                   "desarrollo": Actualizaciones.checkout != nil])
             }
         case "actualizar":
             // Nunca mientras la IA arma un tema: cerrar la app lo cortaría.
