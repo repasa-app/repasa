@@ -1,6 +1,7 @@
 // Arma la carpeta web de la app del celular (www/) sin copiar nada a mano: la misma interfaz de ui/, el motor/ y el anfitrión del
 // teléfono (host/). Después: npx cap sync. Uso: node armar.mjs [--salida carpeta]
-// - index.html carga host/arranque.js antes de app.js y host/host.js (módulo) después; viewport con viewport-fit=cover (notch).
+// - index.html carga host/arranque.js antes de app.js, y cifrado.js (pieza «cifrado») y host/host.js (módulo) después;
+//   viewport con viewport-fit=cover (notch).
 // - Sin la vista previa (demo.json, demo/): en el teléfono los datos son los de la familia.
 // - Los temas de ejemplo (temas/*.json, validados) van como catálogo incluido, con temas/index.json.
 import fs from "node:fs";
@@ -34,6 +35,8 @@ fs.writeFileSync(path.join(SALIDA, "temas", "index.json"), JSON.stringify(temas)
 
 let html = fs.readFileSync(path.join(SALIDA, "index.html"), "utf8");
 // Las piezas de la interfaz (idiomas, puente, tema y componentes) vienen en ui/: sin ellas app.js no arranca en el teléfono.
+// La pieza «cifrado» (ui/cifrado.js) la carga el anfitrión del teléfono (abajo): sin ella no hay copia cifrada.
+if (!fs.existsSync(path.join(SALIDA, "cifrado.js"))) throw new Error("falta ui/cifrado.js (pieza «cifrado» de Pieza)");
 for (const f of ["i18n.js", "host.js", "tema.js", "componentes.js"]) {
   if (!fs.existsSync(path.join(SALIDA, f)) || !html.includes(`<script src="${f}"></script>`)) throw new Error(`falta ui/${f} (pieza de Pieza)`);
 }
@@ -42,7 +45,8 @@ for (const f of ["tema.css", "componentes.css"]) {
 }
 const cambios = [
   ['<meta name="viewport" content="width=device-width, initial-scale=1">', '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'],
-  ['<script src="app.js"></script>', '<script src="host/arranque.js"></script>\n  <script src="app.js"></script>\n  <script type="module" src="host/host.js"></script>'],
+  // La pieza «cifrado» (script clásico) va antes del anfitrión: el motor la usa para la copia cifrada (window.PiezaCifrado).
+  ['<script src="app.js"></script>', '<script src="host/arranque.js"></script>\n  <script src="app.js"></script>\n  <script src="cifrado.js"></script>\n  <script type="module" src="host/host.js"></script>'],
 ];
 for (const [a, b] of cambios) {
   if (!html.includes(a)) throw new Error("ui/index.html cambió: no encuentro " + a);

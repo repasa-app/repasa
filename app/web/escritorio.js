@@ -1,5 +1,6 @@
-// Copia cifrada en las apps de escritorio, con el mismo motor que el celular (motor/copia.js y motor/cifrado.js, WebCrypto).
-// La app de Mac lo copia a ui/escritorio.js (y motor/ a ui/motor/) al empaquetar y lo carga como módulo en su WebView; la app
+// Copia cifrada en las apps de escritorio, con el mismo motor que el celular (motor/copia.js y la pieza «cifrado», WebCrypto).
+// La app de Mac lo copia a ui/escritorio.js (y motor/ a ui/motor/) al empaquetar y lo carga como módulo en su WebView, después de
+// ui/cifrado.js (script clásico: window.PiezaCifrado); la app
 // lee y escribe los archivos de ~/Repasa y este módulo solo cifra, descifra y junta, sobre un almacén en memoria.
 //
 //   RepasaEscritorio.armar(archivos, frase, hoy)  → {ok, texto, cantidad} | {ok: false, error}
@@ -10,7 +11,6 @@
 // `escribir` y la app lo revisa otra vez antes de tocar el disco (solo rutas permitidas, nunca fuera de ~/Repasa).
 import { Almacen, adaptadorMemoria } from "./motor/datos.js";
 import { armarCopia, abrirCopia, juntar, RUTA_PERMITIDA } from "./motor/copia.js";
-import { revisarFrase } from "./motor/cifrado.js";
 
 const NO_SE_PUDO = { armar: "No se pudo guardar la copia.", traer: "No se pudo abrir el archivo." };
 
@@ -25,15 +25,16 @@ function almacenDe(archivos) {
   return { almacen: new Almacen(adaptadorMemoria(mapa)), mapa };
 }
 
+/** La frase lista para mostrar de un error de la pieza «cifrado» (frase corta, la frase no es, dañado…); "" si es otro error. */
+const deCifrado = (e) => (globalThis.PiezaCifrado && e instanceof globalThis.PiezaCifrado.ErrorCifrado ? e.message : "");
+
 export async function armar(archivos, frase, hoy) {
-  const problema = revisarFrase(frase);
-  if (problema) return { ok: false, error: problema };
   try {
     const { almacen } = almacenDe(archivos);
-    const { texto, cantidad } = await armarCopia(almacen, frase, String(hoy || ""));
+    const { texto, cantidad } = await armarCopia(almacen, frase, String(hoy || "")); // la pieza revisa la frase (12+ caracteres)
     return { ok: true, texto, cantidad };
-  } catch {
-    return { ok: false, error: NO_SE_PUDO.armar };
+  } catch (e) {
+    return { ok: false, error: deCifrado(e) || NO_SE_PUDO.armar };
   }
 }
 
@@ -49,8 +50,8 @@ export async function traer(archivos, texto, frase) {
     const escribir = [...mapa].filter(([k, v]) => antes.get(k) !== JSON.stringify(v) && RUTA_PERMITIDA.test(k)).map(([ruta, v]) => ({ ruta, ...v }));
     return { ok: true, resumen, escribir };
   } catch (e) {
-    // ErrorFrase / ErrorDañado traen un mensaje listo para mostrar («La frase no es la correcta.», «El archivo está dañado…»).
-    return { ok: false, error: e?.message && e.constructor?.name !== "Error" ? e.message : NO_SE_PUDO.traer };
+    // Los errores de la pieza traen su frase lista para mostrar («La frase no es la correcta.», «Ese archivo no es una copia…»).
+    return { ok: false, error: deCifrado(e) || NO_SE_PUDO.traer };
   }
 }
 

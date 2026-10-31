@@ -20,7 +20,7 @@ Qué puedes esperar:
 ## Qué cuenta
 - Que un **tema** (del catálogo, a mano o de la IA), una **copia cifrada** o una traducción logren ejecutar código, mostrar HTML o
   escribir fuera de la carpeta de Repasa.
-- Fallas del **cifrado** de la copia (`motor/cifrado.js`, `motor/copia.js`): abrirla sin la frase, cambiarla sin que se note, o que
+- Fallas del **cifrado** de la copia (`ui/cifrado.js` —pieza «cifrado» de Pieza—, `motor/copia.js`, `motor/carpeta.js`): abrirla sin la frase, cambiarla sin que se note, o que
   deje ver nombres o temas.
 - La app del celular: el puente entre la página y los plugins nativos (`movil/plugins`), permisos, archivos de la app expuestos,
   respaldos o cualquier dato que salga del teléfono sin cifrar.

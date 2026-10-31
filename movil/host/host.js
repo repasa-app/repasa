@@ -9,7 +9,6 @@ import { validar } from "../motor/temas.js";
 import * as crear from "../motor/crear_tema.js";
 import * as exp from "../motor/explicar.js";
 import * as copia from "../motor/copia.js";
-import { revisarFrase } from "../motor/cifrado.js";
 
 const CAP = window.Capacitor;
 const llamar = (plugin, metodo, opciones = {}) => CAP.nativePromise(plugin, metodo, opciones);
@@ -17,6 +16,8 @@ const RAIZ = "Repasa"; // dentro de los datos de la app (Directory.Data: Documen
 const DIR = "DATA";
 const A = () => window.Repasa; // las funciones de la interfaz
 const hoy = () => window.REPASA_HOY || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+/** La frase lista para mostrar de un error de la pieza «cifrado» (frase, dañado, no es una copia…); "" si es otro error. */
+const deCifrado = (e) => (globalThis.PiezaCifrado && e instanceof globalThis.PiezaCifrado.ErrorCifrado ? e.message : "");
 const cancelado = (e) => /cancel/i.test(String(e?.message || e)) || e?.code === "CANCELADO";
 
 // ───────────── Archivos: el adaptador del motor sobre Capacitor Filesystem ─────────────
@@ -209,13 +210,12 @@ const ACCIONES = {
   abrirCarpeta: () => {},
   buscarActualizacion: () => A().actualizacionRevisada({ hay: false }),
   async guardarCopia(d) {
-    const problema = revisarFrase(d.frase);
-    if (problema) return A().copiaLista({ ok: false, error: problema });
+    // La pieza «cifrado» (ui/cifrado.js) revisa la frase al armar: una corta da su frase («Usa una frase de al menos 12…»).
     try {
       const { texto, cantidad } = await copia.armarCopia(almacen, d.frase, hoy());
       await llamar("Carpeta", "exportar", { nombre: `Repasa-copia-${hoy()}.repasa`, texto });
       A().copiaLista({ ok: true, cantidad });
-    } catch (e) { A().copiaLista(cancelado(e) ? { ok: false, cancelado: true } : { ok: false, error: "No se pudo guardar la copia." }); }
+    } catch (e) { A().copiaLista(cancelado(e) ? { ok: false, cancelado: true } : { ok: false, error: deCifrado(e) || "No se pudo guardar la copia." }); }
   },
   async traerCopia(d) {
     if (!d.frase) return A().copiaTraida({ ok: false, error: "La frase no es la correcta." });
@@ -226,7 +226,7 @@ const ACCIONES = {
       const resumen = await enOrden(() => copia.juntar(almacen, entradas));
       A().copiaTraida({ ok: true, resumen });
       await enviarEstado();
-    } catch (e) { A().copiaTraida({ ok: false, error: e.message }); }
+    } catch (e) { A().copiaTraida({ ok: false, error: deCifrado(e) || "No se pudo abrir el archivo." }); }
   },
 };
 
