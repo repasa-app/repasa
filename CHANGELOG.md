@@ -22,6 +22,10 @@ Lo que cambia para quien usa Repasa, en palabras simples. Las versiones anterior
   *Under the hood, Pieza pieces: the AI, settings and languages now use the family's shared pieces (`nucleo`, `ia`, `i18n`). When
   you tap «Use», the AI is tested with the same protections as when it builds a topic, and settings only keep what Repasa knows.
   Your topics and each profile's progress stay where they were.*
+- Al traer una copia en tu nube, Repasa ahora te dice si el archivo no es una copia de Repasa, si viene de una versión más nueva
+  («Actualiza la app») o si todavía se está copiando. Las copias que ya guardaste se siguen abriendo con su frase.
+  *When bringing a copy from your cloud, Repasa now tells you if the file isn't a Repasa copy, if it comes from a newer version
+  («Update the app») or if it's still being copied. The copies you already saved still open with their passphrase.*
 - Cuando la IA lee las fotos del cuaderno, ahora solo puede leerlas: tiene prohibido ejecutar, escribir o salir a internet, y ya no recibe los datos internos de Repasa ni tu memoria de Claude.
   *When the AI reads the notebook photos, it can now only read them: it may not run, write or go online, and it no longer receives Repasa's internal settings or your Claude memory.*
 - Los nombres y títulos se muestran siempre como texto, nunca como parte de la página.

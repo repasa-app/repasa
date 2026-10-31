@@ -32,8 +32,9 @@ final class Ventana: NSObject, NSWindowDelegate, WKScriptMessageHandler, WKNavig
         let control = WKUserContentController()
         control.add(self, name: "repasa")
         control.addUserScript(WKUserScript(source: "window.REPASA_HOST = 'mac';", injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        // La copia cifrada usa el mismo motor que el celular (ui/escritorio.js + ui/motor/, los copia empaquetar.sh).
-        let cargarCopia = "(() => { const s = document.createElement('script'); s.type = 'module'; s.src = 'escritorio.js'; document.head.appendChild(s); })();"
+        // La copia cifrada usa el mismo motor que el celular (ui/escritorio.js + ui/motor/, los copia empaquetar.sh) sobre la pieza
+        // «cifrado» (ui/cifrado.js, script clásico: window.PiezaCifrado), que se carga primero.
+        let cargarCopia = "(() => { const c = document.createElement('script'); c.src = 'cifrado.js'; c.onload = () => { const s = document.createElement('script'); s.type = 'module'; s.src = 'escritorio.js'; document.head.appendChild(s); }; document.head.appendChild(c); })();"
         control.addUserScript(WKUserScript(source: cargarCopia, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         let conf = WKWebViewConfiguration()
         conf.userContentController = control

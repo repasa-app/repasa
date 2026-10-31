@@ -6,16 +6,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import * as temas from "../motor/temas.js";
 import * as lineas from "../motor/lineas.js";
 import * as crear from "../motor/crear_tema.js";
 import * as explicar from "../motor/explicar.js";
 import * as datos from "../motor/datos.js";
-import * as cifrado from "../motor/cifrado.js";
 import * as copia from "../motor/copia.js";
 import * as carpeta from "../motor/carpeta.js";
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// La pieza «cifrado» (ui/cifrado.js, script clásico): en el teléfono y en el Mac queda en window.PiezaCifrado; aquí, igual.
+const P = (globalThis.PiezaCifrado = createRequire(import.meta.url)("../ui/cifrado.js"));
+const cifrado = copia.cifrado();
+const esError = (e, codigo) => e instanceof P.ErrorCifrado && e.codigo === codigo;
 const casos = JSON.parse(fs.readFileSync(path.join(RAIZ, "pruebas", "casos.json"), "utf8"));
 const TEMA = JSON.parse(fs.readFileSync(path.join(RAIZ, "pruebas", "datos", "independencia-de-chile.json"), "utf8"));
 const errores = [];
@@ -187,29 +191,53 @@ await bloque("datos: mismo formato que en el computador, sin pisar temas", async
   await al.guardarProgreso("../x", {}).then(() => falla("guardó progreso con una ruta rara"), () => {});
 });
 
-await bloque("cifrado: frase equivocada, archivo cambiado y nombres opacos", async () => {
-  const { cabecera, llaves } = await cifrado.nuevaCabecera("caballo bateria grapa correcto", 100000);
+await bloque("cifrado (pieza): frase equivocada, archivo cambiado y nombres opacos con el contexto de Repasa", async () => {
+  const { cabecera, llaves } = await cifrado.nuevaCabecera("caballo bateria grapa correcto", { iteraciones: 100000 });
   const sobre = await cifrado.cifrarJSON(llaves, { hola: "mundo" }, "aad-1");
   if (JSON.stringify(sobre).includes("mundo")) falla("el sobre se lee sin la frase");
-  const otra = await cifrado.abrirCabecera(JSON.parse(JSON.stringify(cabecera)), "caballo bateria grapa correcto");
+  const otra = await cifrado.abrirCabecera(JSON.parse(JSON.stringify(cabecera)), { frase: "caballo bateria grapa correcto" });
   if (!igual(await cifrado.descifrarJSON(otra, sobre, "aad-1"), { hola: "mundo" })) falla("no se pudo abrir con la frase correcta");
-  await cifrado.abrirCabecera(cabecera, "caballo bateria grapa incorrecto").then(() => falla("abrió con una frase equivocada"), (e) => { if (!(e instanceof cifrado.ErrorFrase) || e.message !== "La frase no es la correcta.") falla("mensaje de frase: " + e.message); });
-  await cifrado.descifrarJSON(otra, sobre, "aad-2").then(() => falla("abrió un sobre fuera de su lugar (AAD)"), (e) => { if (!(e instanceof cifrado.ErrorDañado)) falla("tipo de error AAD"); });
+  await cifrado.abrirCabecera(cabecera, { frase: "caballo bateria grapa incorrecto" }).then(() => falla("abrió con una frase equivocada"), (e) => { if (!esError(e, "frase") || e.message !== "La frase no es la correcta.") falla("mensaje de frase: " + e.message); });
+  await cifrado.descifrarJSON(otra, sobre, "aad-2").then(() => falla("abrió un sobre fuera de su lugar (AAD)"), (e) => { if (!esError(e, "danado")) falla("tipo de error AAD"); });
   const roto = { ...sobre, datos: sobre.datos.slice(0, -6) + (sobre.datos.at(-6) === "A" ? "B" : "A") + sobre.datos.slice(-5) };
   await cifrado.descifrarJSON(otra, roto, "aad-1").then(() => falla("abrió un sobre cambiado"), () => {});
-  await cifrado.abrirCabecera({ ...cabecera, kdf: { ...cabecera.kdf, iteraciones: 1000 } }, "caballo bateria grapa correcto").then(() => falla("aceptó pocas vueltas de PBKDF2"), () => {});
+  await cifrado.abrirCabecera({ ...cabecera, kdf: { ...cabecera.kdf, iteraciones: 1000 } }, { frase: "caballo bateria grapa correcto" }).then(() => falla("aceptó pocas vueltas de PBKDF2"), () => {});
   // Un archivo raro (base64 cortado, sal o IV de otro largo) da siempre «El archivo está dañado…», nunca un error sin explicar.
   for (const sal of ["a", "abcde", "QUJD=", "####"]) {
-    await cifrado.abrirCabecera({ ...cabecera, kdf: { ...cabecera.kdf, sal } }, "caballo bateria grapa correcto").then(() => falla("abrió con una sal rara"), (e) => { if (!(e instanceof cifrado.ErrorDañado)) falla(`sal «${sal}»: ${e.name}`); });
+    await cifrado.abrirCabecera({ ...cabecera, kdf: { ...cabecera.kdf, sal } }, { frase: "caballo bateria grapa correcto" }).then(() => falla("abrió con una sal rara"), (e) => { if (!esError(e, "danado")) falla(`sal «${sal}»: ${e.name}`); });
   }
-  await cifrado.descifrarJSON(otra, { ...sobre, iv: "QUJD" }, "aad-1").then(() => falla("abrió con un IV corto"), (e) => { if (!(e instanceof cifrado.ErrorDañado)) falla("IV corto: " + e.name); });
+  await cifrado.descifrarJSON(otra, { ...sobre, iv: "QUJD" }, "aad-1").then(() => falla("abrió con un IV corto"), (e) => { if (!esError(e, "danado")) falla("IV corto: " + e.name); });
   // «canción» con la tilde como un carácter o como dos (iPhone y Android pueden mandar distinto): la misma frase.
-  const nfd = await cifrado.abrirCabecera((await cifrado.nuevaCabecera("mi canción favorita 2026", 100000)).cabecera, "mi canción favorita 2026").catch(() => null);
+  const nfd = await cifrado.abrirCabecera((await cifrado.nuevaCabecera("mi canción favorita 2026", { iteraciones: 100000 })).cabecera, { frase: "mi canción favorita 2026" }).catch(() => null);
   if (!nfd) falla("la frase no se normaliza (NFC)");
   const n1 = await cifrado.nombreOpaco(llaves, "progreso/martina-x1.json"), n2 = await cifrado.nombreOpaco(otra, "progreso/martina-x1.json");
-  const n3 = await cifrado.nombreOpaco((await cifrado.nuevaCabecera("otra frase larga distinta", 100000)).llaves, "progreso/martina-x1.json");
+  const n3 = await cifrado.nombreOpaco((await cifrado.nuevaCabecera("otra frase larga distinta", { iteraciones: 100000 })).llaves, "progreso/martina-x1.json");
   if (n1 !== n2 || n1 === n3 || !/^[0-9a-f]{32}$/.test(n1)) falla("nombreOpaco: " + [n1, n2, n3]);
-  if (cifrado.revisarFrase("corta") === "" || cifrado.revisarFrase("cuatro palabras bien largas") !== "") falla("revisarFrase");
+  if (P.revisarFrase("corta") === "" || P.revisarFrase("cuatro palabras bien largas") !== "") falla("revisarFrase");
+  await cifrado.nuevaCabecera("corta").then(() => falla("una frase corta sirvió para cifrar"), (e) => { if (e.codigo !== "corta" || !e.message.includes("12 caracteres")) falla("frase corta: " + e.message); });
+});
+
+// Lo que ya guardó una familia con el cifrado de antes (motor/cifrado.js, hasta la pieza) se sigue abriendo: los archivos de
+// pruebas/datos/antes/ se armaron con ese código (frase «pino lluvia tetera azul», datos ficticios).
+await bloque("lo guardado antes de la pieza se sigue abriendo: copia .repasa y carpeta de la fase 2", async () => {
+  const FRASE = "pino lluvia tetera azul";
+  const texto = fs.readFileSync(path.join(RAIZ, "pruebas", "datos", "antes", "copia-v1.repasa"), "utf8");
+  await copia.abrirCopia(texto, "pino lluvia tetera roja").then(() => falla("la copia de antes se abrió con otra frase"), (e) => { if (!esError(e, "frase")) falla("frase equivocada (antes): " + e.message); });
+  const entradas = await copia.abrirCopia(texto, FRASE);
+  const destino = new datos.Almacen(datos.adaptadorMemoria());
+  const r = await copia.juntar(destino, entradas);
+  if (!igual(r, { perfiles: 1, temas: 1, progreso: 1, pruebas: 1, material: 1, omitidos: 0 })) falla("copia de antes: " + JSON.stringify(r));
+  if ((await destino.perfiles())[0]?.nombre !== "Martina" || (await destino.progreso())["martina-x1"]?.puntos !== 50) falla("copia de antes: no volvieron el perfil o el avance");
+  const c = JSON.parse(fs.readFileSync(path.join(RAIZ, "pruebas", "datos", "antes", "carpeta-v1.json"), "utf8"));
+  const llaves = await carpeta.abrirCarpeta(c.cabecera, FRASE);
+  const archivo = await carpeta.archivoDeSobre(llaves, c.datos.nombre, c.datos.texto);
+  if (archivo.ruta !== "progreso/martina-x1.json" || archivo.contenido.puntos !== 3) falla("carpeta de antes: " + JSON.stringify(archivo));
+  if ((await cifrado.nombreOpaco(llaves, archivo.ruta)) + ".repasa" !== c.datos.nombre) falla("carpeta de antes: los nombres opacos cambiaron");
+  if ((await carpeta.leerPedido(llaves, c.pedido.id, c.pedido.texto)).datos.respondio !== "1810") falla("carpeta de antes: pedido");
+  if ((await carpeta.leerRespuesta(llaves, c.respuesta.id, c.respuesta.texto)).texto !== "La Primera Junta fue en 1810.") falla("carpeta de antes: respuesta");
+  // Una copia de una Repasa más nueva pide actualizar (no dice «dañado»); algo que no es una copia lo dice.
+  await copia.abrirCopia(JSON.stringify({ ...JSON.parse(texto), v: 2 }), FRASE).then(() => falla("abrió una copia de una versión más nueva"), (e) => { if (!esError(e, "version") || !e.message.includes("Repasa")) falla("versión nueva: " + e.message); });
+  await copia.abrirCopia("hola", FRASE).then(() => falla("abrió algo que no es una copia"), (e) => { if (!esError(e, "no_es") || e.message !== "Ese archivo no es una copia de Repasa.") falla("no es una copia: " + e.message); });
 });
 
 async function almacenConDatos() {
@@ -228,7 +256,7 @@ await bloque("copia cifrada: se guarda, se trae y se junta sin perder nada", asy
   if (/Martina|martina|independencia|Patria/.test(texto)) falla("la copia deja ver nombres o temas sin la frase");
   if (cantidad !== 5) falla(`esperaba 5 archivos en la copia (perfiles, pruebas, progreso, tema, foto; no los ajustes): ${cantidad}`);
   await copia.abrirCopia(texto, "otra frase cualquiera").then(() => falla("abrió la copia con otra frase"), (e) => { if (e.message !== "La frase no es la correcta.") falla(e.message); });
-  await copia.abrirCopia("{}", "x").then(() => falla("abrió algo que no es una copia"), (e) => { if (e.message !== cifrado.MENSAJES.dañado) falla(e.message); });
+  await copia.abrirCopia("{}", "x").then(() => falla("abrió algo que no es una copia"), (e) => { if (!esError(e, "no_es")) falla(e.message); });
   const entradas = await copia.abrirCopia(texto, "nuestra frase de familia");
   // Otro teléfono con su propio avance: al traer la copia se junta.
   const destino = new datos.Almacen(datos.adaptadorMemoria());

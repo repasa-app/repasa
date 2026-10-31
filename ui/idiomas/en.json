@@ -240,7 +240,6 @@
   "No encontré ese tema.": "I couldn't find that topic.",
   "No encontré esa pregunta.": "I couldn't find that question.",
   "La frase no es la correcta.": "That's not the right passphrase.",
-  "El archivo está dañado o no es una copia de Repasa.": "The file is damaged or isn't a Repasa copy.",
   "Usa una frase de al menos 12 caracteres (por ejemplo, cuatro palabras).": "Use a passphrase of at least 12 characters (for example, four words).",
   "No se pudo guardar la copia.": "The copy couldn't be saved.",
   "No se pudo abrir el archivo.": "The file couldn't be opened.",
@@ -339,6 +338,16 @@
   "Los temas siguen aquí; solo se quita la fecha de la prueba.": "The topics stay here; only the test date is removed.",
   "Dejarla": "Keep it",
   "Detuviste a {ia}.": "You stopped {ia}.",
-  "Hay cambios nuevos en el código de {app}": "There are new changes in {app}'s code"
+  "Hay cambios nuevos en el código de {app}": "There are new changes in {app}'s code",
+  "El archivo está dañado o se está copiando todavía. Prueba en un rato.": "The file is damaged or still being copied. Try again in a while.",
+  "Este archivo viene de una versión más nueva de {app}. Actualiza la app.": "This file comes from a newer version of {app}. Update the app.",
+  "Ese archivo no es una copia de {app}.": "That file isn't a {app} copy.",
+  "Ese archivo no es una copia de Repasa.": "That file isn't a Repasa copy.",
+  "Este archivo viene de una versión más nueva de Repasa. Actualiza la app.": "This file comes from a newer version of Repasa. Update the app.",
+  "Este equipo no puede cifrar.": "This device can't encrypt.",
+  "Muy corta": "Too short",
+  "Aceptable": "Acceptable",
+  "Buena": "Good",
+  "Muy buena": "Very good"
  }
 }

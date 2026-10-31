@@ -251,7 +251,14 @@ class Piezas(unittest.TestCase):
         with open(os.path.join(RAIZ, "herramientas", "empaquetar.sh"), encoding="utf-8") as f:
             self.assertIn('cp "$RAIZ/app.json" "$CODIGO/app.json"', f.read())
         with open(os.path.join(RAIZ, "piezas.json"), encoding="utf-8") as f:
-            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes"})
+            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes", "cifrado"})
+
+    def test_cifrado_es_la_pieza(self):
+        """La copia cifrada usa la pieza «cifrado» (ui/cifrado.js): sin copia propia, y el Mac la carga antes que escritorio.js."""
+        self.assertFalse(os.path.exists(os.path.join(RAIZ, "motor", "cifrado.js")), "motor/cifrado.js se reemplazó por la pieza")
+        with open(os.path.join(RAIZ, "app", "Sources", "Repasa", "Ventana.swift"), encoding="utf-8") as f:
+            swift = f.read()
+        self.assertLess(swift.index("c.src = 'cifrado.js'"), swift.index("s.src = 'escritorio.js'"))
 
     def test_piezas_de_la_interfaz_en_orden(self):
         """Los estilos de las piezas van antes que app.css (Repasa los ajusta) y sus scripts antes que app.js (que los usa)."""

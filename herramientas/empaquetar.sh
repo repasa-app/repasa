@@ -2,7 +2,8 @@
 # Arma dist/Repasa.app (autosuficiente) y dist/Repasa-macOS.zip + .sha256, sin instalar nada. Solo en un Mac.
 # Lo usan build.sh (en tu Mac), la actualización de una instalación de desarrollo y, cuando exista, la acción que publica cada versión.
 # Dentro van: la app, Python portátil y el código en Contents/Resources/repasa: bin/, temas/ (catálogo incluido) y ui/ con el
-# motor JS (ui/motor/) y la copia cifrada de escritorio (ui/escritorio.js, desde app/web/). Los datos de la familia quedan en ~/Repasa.
+# motor JS (ui/motor/) y la copia cifrada de escritorio (ui/escritorio.js, desde app/web/, sobre la pieza «cifrado»: ui/cifrado.js).
+# Los datos de la familia quedan en ~/Repasa.
 set -euo pipefail
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:$PATH
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
@@ -29,6 +30,8 @@ tar -xzf "$PY_TGZ" -C "$APP/Contents/Resources"   # → Resources/python/bin/pyt
 for d in bin ui temas; do ditto "$RAIZ/$d" "$CODIGO/$d"; done
 ditto "$RAIZ/motor" "$CODIGO/ui/motor"
 cp "$RAIZ/app/web/escritorio.js" "$CODIGO/ui/escritorio.js"
+# La pieza «cifrado» viene en ui/ (ui/cifrado.js) y Ventana.swift la carga antes de escritorio.js: sin ella no hay copia cifrada.
+[ -f "$CODIGO/ui/cifrado.js" ] || { echo "✗ Falta ui/cifrado.js (pieza «cifrado»)" >&2; exit 1; }
 # app.json: la descripción de la app que leen las piezas (bin/nucleo.py la busca junto a bin/; sin ella ningún script arranca).
 cp "$RAIZ/app.json" "$CODIGO/app.json"
 # La app usa los datos de la familia, nunca la demo ni sus imágenes; temas/README.md no hace falta adentro.

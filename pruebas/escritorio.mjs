@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
 import * as datos from "../motor/datos.js";
 import * as copia from "../motor/copia.js";
 
@@ -17,6 +18,8 @@ const ui = fs.mkdtempSync(path.join(os.tmpdir(), "repasa-escritorio-"));
 fs.cpSync(path.join(RAIZ, "motor"), path.join(ui, "motor"), { recursive: true });
 fs.copyFileSync(path.join(RAIZ, "app", "web", "escritorio.js"), path.join(ui, "escritorio.js"));
 globalThis.window = {};
+// Ventana.swift carga ui/cifrado.js (pieza «cifrado», script clásico) antes de escritorio.js: queda en window.PiezaCifrado.
+globalThis.PiezaCifrado = createRequire(import.meta.url)(path.join(RAIZ, "ui", "cifrado.js"));
 await import(pathToFileURL(path.join(ui, "escritorio.js")).href);
 const R = globalThis.window.RepasaEscritorio;
 const FRASE = "cuatro palabras de prueba";
@@ -32,7 +35,7 @@ const computador = {
 
 {
   const corta = await R.armar(computador, "corta", "2026-10-28");
-  if (corta.ok) falla("una frase corta no debería servir");
+  if (corta.ok || !corta.error.includes("12 caracteres")) falla("una frase corta no debería servir: " + JSON.stringify(corta));
   const r = await R.armar(computador, FRASE, "2026-10-28");
   if (!r.ok || r.cantidad !== 4) falla("armar: " + JSON.stringify(r).slice(0, 200));
   else if (/Martina|independencia|claude/i.test(r.texto)) falla("la copia deja ver nombres, temas o ajustes");
@@ -55,8 +58,14 @@ const computador = {
   const { texto } = await copia.armarCopia(telefono, FRASE, "2026-10-28");
   const mala = await R.traer({ ...computador }, texto, "otra frase cualquiera");
   if (mala.ok || mala.error !== "La frase no es la correcta.") falla("frase equivocada: " + JSON.stringify(mala));
-  const danada = await R.traer({ ...computador }, "{\"repasa\":\"otra\"}", FRASE);
+  const otra = await R.traer({ ...computador }, "{\"repasa\":\"otra\"}", FRASE);
+  if (otra.ok || otra.error !== "Ese archivo no es una copia de Repasa.") falla("no es una copia: " + JSON.stringify(otra));
+  const danada = await R.traer({ ...computador }, texto.slice(0, -40), FRASE);
   if (danada.ok || !/dañado/.test(danada.error)) falla("archivo dañado: " + JSON.stringify(danada));
+  // Una copia hecha con el cifrado de antes de la pieza (pruebas/datos/antes/) se trae igual al computador.
+  const antes = await R.traer({}, fs.readFileSync(path.join(RAIZ, "pruebas", "datos", "antes", "copia-v1.repasa"), "utf8"), "pino lluvia tetera azul");
+  if (!antes.ok || antes.resumen.temas !== 1 || antes.resumen.progreso !== 1) falla("copia de antes en el computador: " + JSON.stringify(antes).slice(0, 200));
+  else console.log("  ✓ Una copia hecha antes de la pieza «cifrado» se trae al computador");
   const sinMaterial = { ...computador, [`temas/${TEMA.id}/material/material-1.jpg`]: { base64: "" } };
   const r = await R.traer(sinMaterial, texto, FRASE);
   const rutas = (r.escribir || []).map((x) => x.ruta).sort();
