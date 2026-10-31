@@ -33,8 +33,13 @@ for (const f of fs.readdirSync(path.join(RAIZ, "temas")).filter((x) => x.endsWit
 fs.writeFileSync(path.join(SALIDA, "temas", "index.json"), JSON.stringify(temas));
 
 let html = fs.readFileSync(path.join(SALIDA, "index.html"), "utf8");
-// Los idiomas son la pieza «i18n» (ui/i18n.js): sin ella app.js no arranca en el teléfono.
-if (!fs.existsSync(path.join(SALIDA, "i18n.js")) || !html.includes('<script src="i18n.js"></script>')) throw new Error("falta ui/i18n.js (pieza «i18n»)");
+// Las piezas de la interfaz (idiomas, puente, tema y componentes) vienen en ui/: sin ellas app.js no arranca en el teléfono.
+for (const f of ["i18n.js", "host.js", "tema.js", "componentes.js"]) {
+  if (!fs.existsSync(path.join(SALIDA, f)) || !html.includes(`<script src="${f}"></script>`)) throw new Error(`falta ui/${f} (pieza de Pieza)`);
+}
+for (const f of ["tema.css", "componentes.css"]) {
+  if (!fs.existsSync(path.join(SALIDA, f)) || !html.includes(`<link rel="stylesheet" href="${f}">`)) throw new Error(`falta ui/${f} (pieza de Pieza)`);
+}
 const cambios = [
   ['<meta name="viewport" content="width=device-width, initial-scale=1">', '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'],
   ['<script src="app.js"></script>', '<script src="host/arranque.js"></script>\n  <script src="app.js"></script>\n  <script type="module" src="host/host.js"></script>'],

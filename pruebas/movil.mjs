@@ -60,7 +60,7 @@ await paso("Teléfono nuevo: idioma primero, la IA del teléfono, perfil y a est
   if (await p.$(".perfiles")) falla("se ve algo antes de elegir el idioma");
   await p.click('[data-idioma="es"]');
   await p.click('[data-bv="2"]');
-  const ia = await p.textContent(".dialogo");
+  const ia = await p.textContent(".pz-dialogo");
   if (!ia.includes("Apple Intelligence") || !ia.includes("IA del propio teléfono")) falla("el paso de la IA no habla de la IA del teléfono: " + ia.slice(0, 200));
   if (/Claude|Codex|instalarla/.test(ia)) falla("en el teléfono se ofrecen IA de computador");
   await p.click('[data-accion="bv-fin"]');
@@ -154,15 +154,15 @@ await paso("Catálogo incluido: agregar un tema de ejemplo", async () => {
 await paso("Teléfono sin IA: lo dice claro y deja crear a mano o del catálogo", async () => {
   const p = await telefono({ consulta: "?perfil=martina", antes: () => { window._ia = { texto: false, ocr: true, motivo: "dispositivo", plataforma: "ios", contexto: 4096 }; } });
   await p.click('.accion-inferior [data-accion="nuevo-tema"]');
-  const txt = await p.textContent(".dialogo");
+  const txt = await p.textContent(".pz-dialogo");
   if (!txt.includes("no tiene IA propia") || !txt.includes("iPhone 15 Pro")) falla("no explica por qué no hay IA: " + txt.slice(0, 200));
   if (await p.$('[data-accion="crear-tema"]')) falla("muestra «Armar mi repaso» sin IA");
   await p.click('.botones-foto [data-modo="mano"]');
   await p.waitForSelector("#mano-titulo");
   await p.click('[data-accion="cerrar"]');
   await p.click('[data-accion="adultos"]');
-  await p.click('[data-probar="telefono"]');
-  await p.waitForFunction(() => document.querySelector(".dialogo")?.textContent.includes("iPhone 15 Pro"));
+  await p.click('[data-pz-probar-ia="telefono"]');
+  await p.waitForFunction(() => document.querySelector(".pz-dialogo")?.textContent.includes("iPhone 15 Pro"));
   await p.close();
 });
 

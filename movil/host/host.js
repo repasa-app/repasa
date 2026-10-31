@@ -189,16 +189,18 @@ const ACCIONES = {
     const t = (await almacen.tema(d.tema)) || (await cargarCatalogo()).find((x) => x.id === d.tema);
     A().explicado(await exp.explicar(preguntarLocal, t, d.pregunta, String(d.respondio || "")));
   },
+  // probarIA {ia} → iaProbada {ia, ok, texto?}: la misma forma que en el Mac (pieza «host-ui»). La IA del teléfono es «telefono».
   async probarIA(d) {
-    if (d.id !== "telefono") return A().iaProbada({ id: d.id, ok: false, texto: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." });
+    const id = String(d.ia || "");
+    if (id !== "telefono") return A().iaProbada({ ia: id, ok: false, texto: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." });
     try { await llamar("IaLocal", "preparar"); } catch { /* sigue */ }
     await revisarIA();
-    if (!ia.texto) return A().iaProbada({ id: d.id, ok: false, texto: detalleIA() });
+    if (!ia.texto) return A().iaProbada({ ia: id, ok: false, texto: detalleIA() });
     try {
       await preguntarLocal("Responde solo con la palabra: listo", { maxTokens: 10, temperatura: 0 });
       await enOrden(() => almacen.guardarConfig({ ia: "telefono" }));
-      A().iaProbada({ id: d.id, ok: true });
-    } catch (e) { A().iaProbada({ id: d.id, ok: false, texto: e.message }); }
+      A().iaProbada({ ia: id, ok: true });
+    } catch (e) { A().iaProbada({ ia: id, ok: false, texto: e.message }); }
   },
   abrirEnlace(d) {
     // Solo los enlaces conocidos de Repasa (Acerca de); Capacitor abre lo externo en el navegador del sistema.

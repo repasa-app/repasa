@@ -73,20 +73,26 @@ const VISTAS = [
   ["nuevo-sin-ia", "E=>{E.catalogo=[];E.capacidades={ia:false,iaDetalle:'Este iPhone no tiene Apple Intelligence (hace falta un iPhone 15 Pro o más nuevo).'};E.nuevo={paso:'elegir',modo:'ia',archivos:[],texto:'',ramo:'auto',curso:'6b',mano:{}}}"],
   ["nuevo-error-ia", "E=>{E.capacidades={ia:true,copia:true};E.nuevo.error='La IA del teléfono no quiso responder con este material (sus filtros son estrictos). Prueba con otra foto o escríbelo a mano.'}"],
   ["prueba", "E=>{E.nuevo=null;E.prueba={ramo:'historia',temas:['independencia-de-chile'],fecha:'2026-10-30',id:'prueba-historia'}}"],
-  ["perfil-nuevo", "E=>{E.prueba=null;E.perfilEdit={nombre:'',curso:'6b',avatar:'🦉',error:'x'}}"],
+  ["prueba-borrar", "(E,ui)=>{ui.confirmar({titulo:'¿Borrar esta prueba?',texto:'Los temas siguen aquí; solo se quita la fecha de la prueba.',si:'Borrar',no:'Dejarla',peligro:true})}"],
+  ["perfil-nuevo", "(E,ui)=>{document.querySelector('[data-pz-confirmar=no]')?.click();E.prueba=null;E.perfilEdit={nombre:'',curso:'6b',avatar:'🦉',error:'x'}}"],
   ["adultos", "E=>{E.perfilEdit=null;E.adultos=true}"],
-  ["adultos-al-dia", "E=>{E.buscando='alDia'}"],
-  ["adultos-sin-conexion", "E=>{E.buscando='sinConexion'}"],
-  ["adultos-hay-version", "E=>{E.buscando=null;E.actualizacion={hay:true,detalle:'Versión 0.2.0'}}"],
-  ["adultos-actualizando", "E=>{E.act={paso:'2',texto:'Preparando la versión nueva…'}}"],
-  ["adultos-actualizar-error", "E=>{E.act={paso:'error',texto:'No pude descargar la versión nueva. Revisa tu conexión e intenta de nuevo.'}}"],
-  ["adultos-instalando", "E=>{E.act={paso:'3',texto:'Instalando: Repasa se cerrará y volverá a abrirse sola'}}"],
-  ["adultos-actualizar-otros", "E=>{E.act={paso:'error',texto:'Espera a que termine de armar el tema y vuelve a intentarlo.'}}"],
-  ["adultos-actualizar-otros-2", "E=>{E.act={paso:'error',texto:'No pude preparar la versión nueva. Repasa sigue igual que antes; intenta de nuevo más tarde.'}}"],
-  ["adultos-actualizar-otros-3", "E=>{E.act={paso:'1',texto:'Descargando la versión nueva…'}}"],
-  ["adultos-actualizar-otros-4", "E=>{E.act={paso:'error',texto:'No encontré la descarga de la versión nueva.'}}"],
-  ["adultos-actualizar-otros-5", "E=>{E.act={paso:'error',texto:'En la vista previa no hay nada que actualizar.'}}"],
-  ["adultos-fin-actualizar", "E=>{E.act=null;E.actualizacion={hay:false};E.buscando=null}"],
+  // Actualizaciones: el estado es de la pieza «componentes» (ui.act), con la misma forma que manda la app de Mac.
+  ["adultos-buscando", "(E,ui)=>{ui.act.estado='buscando'}"],
+  ["adultos-al-dia", "(E,ui)=>{ui.act.estado='al-dia'}"],
+  ["adultos-sin-conexion", "(E,ui)=>{ui.act.estado='sin-conexion'}"],
+  ["adultos-hay-version", "(E,ui)=>{ui.act.estado=null;ui.act.disponible={hay:true,notas:'Versión 0.2.0'}}"],
+  ["adultos-actualizando", "(E,ui)=>{ui.act.estado={paso:'2',texto:'Preparando la versión nueva…',valores:{},total:3,pct:40}}"],
+  ["adultos-actualizar-error", "(E,ui)=>{ui.act.estado={paso:'error',texto:'No pude descargar la versión nueva. Revisa tu conexión e intenta de nuevo.',valores:{},total:3}}"],
+  ["adultos-instalando", "(E,ui)=>{ui.act.estado={paso:'3',texto:'Instalando: Repasa se cerrará y volverá a abrirse sola',valores:{},total:3}}"],
+  ["adultos-actualizar-otros", "(E,ui)=>{ui.act.estado={paso:'error',texto:'Espera a que termine de armar el tema y vuelve a intentarlo.',valores:{},total:3}}"],
+  ["adultos-actualizar-otros-2", "(E,ui)=>{ui.act.estado={paso:'error',texto:'No pude preparar la versión nueva. Repasa sigue igual que antes; intenta de nuevo más tarde.',valores:{},total:3}}"],
+  ["adultos-actualizar-otros-3", "(E,ui)=>{ui.act.estado={paso:'1',texto:'Descargando la versión nueva…',valores:{},total:3}}"],
+  ["adultos-actualizar-otros-4", "(E,ui)=>{ui.act.estado={paso:'error',texto:'No encontré la descarga de la versión nueva.',valores:{},total:3}}"],
+  ["adultos-actualizar-otros-5", "(E,ui)=>{ui.act.estado={paso:'error',texto:'En la vista previa no hay nada que actualizar.',valores:{},total:3}}"],
+  ["adultos-fin-actualizar", "(E,ui)=>{ui.act.estado=null;ui.act.disponible=null}"],
+  ["adultos-ia-error", "(E,ui)=>{ui.ia.resultados.claude={ia:'claude',ok:false,plantilla:'No encontré {ia} en este computador.',valores:{ia:'Claude Code'}}}"],
+  ["adultos-oscuro", "(E,ui,tema)=>{tema.aplicar('oscuro')}"],
+  ["adultos-claro", "(E,ui,tema)=>{tema.aplicar('sistema');delete ui.ia.resultados.claude}"],
   ["adultos-copia", "E=>{E.capacidades={ia:true,copia:true};E.copia={frase:'',estado:'guardada',cantidad:7,error:''}}"],
   ["adultos-copia-traida", "E=>{E.copia={frase:'',estado:'traida',resumen:{temas:2,progreso:1},error:''}}"],
   ["adultos-copia-error", "E=>{E.copia={frase:'x',estado:'',error:'La frase no es la correcta.'}}"],
@@ -153,17 +159,17 @@ async function nuevaPagina(opciones) {
   if (MOVIL) await p.waitForSelector("[data-idioma]");
   else await p.evaluate((e) => window.Repasa.estado({ ...e, config: {} }), estadoDemo);
   const primera = await p.evaluate(() => ({
-    titulo: document.querySelector(".dialogo h2")?.textContent || "", opciones: [...document.querySelectorAll("[data-idioma]")].map((b) => b.dataset.idioma),
-    foco: document.activeElement?.dataset?.idioma, otros: !!document.querySelector(".perfiles, [data-accion='adultos'], [data-probar]"),
+    titulo: document.querySelector(".pz-dialogo h2")?.textContent || "", opciones: [...document.querySelectorAll("[data-idioma]")].map((b) => b.dataset.idioma),
+    foco: document.activeElement?.dataset?.idioma, otros: !!document.querySelector(".perfiles, [data-accion='adultos'], [data-pz-probar-ia]"),
   }));
   if (!/Elige tu idioma/.test(primera.titulo) || !/Choose your language/.test(primera.titulo) || primera.opciones.join() !== "es,en") falla("con la bienvenida pendiente, la primera pantalla no es la de idioma: " + JSON.stringify(primera));
   else if (primera.otros) falla("se ve algo más (perfiles, ajustes o la IA) antes de elegir el idioma");
   else if (primera.foco !== "es") falla("el idioma del sistema (es-CL) no quedó enfocado como sugerido: " + primera.foco);
   else {
     await p.keyboard.press("2"); // 2 = English
-    await p.waitForFunction(() => document.documentElement.lang === "en" && document.querySelector(".dialogo h2")?.textContent.includes("Hi, this is Repasa"), null, { timeout: 3000 }).catch(() => {});
+    await p.waitForFunction(() => document.documentElement.lang === "en" && document.querySelector(".pz-dialogo h2")?.textContent.includes("Hi, this is Repasa"), null, { timeout: 3000 }).catch(() => {});
     await p.waitForTimeout(100);
-    const despues = await p.evaluate(() => ({ titulo: document.querySelector(".dialogo h2")?.textContent, perfiles: document.querySelector(".perfiles h1")?.textContent,
+    const despues = await p.evaluate(() => ({ titulo: document.querySelector(".pz-dialogo h2")?.textContent, perfiles: document.querySelector(".perfiles h1")?.textContent,
       guardado: window._fs ? JSON.parse(window._fs.get("Repasa/.repasa/config.json")?.data || "{}").idioma_ui === "en" : window._enviados.some((m) => m.accion === "config" && m.datos.idioma_ui === "en") }));
     if (despues.titulo !== "Hi, this is Repasa") falla("después de elegir English, el paso siguiente no salió en inglés: " + despues.titulo);
     else if (!despues.guardado) falla("elegir English no guardó idioma_ui por el puente (config)");
@@ -175,6 +181,44 @@ async function nuevaPagina(opciones) {
   if (MOVIL) await p.waitForSelector(".perfiles, [data-idioma]");
   else await p.evaluate((e) => window.Repasa.estado({ ...e, config: { bienvenida: true } }), estadoDemo);
   if (await p.$("[data-idioma]") || !(await p.$(".perfiles"))) falla("la pantalla de idioma aparece aunque la bienvenida ya estaba hecha");
+  await p.close();
+}
+
+// 8) Diálogos (pieza «componentes»): el foco entra, Tab no se escapa, Esc cierra y el foco vuelve a donde estaba.
+{
+  const p = await nuevaPagina({ viewport: { width: 1360, height: 860 } });
+  p.on("pageerror", (e) => falla(`error de JavaScript (diálogos): ${e.message}`));
+  await p.goto(BASE + "?perfil=martina"); await p.waitForSelector('[data-accion="adultos"]');
+  await p.focus('[data-accion="adultos"]'); await p.keyboard.press("Enter");
+  await p.waitForSelector(".pz-dialogo");
+  const dentro = () => p.evaluate(() => !!document.activeElement?.closest?.(".pz-dialogo"));
+  let escapa = !(await dentro());
+  for (let i = 0; i < 40 && !escapa; i++) { await p.keyboard.press(i % 7 === 6 ? "Shift+Tab" : "Tab"); escapa = !(await dentro()); }
+  await p.keyboard.press("Escape"); await p.waitForTimeout(50);
+  const despues = await p.evaluate(() => ({ abierto: !!document.querySelector(".pz-dialogo"), foco: document.activeElement?.dataset?.accion }));
+  if (escapa) falla("el foco se sale del diálogo «Para adultos» con Tab");
+  else if (despues.abierto) falla("Esc no cierra el diálogo «Para adultos»");
+  else if (despues.foco !== "adultos") falla("al cerrar el diálogo el foco no vuelve al botón que lo abrió: " + despues.foco);
+  else console.log("  ✓ Diálogos: foco adentro, Esc cierra y el foco vuelve");
+  // Mientras la IA arma un tema, ni Esc ni el velo lo cierran (quedaría a medias).
+  await p.evaluate(() => window.Repasa._probar((E) => { E.nuevo = { paso: "creando", archivos: [], mano: {} }; }));
+  await p.keyboard.press("Escape"); await p.mouse.click(5, 5); await p.waitForTimeout(50);
+  if (!(await p.$(".pz-dialogo"))) falla("Esc o el velo cerraron «Armando tu repaso…» mientras la IA trabajaba");
+  // Borrar una prueba pregunta antes; «Dejarla» no borra nada.
+  await p.evaluate(() => window.Repasa._probar((E) => { E.nuevo = null; E.prueba = { ...E.pruebas[0] }; }));
+  const antes = await p.evaluate(() => { let n; window.Repasa._probar((E) => { n = E.pruebas.length; }); return n; });
+  await p.click('[data-accion="borrar-prueba"]'); await p.waitForSelector('[data-pz-confirmar="no"]'); await p.waitForTimeout(50);
+  // Borrar no se deshace: el foco empieza en «Dejarla», así un Enter apurado no borra (pieza «componentes» 0.2).
+  const focoConfirmar = await p.evaluate(() => document.activeElement?.dataset?.pzConfirmar);
+  if (focoConfirmar !== "no") falla("en «¿Borrar esta prueba?» el foco no empieza en «Dejarla»: " + focoConfirmar);
+  await p.keyboard.press("Enter"); await p.waitForTimeout(50);
+  const trasEnter = await p.evaluate(() => { let n; window.Repasa._probar((E) => { n = E.pruebas.length; }); return n; });
+  if (trasEnter !== antes) falla("Enter en «¿Borrar esta prueba?» borró la prueba");
+  await p.click('[data-accion="borrar-prueba"]'); await p.waitForSelector('[data-pz-confirmar="no"]');
+  await p.keyboard.press("Escape"); await p.waitForTimeout(50);
+  const quedan = await p.evaluate(() => { let n; window.Repasa._probar((E) => { n = E.pruebas.length; }); return n; });
+  if (quedan !== antes || !(await p.$('[data-accion="borrar-prueba"]'))) falla("Esc en «¿Borrar esta prueba?» borró la prueba o cerró su diálogo");
+  else console.log("  ✓ Borrar una prueba pregunta antes; el foco va a «Dejarla» y ni Enter ni Esc borran");
   await p.close();
 }
 
@@ -210,14 +254,26 @@ for (const [idioma, consulta] of [["español", "idioma=es"], ["inglés", "idioma
 // 5) Contraste del botón principal
 for (const esquema of ["light", "dark"]) {
   const p = await nuevaPagina({ colorScheme: esquema });
-  await p.goto(BASE + "?perfil=martina"); await p.click("[data-tema]"); await p.waitForSelector(".boton.principal");
+  await p.goto(BASE + "?perfil=martina"); await p.click("[data-tema]"); await p.waitForSelector(".pz-boton.pz-principal");
   const c = await p.evaluate(() => {
     const lum = (s) => { const [r, g, b] = s.match(/[\d.]+/g).slice(0, 3).map((x) => { x = x / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
-    const cs = getComputedStyle(document.querySelector(".boton.principal")); const a = lum(cs.color), b = lum(cs.backgroundColor);
+    const cs = getComputedStyle(document.querySelector(".pz-boton.pz-principal")); const a = lum(cs.color), b = lum(cs.backgroundColor);
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   });
   if (c < 4.5) falla(`contraste del botón principal en modo ${esquema}: ${c.toFixed(2)} (mínimo 4.5)`);
   else console.log(`  ✓ Contraste en modo ${esquema === "light" ? "claro" : "oscuro"}: ${c.toFixed(2)}`);
+  // Texto, texto suave, rojo (un error) y verde (¡bien!) se leen (AA, 4.5) sobre el fondo, el panel y el papel (pieza «tema»).
+  const bajos = await p.evaluate(() => {
+    const lum = (s) => { const [r, g, b] = s.match(/[\d.]+/g).slice(0, 3).map((x) => { x = x / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const color = (v, prop) => { const el = document.createElement("i"); el.style[prop] = `var(${v})`; document.body.appendChild(el); const c = getComputedStyle(el)[prop]; el.remove(); return c; };
+    const m = [];
+    for (const t of ["--texto", "--texto-suave", "--rojo", "--verde"]) for (const f of ["--fondo", "--panel", "--papel"]) {
+      const a = lum(color(t, "color")), b = lum(color(f, "backgroundColor")), c = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      if (c < 4.5) m.push(`${t} sobre ${f}: ${c.toFixed(2)}`);
+    }
+    return m;
+  });
+  for (const x of bajos) falla(`contraste en modo ${esquema}: ${x} (mínimo 4.5)`);
   await p.close();
 }
 await navegador.close();
