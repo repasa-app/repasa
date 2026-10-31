@@ -53,6 +53,9 @@ Android (`movil/`, fase 1) con la IA del propio teléfono.
   language», Español/English escritos cada uno en su idioma, el del sistema marcado como sugerido; teclas 1 y 2). Mientras no se
   elige no se pinta nada más (ni perfiles ni ajustes). Elegir guarda `idioma_ui` con `config`, igual que Ajustes, y el resto
   (presentación, la IA) ya sale en ese idioma. Quien ya tiene `bienvenida: true` no la vuelve a ver; el idioma se cambia en Ajustes.
+- **Pintar (`pintar()` en `ui/app.js`):** arma el HTML de tres partes (barra, pantalla y diálogo) y reemplaza solo la que cambió
+  (al cambiar el idioma, todo). Lo que se ve tiene que salir de `E`: un cambio hecho a mano en el DOM se pierde o queda pegado.
+  Un diálogo que se vuelve a pintar con `mantener()` conserva su scroll. Probado en `pruebas/interfaz.mjs` («Pintar por partes»).
 - **Explicar de nuevo:** `explicar.py <tema> <pregunta> "<lo que respondió>" <salida.json>` devuelve texto plano corto (sin Markdown
   ni HTML, máx. 900 caracteres).
 - **Sin IA: a mano y catálogo.** «Nuevo tema» tiene tres formas: fotos con la IA, **a mano** y **catálogo** (los temas de `temas/`).
