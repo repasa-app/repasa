@@ -108,7 +108,8 @@ def crear(curso, ramo, texto, archivos):
         return {"ok": False, "error": "Agrega una foto, un PDF o pega el texto que hay que estudiar."}
     respuesta, error = ia.preguntar(prompt(curso, ramo, texto.strip()[:20000], bool(archivos)), timeout=900, archivos=archivos)
     if error:
-        return {"ok": False, "error": error}
+        # Pieza «ia»: el error llega como {codigo, valores}; la interfaz traduce la frase en español (ia.frase) y puede decidir por código.
+        return {"ok": False, "error": ia.frase(error), "codigo": error["codigo"]}
     t = leer_json_ia(respuesta)
     if isinstance(t, dict):
         completar(t, curso, ramo, time.strftime("%Y-%m-%d"))

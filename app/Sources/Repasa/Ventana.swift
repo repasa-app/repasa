@@ -186,10 +186,17 @@ final class Ventana: NSObject, NSWindowDelegate, WKScriptMessageHandler, WKNavig
                                           "respondio": String((d["respondio"] as? String ?? "").prefix(300))]
             Procesador.conEntrada("explicar.py", [], entrada) { Ventana.shared.llamar("explicado", $0) }
         case "probarIA":
+            // Pieza «ia»: `ia.py probar <entrada {ia}> <salida>` prueba con las mismas protecciones que al crear un tema (sin
+            // herramientas, sin MCP, sin la memoria de la persona, en una carpeta temporal). La IA nunca va como argumento.
             let id = d["id"] as? String ?? ""
-            IA.probar(id) { ok, texto in
+            guard IA.conocidas.contains(where: { $0.id == id }) else {
+                llamar("iaProbada", ["id": id, "ok": false, "texto": Idioma.t("No conozco esa IA.")])
+                return
+            }
+            Procesador.conEntrada("ia.py", ["probar"], ["ia": id]) { r in
+                let ok = r["ok"] as? Bool == true
                 if ok { Config.guardar(["ia": id]) }
-                Ventana.shared.llamar("iaProbada", ["id": id, "ok": ok, "texto": texto])
+                Ventana.shared.llamar("iaProbada", ["id": id, "ok": ok, "texto": ok ? "" : (r["error"] as? String ?? Idioma.t("No respondió."))])
             }
         case "abrirEnlace":
             if let u = URL(string: d["url"] as? String ?? ""), Ventana.enlaceNuestro(u) { NSWorkspace.shared.open(u) }

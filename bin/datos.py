@@ -6,22 +6,29 @@
   temas/<id>/material/          copias de las fotos o PDF de donde salió el tema (quedan en el computador)
   progreso/<perfil>.json        cómo le va a cada perfil con cada pregunta (cajas de repaso), puntos y racha
   pruebas.json                  [{"id", "perfil", "ramo", "temas": [...], "fecha"}]
-  .repasa/config.json           ajustes de la app (IA, idioma)
+  .repasa/config.json           ajustes de la app (IA, idioma), validados con app.json (pieza «nucleo»)
   .repasa/catalogo/             temas descargados del catálogo comunitario
   .repasa/temporal/             fotos o PDF arrastrados a la app de escritorio para un tema que todavía no se guarda
 
 Las reglas de perfiles, pruebas y progreso son las mismas que motor/datos.js (pruebas/casos.json, sección «datos»).
+
+Lo genérico (app.json, config validada, escritura atómica) viene de la pieza «nucleo» (bin/nucleo.py); aquí queda lo propio de
+Repasa. app.json dice «"datos": "visible"»: la carpeta interna de nucleo es ~/Repasa/.repasa, la misma de siempre.
 """
 import json
 import os
 import re
-import tempfile
+
+import nucleo
 
 BASE = os.environ.get("REPASA_CARPETA") or os.path.join(os.path.expanduser("~"), "Repasa")
 INTERNO = os.path.join(BASE, ".repasa")
+if os.environ.get("REPASA_CARPETA"):
+    # Pruebas: nucleo (config de la app) mira la misma carpeta que el resto. La app de Mac nunca pasa variables REPASA_* de afuera.
+    os.environ["REPASA_DATOS"] = INTERNO
 TEMAS = os.path.join(BASE, "temas")
 PROGRESO = os.path.join(BASE, "progreso")
-RECURSOS = os.environ.get("REPASA_RECURSOS") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RECURSOS = nucleo.recursos()  # donde está app.json: el checkout o Contents/Resources/repasa
 ID = re.compile(r"[a-z0-9-]{1,80}")
 ID_TEMA = re.compile(r"[a-z0-9-]{2,60}")
 CURSOS = ("5b", "6b", "7b", "8b", "1m", "2m", "3m", "4m")
@@ -37,28 +44,22 @@ def carpeta_privada():
 
 
 def leer_json(ruta, defecto):
-    try:
-        with open(ruta, encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return defecto
+    return nucleo.leer_json(ruta, defecto)
 
 
 def escribir_json(ruta, valor):
-    """Escribe en un temporal y lo renombra: si algo se corta a la mitad, el archivo anterior queda intacto. El archivo queda 0600
-    (mkstemp) y ~/Repasa, 0700."""
+    """Escribe en un temporal y lo renombra (nucleo.escribir_atomico): si algo se corta a la mitad, el archivo anterior queda
+    intacto. El archivo queda siempre 0600, aunque antes fuera otra cosa, y ~/Repasa, 0700."""
     if os.path.abspath(ruta).startswith(os.path.abspath(BASE) + os.sep):
         carpeta_privada()
-    os.makedirs(os.path.dirname(ruta) or ".", exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(ruta) or ".", prefix=".tmp-")
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump(valor, f, ensure_ascii=False, indent=1)
-        f.write("\n")
-    os.replace(tmp, ruta)
+    nucleo.escribir_atomico(ruta, json.dumps(valor, ensure_ascii=False, indent=1) + "\n", nucleo.PRIVADO)
 
 
 def config():
-    return {"ia": "claude", "idioma_ui": "", **leer_json(os.path.join(INTERNO, "config.json"), {})}
+    """Los ajustes, solo con las claves y valores de app.json (nucleo.config). ~/Repasa queda 0700 antes de que nucleo cree
+    ~/Repasa/.repasa (os.makedirs dejaría la carpeta de arriba con los permisos de siempre)."""
+    carpeta_privada()
+    return {"ia": "claude", "idioma_ui": "", **nucleo.config()}
 
 
 def id_de(texto):
