@@ -32,7 +32,7 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 - **"No entendí":** si una explicación no basta, la IA lo explica de otra forma, con un ejemplo de la vida diaria.
 - **Ganas de volver:** puntos, racha de días seguidos y una celebración al terminar. Sin anuncios, sin compras dentro de la app.
 - **Para adultos:** cómo le va a cada hijo o hija por ramo y en la semana, qué IA se usa, idioma y apariencia (clara, oscura o como el sistema). Varios perfiles en un mismo computador.
-- **En el computador y en el celular:** app de Mac (en pruebas) y app de iPhone y Android con **la IA del propio teléfono**,
+- **En el computador y en el celular:** app de Mac (para descargar) y app de iPhone y Android con **la IA del propio teléfono**,
   gratis y sin internet. El avance viaja en una copia cifrada con una frase que conoce la familia.
 - **Sin IA también se puede:** escribir un tema a mano o elegir uno del catálogo. Español e inglés; lo primero que pregunta es el idioma.
 
@@ -42,13 +42,13 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 | | Cómo | Estado |
 |---|---|---|
 | 🌐 **Navegador** | [Vista previa con datos ficticios](https://repasa-app.github.io/repasa/demo/): nada que instalar. | Para mirar cómo funciona |
-| 🍎 **Mac** | [Desde el código](#en-el-mac-en-pruebas) con `bash build.sh` (macOS 15, Apple Silicon). | En pruebas; aún sin versión publicada ni firma de Apple |
+| 🍎 **Mac** | [Descargar `Repasa-macOS.zip`](https://github.com/repasa-app/repasa/releases/latest/download/Repasa-macOS.zip) (macOS 15, Apple Silicon); [pasos abajo](#en-el-mac). | Versión 0.1, todavía sin firma de Apple |
 | 📱 **iPhone y Android** | [Desde el código](movil/README.md), en modo de prueba. Usa la IA del teléfono. | Fase 1, en pruebas; todavía no está en las tiendas |
 | 🪟 🐧 **Windows y Linux** | La misma interfaz, en una app de escritorio. | En camino |
 
 En el computador, la IA es la de un adulto de la casa, con su cuenta: Claude Code, Codex (ChatGPT) o Gemini CLI
-([cómo instalarla](https://repasa-app.github.io/repasa/ia.html)). En GitHub, **Watch → Custom → Releases** avisa cuando salga la
-primera versión para descargar.
+([cómo instalarla](https://repasa-app.github.io/repasa/ia.html)). Las versiones nuevas del Mac llegan solas desde «Para adultos»;
+todas están en [Releases](https://github.com/repasa-app/repasa/releases).
 
 ## Hecha para niñas y niños
 - **Sin cuentas ni correos.** Cada perfil es solo un nombre o apodo, un curso y un personaje.
@@ -72,10 +72,11 @@ Al participar aceptas el [código de conducta](CODE_OF_CONDUCT.md). ¿Una falla 
 
 ## Estado
 Versión 0.1, recién nacida. Ya funcionan el motor (crear temas con la IA, explicar de nuevo, validar, escribir temas a mano) y la
-interfaz completa, que puedes [probar con datos ficticios](https://repasa-app.github.io/repasa/demo/). La **app de Mac** está en
-pruebas (abajo); las de Windows y Linux vienen en camino. La app del celular está en su primera fase.
+interfaz completa, que puedes [probar con datos ficticios](https://repasa-app.github.io/repasa/demo/). La **app de Mac** ya se
+[descarga](#en-el-mac) (primera versión, todavía sin firma de Apple); las de Windows y Linux vienen en camino. La app del celular está en su primera fase.
 
-## En el Mac (en pruebas)
+<a id="en-el-mac"></a>
+## En el Mac
 Una app normal de Mac (macOS 15 o más nuevo, Mac con Apple Silicon) con la misma interfaz. Trae todo adentro (también Python): no
 hay que instalar nada más que la IA de un adulto (Claude Code, Codex o Gemini, [cómo instalarla](https://repasa-app.github.io/repasa/ia.html)).
 - **Fotos del cuaderno o PDF:** con «Elegir fotos o PDF» o arrastrándolos a «Nuevo tema».
@@ -83,7 +84,14 @@ hay que instalar nada más que la IA de un adulto (Claude Code, Codex o Gemini, 
   celular o a otro computador, la misma que en el teléfono.
 - **Actualizaciones** desde «Para adultos»: la app revisa sola y nunca interrumpe a los niños.
 
-Mientras no haya una versión publicada, se arma desde el código en un Mac con las herramientas de línea de comandos de Xcode
+**Instalar:**
+1. Descarga [`Repasa-macOS.zip`](https://github.com/repasa-app/repasa/releases/latest/download/Repasa-macOS.zip) (al lado está su
+   huella, `Repasa-macOS.zip.sha256`, en [Releases](https://github.com/repasa-app/repasa/releases)).
+2. Descomprímelo y mueve **Repasa** a Aplicaciones.
+3. La primera vez, ábrela con clic derecho → Abrir (o en Ajustes del Sistema → Privacidad y seguridad → «Abrir igualmente»): la app
+   todavía no tiene firma de Apple, así que macOS puede decir que no puede verificarla.
+
+**Desde el código** (para probar los cambios más nuevos), en un Mac con las herramientas de línea de comandos de Xcode
 (`xcode-select --install`):
 ```bash
 git clone https://github.com/repasa-app/repasa ~/Developer/repasa   # en ~/Developer: ~/repasa chocaría con la carpeta de datos ~/Repasa
@@ -159,8 +167,10 @@ an easy summary, test-style questions and flashcards. Daily spaced-repetition re
 date makes Repasa prioritize those topics, and points and streaks keep it fun. No accounts, no ads, no servers: everything stays on the
 computer in open files. Spanish-first, English included. Licensed under AGPL-3.0.
 
-**On the Mac (testing):** a native app (macOS 15+, Apple Silicon) with everything inside, Python included; add notebook photos or
-PDFs with a button or by dragging them in. Until a release is published, build it on a Mac with
+**On the Mac:** a native app (macOS 15+, Apple Silicon) with everything inside, Python included; add notebook photos or PDFs with
+a button or by dragging them in. [Download `Repasa-macOS.zip`](https://github.com/repasa-app/repasa/releases/latest/download/Repasa-macOS.zip),
+unzip it and move Repasa to Applications. It isn't signed by Apple yet: the first time, open it with right-click → Open (or in
+System Settings → Privacy & Security → «Open Anyway»). New versions arrive from «For grown-ups». To build from source instead:
 `git clone https://github.com/repasa-app/repasa ~/Developer/repasa && cd ~/Developer/repasa && bash build.sh`.
 
 **On the phone (phase 1, testing):** an iPhone and Android app with the same interface and the phone's own AI (Apple

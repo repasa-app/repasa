@@ -6,7 +6,7 @@
 Repasa es una app de estudio para niñas y niños de 5° básico a 4° medio, pensada para el computador de la casa. Le sacan una foto al
 cuaderno (o agregan un PDF o texto) y la IA de un adulto (Claude Code, Codex o Gemini, con su cuenta) arma un **tema**: resumen fácil,
 conceptos, preguntas tipo prueba y tarjetas. El repaso diario usa cajas de Leitner; antes de una prueba se priorizan sus temas. Puntos y
-racha para que den ganas de volver. Interfaz web única; app de Mac (`app/`, en pruebas), Windows y Linux en camino; app para iPhone y
+racha para que den ganas de volver. Interfaz web única; app de Mac (`app/`, publicada desde 0.1.0), Windows y Linux en camino; app para iPhone y
 Android (`movil/`, fase 1) con la IA del propio teléfono.
 
 **Principios que no se negocian**
@@ -178,6 +178,13 @@ el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
   `cd app && swift build -c release`. Swift solo compila en un Mac (o en el job `mac` de GitHub, que corre si cambió `app/`, `app.json` o `acciones.json`).
 - Una acción nueva del puente va en `ui/app.js`, `simular()`, `movil/host/host.js` (o en `SOLO_ESCRITORIO` de `pruebas/contrato.py`)
   y, en el Mac, declarada en `app.json` → `acciones` (si solo corre un script) o registrada en `app/Sources/Repasa/`.
+
+## Publicar una versión
+Sube `CFBundleShortVersionString` en `app/Info.plist` y haz push a main: `.github/workflows/publicar.yml` corre las pruebas rápidas
+(`contrato.py` y `test_python.py`), arma la app en macos-15 con `herramientas/empaquetar.sh` y crea el Release `vX.Y.Z` con
+`Repasa-macOS.zip` + `.sha256` (nombres fijos: los usan la página, el README y la pieza «actualizaciones»). Si la versión ya existe,
+no hace nada; también se lanza con una etiqueta `vX.Y.Z` o a mano desde Actions. Por ahora solo Mac. En `CHANGELOG.md`, «Sin
+publicar» pasa a `## X.Y.Z · AAAA-MM-DD`.
 
 ## Reglas al cambiar cosas
 - Código, comentarios, commits y textos en **español** (de Chile neutro). Todo texto nuevo visible va con su traducción en
