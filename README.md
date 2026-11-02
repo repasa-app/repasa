@@ -88,8 +88,8 @@ hay que instalar nada más que la IA de un adulto (Claude Code, Codex o Gemini, 
 1. Descarga [`Repasa-macOS.zip`](https://github.com/repasa-app/repasa/releases/latest/download/Repasa-macOS.zip) (al lado está su
    huella, `Repasa-macOS.zip.sha256`, en [Releases](https://github.com/repasa-app/repasa/releases)).
 2. Descomprímelo y mueve **Repasa** a Aplicaciones.
-3. La primera vez, ábrela con clic derecho → Abrir (o en Ajustes del Sistema → Privacidad y seguridad → «Abrir igualmente»): la app
-   todavía no tiene firma de Apple, así que macOS puede decir que no puede verificarla.
+3. La primera vez, intenta abrirla y después ve a Ajustes del Sistema → Privacidad y seguridad → «Abrir igualmente»: la app
+   todavía no tiene firma de Apple, así que macOS dice que no puede verificarla.
 
 **Desde el código** (para probar los cambios más nuevos), en un Mac con las herramientas de línea de comandos de Xcode
 (`xcode-select --install`):
@@ -97,8 +97,8 @@ hay que instalar nada más que la IA de un adulto (Claude Code, Codex o Gemini, 
 git clone https://github.com/repasa-app/repasa ~/Developer/repasa   # en ~/Developer: ~/repasa chocaría con la carpeta de datos ~/Repasa
 cd ~/Developer/repasa && bash build.sh                               # compila e instala en ~/Applications/Repasa.app
 ```
-La primera vez, macOS puede pedir confirmar que quieres abrirla (clic derecho → Abrir): la app va firmada solo en tu Mac, todavía
-sin firma de Apple.
+La app queda firmada solo en tu Mac, todavía sin firma de Apple; si macOS avisa que no puede verificarla, ábrela desde Ajustes del
+Sistema → Privacidad y seguridad → «Abrir igualmente».
 
 ## En el celular (fase 1, en pruebas)
 Repasa también corre en iPhone y Android, con la misma interfaz y **la IA del propio teléfono**: gratis, privada y sin internet.
@@ -169,8 +169,8 @@ computer in open files. Spanish-first, English included. Licensed under AGPL-3.0
 
 **On the Mac:** a native app (macOS 15+, Apple Silicon) with everything inside, Python included; add notebook photos or PDFs with
 a button or by dragging them in. [Download `Repasa-macOS.zip`](https://github.com/repasa-app/repasa/releases/latest/download/Repasa-macOS.zip),
-unzip it and move Repasa to Applications. It isn't signed by Apple yet: the first time, open it with right-click → Open (or in
-System Settings → Privacy & Security → «Open Anyway»). New versions arrive from «For grown-ups». To build from source instead:
+unzip it and move Repasa to Applications. It isn't signed by Apple yet: the first time, try to open it, then go to
+System Settings → Privacy & Security → «Open Anyway». New versions arrive from «For grown-ups». To build from source instead:
 `git clone https://github.com/repasa-app/repasa ~/Developer/repasa && cd ~/Developer/repasa && bash build.sh`.
 
 **On the phone (phase 1, testing):** an iPhone and Android app with the same interface and the phone's own AI (Apple
