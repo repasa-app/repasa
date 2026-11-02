@@ -1,6 +1,6 @@
 #!/bin/bash
 # Arma dist/Repasa.app (autosuficiente) y dist/Repasa-macOS.zip + .sha256, sin instalar nada. Solo en un Mac.
-# Lo usan build.sh (en tu Mac), la actualización de una instalación de desarrollo y, cuando exista, la acción que publica cada versión.
+# Lo usan build.sh (en tu Mac), la actualización de una instalación de desarrollo y la acción que publica cada versión (.github/workflows/publicar.yml).
 # Dentro van: la app, Python portátil y el código en Contents/Resources/repasa: bin/, temas/ (catálogo incluido) y ui/ con el
 # motor JS (ui/motor/) y la copia cifrada de escritorio (ui/escritorio.js, desde app/web/, sobre la pieza «cifrado»: ui/cifrado.js).
 # Los datos de la familia quedan en ~/Repasa.

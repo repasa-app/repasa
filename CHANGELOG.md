@@ -1,11 +1,19 @@
 # Cambios · Changelog
 
-Lo que cambia para quien usa Repasa, en palabras simples. Las versiones anteriores a este archivo están en
+Lo que cambia para quien usa Repasa, en palabras simples. Cada versión publicada se descarga desde
 [Releases](https://github.com/repasa-app/repasa/releases).
-*What changes for people using Repasa, in plain words. Earlier versions are listed in Releases.*
+*What changes for people using Repasa, in plain words. Each published version can be downloaded from Releases.*
 
-## Sin publicar · Unreleased
+## 0.1.0 · 2026-11-02
 
+- **La primera versión para descargar:** la app de Mac (macOS 15, Apple Silicon) ya se baja lista desde la
+  [página](https://repasa-app.github.io/repasa/) o desde [Releases](https://github.com/repasa-app/repasa/releases), sin armarla
+  desde el código. Todavía no tiene firma de Apple: la primera vez, intenta abrirla y después ve a Ajustes del
+  Sistema → Privacidad y seguridad → «Abrir igualmente». Cuando hay una versión nueva, avisa en «Para adultos» y se instala con un botón.
+  *The first version to download: the Mac app (macOS 15, Apple Silicon) now comes ready from the
+  [website](https://repasa-app.github.io/repasa/) or from Releases, no need to build it from source. It isn't signed by Apple yet:
+  the first time, try to open it, then go to System Settings → Privacy & Security → «Open Anyway». When there's a new version, it
+  says so in «For grown-ups» and installs with one button.*
 - En la primera pantalla, el idioma también se elige con las flechas, y dice que se cambia en «Para adultos». Si eligen el idioma y
   cierran la app antes de terminar, al volver siguen desde el saludo. En el Mac, los paneles para elegir fotos o una copia y para
   guardarla vuelven a decir qué elegir.
