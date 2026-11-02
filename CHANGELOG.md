@@ -38,6 +38,8 @@ Lo que cambia para quien usa Repasa, en palabras simples. Las versiones anterior
   («Actualiza la app») o si todavía se está copiando. Las copias que ya guardaste se siguen abriendo con su frase.
   *When bringing a copy from your cloud, Repasa now tells you if the file isn't a Repasa copy, if it comes from a newer version
   («Update the app») or if it's still being copied. The copies you already saved still open with their passphrase.*
+- Abrir «Para adultos» o cerrar un diálogo es más rápido cuando hay muchos temas, y un diálogo ya no salta arriba al tocar algo dentro (por ejemplo, «Usar y probar» en la IA o «Guardar copia»).
+  *Opening «For grown-ups» or closing a dialog is faster with many topics, and a dialog no longer jumps to the top when you tap something inside it (for example, «Use and test» on an AI or «Save copy»).*
 - Cuando la IA lee las fotos del cuaderno, ahora solo puede leerlas: tiene prohibido ejecutar, escribir o salir a internet, y ya no recibe los datos internos de Repasa ni tu memoria de Claude.
   *When the AI reads the notebook photos, it can now only read them: it may not run, write or go online, and it no longer receives Repasa's internal settings or your Claude memory.*
 - Los nombres y títulos se muestran siempre como texto, nunca como parte de la página.

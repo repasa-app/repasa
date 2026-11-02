@@ -114,13 +114,46 @@
   const elegir = (lista, semilla) => lista[Math.abs([...semilla].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % lista.length];
 
   // ───────────── Pintar ─────────────
+  // Lo último que se pintó, por parte (barra, pantalla, diálogo de Repasa y las capas de la pieza «componentes»). Una parte que no
+  // cambió no se vuelve a armar: abrir «Para adultos» o tocar algo dentro de un diálogo ya no rehace la pantalla de atrás (con
+  // muchos temas era lo que más costaba). Cada parte es una lista de nodos (las capas de la pieza pueden ser dos o ninguna).
+  let pintado = null;
+  function parte(html) {
+    if (!html) return [];
+    const t = document.createElement("template");
+    t.innerHTML = html;
+    traducirDOM(t.content);
+    return [...t.content.childNodes];
+  }
   function pintar() {
     const raiz = $("#app"), activo = document.activeElement?.id, y = window.scrollY;
     // Primer uso: mientras se elige el idioma no se muestra nada más (ni perfiles ni ajustes), para no hablarle en otro idioma.
     const soloIdioma = E.bv === 0;
-    raiz.innerHTML = `${barra(soloIdioma)}<main>${soloIdioma ? "" : principal()}</main>${dialogos()}${ui.capas()}`;
-    traducirDOM(raiz);
-    if (activo) document.getElementById(activo)?.focus();
+    const html = [barra(soloIdioma), `<main>${soloIdioma ? "" : principal()}</main>`, dialogos(), ui.capas()];
+    const antes = pintado && pintado.idioma === E.idioma && pintado.nodos.every((ns) => ns.every((n) => n.parentNode === raiz)) ? pintado : null;
+    const yDialogo = $(".pz-dialogo", raiz)?.scrollTop || 0;
+    let nodos;
+    if (!antes) {
+      nodos = html.map(parte);
+      raiz.replaceChildren(...nodos.flat());
+    } else {
+      nodos = html.map((h, i) => {
+        const viejos = antes.nodos[i];
+        if (h === antes.html[i]) return viejos;
+        const nuevos = parte(h);
+        // Va justo antes de la primera parte que sigue en la página (o al final).
+        const despues = antes.nodos.slice(i + 1).flat()[0] || null;
+        for (const n of nuevos) raiz.insertBefore(n, despues);
+        for (const n of viejos) n.remove();
+        return nuevos;
+      });
+      // Un diálogo que se vuelve a pintar (probar la IA, guardar la copia…) queda donde la persona lo había dejado.
+      if (E._mantener && nodos[2] !== antes.nodos[2] && antes.nodos[2].length) {
+        const d = nodos[2].map((n) => n.querySelector?.(".pz-dialogo")).find(Boolean); if (d) d.scrollTop = yDialogo;
+      }
+    }
+    pintado = { html, nodos, idioma: E.idioma };
+    if (activo) document.getElementById(activo)?.focus({ preventScroll: true }); // sin mover el scroll: lo ponen las líneas de abajo
     ui.despuesDePintar(); // el foco entra al diálogo que se abrió, queda adentro y vuelve a donde estaba al cerrarlo
     if (E._mantener) window.scrollTo(0, y); else window.scrollTo(0, 0);
     E._mantener = false;
