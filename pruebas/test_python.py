@@ -288,7 +288,7 @@ class Piezas(unittest.TestCase):
         self.assertIn('cp "$RAIZ/app.json" "$CODIGO/app.json"', sh)
         self.assertIn('cp "$RAIZ/acciones.json" "$CODIGO/acciones.json"', sh, "las acciones declaradas que lee la pieza «host-mac»")
         with open(os.path.join(RAIZ, "piezas.json"), encoding="utf-8") as f:
-            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes", "cifrado", "host-mac",
+            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes", "cifrado", "host-mac", "bienvenida",
                                                             "actualizaciones"})
 
     def test_cifrado_es_la_pieza(self):

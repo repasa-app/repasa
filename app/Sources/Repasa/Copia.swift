@@ -81,25 +81,24 @@ enum Copia {
         }
     }
 
-    /// «Guardar como» del host, en iCloud Drive si la persona lo tiene. El archivo queda solo para la persona (0600).
+    /// «Guardar como» del host, en iCloud Drive si la persona lo tiene. El archivo queda solo para la persona (`privado`: 0600).
+    /// `guardarArchivo` distingue cancelar de un error (una copia más grande que el máximo, o que no se pudo escribir ahí).
     private static func elegirDondeGuardar(_ p: Puente, texto: String, cantidad: Int, hoy: String) {
         let icloud = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs")
         let desde = FileManager.default.fileExists(atPath: icloud.path) ? icloud : nil
-        // guardarComo devuelve nil igual si es muy grande que si se cancela: lo grande se dice antes, como un error.
-        guard texto.utf8.count <= maximo else {
+        p.guardarArchivo(nombre: "Repasa-copia-\(hoy)", extension: "repasa", datos: Data(texto.utf8), desde: desde, maximo: maximo,
+                         mensaje: Idioma.t("Dónde guardar la copia cifrada"), privado: true) { r in
             p.soltar()
-            return RepasaApp.responder("copiaLista", ["ok": false, "error": Idioma.t("No se pudo guardar la copia.")])
-        }
-        p.guardarComo(nombre: "Repasa-copia-\(hoy)", extension: "repasa", datos: Data(texto.utf8), desde: desde, maximo: maximo) { u in
-            p.soltar()
-            guard let u else { return RepasaApp.responder("copiaLista", ["ok": false, "cancelado": true]) }
-            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: u.path)
-            RepasaApp.responder("copiaLista", ["ok": true, "cantidad": cantidad])
+            switch r {
+            case .guardado: RepasaApp.responder("copiaLista", ["ok": true, "cantidad": cantidad])
+            case .cancelado: RepasaApp.responder("copiaLista", ["ok": false, "cancelado": true])
+            case .error: RepasaApp.responder("copiaLista", ["ok": false, "error": Idioma.t("No se pudo guardar la copia.")])
+            }
         }
     }
 
     private static func traer(_ p: Puente, frase: String) {
-        p.elegirArchivos(extensiones: ["repasa"]) { urls in juntar(p, urls.first, frase: frase) }
+        p.elegirArchivos(extensiones: ["repasa"], mensaje: Idioma.t("Elige la copia de Repasa (archivo .repasa)")) { urls in juntar(p, urls.first, frase: frase) }
     }
 
     private static func juntar(_ p: Puente, _ origen: URL?, frase: String) {

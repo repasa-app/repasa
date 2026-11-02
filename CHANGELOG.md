@@ -6,6 +6,12 @@ Lo que cambia para quien usa Repasa, en palabras simples. Las versiones anterior
 
 ## Sin publicar · Unreleased
 
+- En la primera pantalla, el idioma también se elige con las flechas, y dice que se cambia en «Para adultos». Si eligen el idioma y
+  cierran la app antes de terminar, al volver siguen desde el saludo. En el Mac, los paneles para elegir fotos o una copia y para
+  guardarla vuelven a decir qué elegir.
+  *On the first screen you can also pick the language with the arrow keys, and it says it can be changed in «For grown-ups». If you
+  pick the language and close the app before finishing, you continue from the greeting. On the Mac, the panels for choosing photos
+  or a copy and for saving it say again what to choose.*
 - **La app de Mac, sobre la base compartida de Pieza:** la ventana, los menús, los ajustes y las actualizaciones ahora son los de la
   familia de apps. Para ti se ve igual: la misma carpeta `~/Repasa`, los mismos perfiles, temas y ajustes, los mismos menús y
   atajos («Para adultos…» con ⌘,), y las versiones nuevas siguen apareciendo solo en «Para adultos». Ahora cada tarea tiene un tiempo

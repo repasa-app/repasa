@@ -156,11 +156,11 @@ async function nuevaPagina(opciones) {
   await p.goto(BASE + (MOVIL ? "?bienvenida" : ""));
   await p.waitForFunction(() => window.Repasa);
   const estadoDemo = JSON.parse(demo);
-  if (MOVIL) await p.waitForSelector("[data-idioma]");
+  if (MOVIL) await p.waitForSelector("[data-bv-idioma]");
   else await p.evaluate((e) => window.Repasa.estado({ ...e, config: {} }), estadoDemo);
   const primera = await p.evaluate(() => ({
-    titulo: document.querySelector(".pz-dialogo h2")?.textContent || "", opciones: [...document.querySelectorAll("[data-idioma]")].map((b) => b.dataset.idioma),
-    foco: document.activeElement?.dataset?.idioma, otros: !!document.querySelector(".perfiles, [data-accion='adultos'], [data-pz-probar-ia]"),
+    titulo: document.querySelector(".pz-dialogo h2")?.textContent || "", opciones: [...document.querySelectorAll("[data-bv-idioma]")].map((b) => b.dataset.bvIdioma),
+    foco: document.activeElement?.dataset?.bvIdioma, otros: !!document.querySelector(".perfiles, [data-accion='adultos'], [data-pz-probar-ia]"),
   }));
   if (!/Elige tu idioma/.test(primera.titulo) || !/Choose your language/.test(primera.titulo) || primera.opciones.join() !== "es,en") falla("con la bienvenida pendiente, la primera pantalla no es la de idioma: " + JSON.stringify(primera));
   else if (primera.otros) falla("se ve algo más (perfiles, ajustes o la IA) antes de elegir el idioma");
@@ -178,15 +178,15 @@ async function nuevaPagina(opciones) {
   }
   // Quien ya hizo la bienvenida no vuelve a ver la pantalla de idioma.
   await p.goto(BASE); await p.waitForFunction(() => window.Repasa);
-  if (MOVIL) await p.waitForSelector(".perfiles, [data-idioma]");
+  if (MOVIL) await p.waitForSelector(".perfiles, [data-bv-idioma]");
   else await p.evaluate((e) => window.Repasa.estado({ ...e, config: { bienvenida: true } }), estadoDemo);
-  if (await p.$("[data-idioma]") || !(await p.$(".perfiles"))) falla("la pantalla de idioma aparece aunque la bienvenida ya estaba hecha");
+  if (await p.$("[data-bv-idioma]") || !(await p.$(".perfiles"))) falla("la pantalla de idioma aparece aunque la bienvenida ya estaba hecha");
   // El menú «Para adultos…» (⌘,) de la app de Mac (pieza «host-mac»: window.Repasa.menu({accion: "ajustes"})) abre Para adultos…
   await p.evaluate(() => window.Repasa.menu({ accion: "ajustes" }));
   const adultos = await p.evaluate(() => !!document.querySelector(".pz-dialogo"));
   // …pero nunca en medio de la bienvenida (la pantalla del idioma sigue sola).
   await p.evaluate((e) => window.Repasa.estado({ ...e, config: {} }), estadoDemo);
-  await p.evaluate(() => window.Repasa._probar((E) => { E.adultos = false; E.bv = 0; }));
+  await p.evaluate(() => window.Repasa._probar((E) => { E.adultos = false; window.Repasa._pruebas.bienvenida.paso(0); }));
   await p.evaluate(() => window.Repasa.menu({ accion: "ajustes" }));
   const enBienvenida = await p.evaluate(() => window.Repasa._probar((E) => { window.__adultos = E.adultos; }) || window.__adultos);
   if (!adultos) falla("el menú «Para adultos…» de la app de Mac no abre Para adultos");
@@ -242,7 +242,7 @@ for (const [idioma, consulta] of [["español", "idioma=es"], ["inglés", "idioma
       await p.addInitScript(() => { window._faltantes = new Set(); });
       await p.goto(BASE + "?" + [consulta, bv ? "bienvenida" : ""].filter(Boolean).join("&"));
       await p.waitForFunction(() => window.Repasa && document.querySelector(".barra"));
-      const pasos = bv ? [0, 1, 2].map((n) => [`bienvenida-${n}`, `E=>{E.bv=${n}}`]) : VISTAS;
+      const pasos = bv ? [0, 1, 2].map((n) => [`bienvenida-${n}`, `E=>{window.Repasa._pruebas.bienvenida.paso(${n})}`]) : VISTAS;
       for (const [nombre, f] of pasos) {
         await p.evaluate(`window.Repasa._probar(${f})`);
         await p.waitForTimeout(80);
