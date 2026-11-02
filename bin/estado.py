@@ -3,8 +3,8 @@
   estado.py <salida.json>
 
 Perfiles, temas, progreso, pruebas y ajustes (lo mismo que Almacen.estado() en motor/datos.js) más el catálogo incluido en la app
-(temas/*.json validados, sin los que ya se agregaron), igual que el anfitrión del celular. La app de escritorio le suma lo suyo
-(las IA instaladas, versión, carpeta, actualizaciones y capacidades).
+(temas/*.json validados, sin los que ya se agregaron), igual que el anfitrión del celular, y las IA del adulto que hay en este
+computador (pieza «ia»: ia.lista()). La app de escritorio le suma lo suyo (versión, carpeta, actualizaciones y capacidades).
 """
 import glob
 import json
@@ -13,6 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import datos  # noqa: E402
+import ia  # noqa: E402
 import temas  # noqa: E402
 
 
@@ -29,7 +30,7 @@ def estado():
     datos.carpeta_privada()
     ts = datos.temas_validos()
     return {"ok": True, "perfiles": datos.perfiles(), "temas": ts, "progreso": datos.progreso(), "pruebas": datos.pruebas(),
-            "config": datos.config(), "catalogo": catalogo({t["id"] for t in ts})}
+            "config": datos.config(), "catalogo": catalogo({t["id"] for t in ts}), "ias": ia.lista()}
 
 
 if __name__ == "__main__":

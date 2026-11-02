@@ -1,0 +1,15 @@
+{
+ "cabecera": "{\n \"repasa\": \"carpeta\",\n \"v\": 1,\n \"kdf\": {\n  \"alg\": \"PBKDF2-SHA256\",\n  \"iteraciones\": 600000,\n  \"sal\": \"rAVGqYCliOhiy/f/ltUF2w==\"\n },\n \"cifrado\": \"AES-256-GCM\",\n \"verificador\": {\n  \"iv\": \"vS/FZ0jr2eznwX4w\",\n  \"datos\": \"dOUMiA1M8pPu3V7Wh7Q9ezPy9DJTyg==\"\n }\n}",
+ "datos": {
+  "nombre": "eb5e6054918792f048bf43a0cb90912f.repasa",
+  "texto": "{\"v\":1,\"iv\":\"9yiX1zbVZb/TRK7o\",\"datos\":\"govxQm60aFp2A/ydEH7x50yn3ZvthnhQUBP8SPl0SFzLdCdeftCdkvR46lZNdo9GWyfTfdT3L7UdQh5CwUO0Mz3Rc1zkPIw/aH+gOyiTG5Lt+3rjmpsbyOBO\"}"
+ },
+ "pedido": {
+  "id": "3d1b254m304t5g064c621r6i",
+  "texto": "{\"v\":1,\"iv\":\"jiNeQDlnrYsO2d2U\",\"datos\":\"l21joTovwsOVUPAlY76wAxuFGB4Jg25ZHqMI29TSN8HL/qIC4McUk7vujPKYpJVrVLybMhYohoYauYqs8pAm9+eqYubFW3oTvPH/cdvhJle3fZMU1u6L0+Q2EpSr0o/AU3lyUz2Lrwxram7XPSfcZecpGDQBIQvBHbNCH42qKlricRUwYk8gA2Btlz+NEadCBblG/q/uYOdPxpqlZm6k8H3CTgOB5Q==\"}"
+ },
+ "respuesta": {
+  "id": "3d1b254m304t5g064c621r6i",
+  "texto": "{\"v\":1,\"iv\":\"36PiJrHB8CBAippO\",\"datos\":\"N5AZvGDTh7ROjLHuIwMgTQi1kUDIM23blWgUXpgAkQrmLTidmB27DjQSKYskqAQpGD/JoXzKaeLgC1zCjyB4H9dgwZikTMLAll5K+UMRlfkXMcRYx/wWjL844IYhj2LV1/2d\"}"
+ }
+}

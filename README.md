@@ -31,7 +31,7 @@ Las preguntas que cuestan vuelven hasta que se aprenden. Gratis, de código abie
 - **Prepara la prueba:** dices la fecha y los temas, y Repasa les da prioridad los días antes.
 - **"No entendí":** si una explicación no basta, la IA lo explica de otra forma, con un ejemplo de la vida diaria.
 - **Ganas de volver:** puntos, racha de días seguidos y una celebración al terminar. Sin anuncios, sin compras dentro de la app.
-- **Para adultos:** cómo le va a cada hijo o hija por ramo y en la semana, qué IA se usa e idioma. Varios perfiles en un mismo computador.
+- **Para adultos:** cómo le va a cada hijo o hija por ramo y en la semana, qué IA se usa, idioma y apariencia (clara, oscura o como el sistema). Varios perfiles en un mismo computador.
 - **En el computador y en el celular:** app de Mac (en pruebas) y app de iPhone y Android con **la IA del propio teléfono**,
   gratis y sin internet. El avance viaja en una copia cifrada con una frase que conoce la familia.
 - **Sin IA también se puede:** escribir un tema a mano o elegir uno del catálogo. Español e inglés; lo primero que pregunta es el idioma.
@@ -174,4 +174,6 @@ Spanish; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-[![Hecho con Pieza](https://pieza-app.github.io/pieza/sello.svg)](https://pieza-app.github.io/pieza/) · Las piezas comunes (tu IA, idiomas, actualizaciones…) viven en [Pieza](https://github.com/pieza-app/pieza).
+[![Hecho con Pieza](https://pieza-app.github.io/pieza/sello.svg)](https://pieza-app.github.io/pieza/) · Las piezas comunes (tu IA, idiomas, actualizaciones, la app de Mac…) viven en [Pieza](https://github.com/pieza-app/pieza).
+
+[![Made with Pieza](https://pieza-app.github.io/pieza/sello-en.svg)](https://pieza-app.github.io/pieza/) · The shared pieces (your AI, languages, updates, the Mac app…) live in [Pieza](https://github.com/pieza-app/pieza).

@@ -6,9 +6,25 @@
 //    "archivos": [{iv, datos}, …]}       cada sobre guarda {"ruta", "tipo": "json" | "base64", "contenido"}
 //
 // Traer una copia **junta** lo que trae con lo que hay en el teléfono; nunca borra nada (ver `juntar`).
-import { nuevaCabecera, abrirCabecera, cifrarJSON, descifrarJSON, ErrorDañado, MENSAJES } from "./cifrado.js";
+//
+// El cifrado es la pieza «cifrado» de Pieza (ui/cifrado.js, script clásico: window.PiezaCifrado), cargada antes que este motor
+// (en el teléfono y en el Mac, por <script src="cifrado.js">; en Node, las pruebas la ponen en globalThis). Con el contexto
+// «repasa» da los mismos verificadores, AAD y nombres opacos de siempre: lo que ya guardó una familia se sigue abriendo.
 import { validar, esObjeto } from "./temas.js";
 import { perfilValido, pruebaValida, ID, ID_TEMA, EXT_MATERIAL } from "./datos.js";
+
+let pieza = null;
+/** La pieza «cifrado» con el contexto y el formato de Repasa ({"repasa": "copia", "v": 1, …}). Errores: PiezaCifrado.ErrorCifrado
+ *  con `codigo` (frase, danado, no_es, version…), `plantilla`/`valores` y `frase` ya rellena. */
+export function cifrado() {
+  if (pieza) return pieza;
+  const P = globalThis.PiezaCifrado;
+  if (!P) throw new Error("Falta ui/cifrado.js (pieza «cifrado») antes del motor.");
+  // Sin tope propio de tamaño: una copia con muchas fotos puede pasar los 100 MB de la pieza (antes no había tope).
+  return (pieza = P.crear({ app: "Repasa", contexto: "repasa", claveVersion: "v", maximo: 1024 * 1024 * 1024 }));
+}
+/** Un error de la pieza con la marca de Repasa: «no_es», «danado», «version»… */
+export const errorCifrado = (codigo) => cifrado().error(codigo);
 
 const AAD = "repasa:copia:v1";
 /** Solo estas rutas entran y salen de una copia (nada de .repasa/: los ajustes son de cada teléfono). */
@@ -29,27 +45,25 @@ export async function rutasDe(almacen) {
 
 /** Arma la copia cifrada (texto JSON listo para guardar). `avance(n, total)` para mostrar por dónde va. */
 export async function armarCopia(almacen, frase, hoy, avance = () => {}) {
-  const { cabecera, llaves } = await nuevaCabecera(frase);
+  const C = cifrado();
+  const { cabecera, llaves } = await C.nuevaCabecera(frase);
   const rutas = await rutasDe(almacen), archivos = [];
   for (const [i, ruta] of rutas.entries()) {
     avance(i + 1, rutas.length);
     const json = ruta.endsWith(".json");
     const contenido = json ? await almacen.leerJSON(ruta, null) : await almacen.a.leerBase64(ruta);
-    if (contenido == null) continue;
-    archivos.push(await cifrarJSON(llaves, { ruta, tipo: json ? "json" : "base64", contenido }, AAD));
+    if (contenido != null) archivos.push({ ruta, tipo: json ? "json" : "base64", contenido });
   }
-  return { texto: JSON.stringify({ repasa: "copia", v: 1, creada: hoy, ...cabecera, archivos }), cantidad: archivos.length };
+  const texto = await C.armarVarios(archivos, cabecera, llaves, { aad: AAD, extra: { creada: hoy } });
+  return { texto, cantidad: archivos.length };
 }
 
-/** Abre una copia con la frase: lista de {ruta, tipo, contenido}, solo con rutas permitidas. Lanza ErrorFrase o ErrorDañado. */
+/** Abre una copia con la frase: lista de {ruta, tipo, contenido}, solo con rutas permitidas. Lanza ErrorCifrado: `frase` (no es
+ *  la correcta), `no_es` (no es una copia de Repasa), `version` (de una Repasa más nueva) o `danado`. */
 export async function abrirCopia(texto, frase) {
-  let c;
-  try { c = JSON.parse(texto); } catch { throw new ErrorDañado(MENSAJES.dañado); }
-  if (!esObjeto(c) || c.repasa !== "copia" || c.v !== 1 || !Array.isArray(c.archivos)) throw new ErrorDañado(MENSAJES.dañado);
-  const llaves = await abrirCabecera(c, frase);
+  const { contenidos } = await cifrado().abrirVarios(texto, { frase }, { aad: AAD });
   const r = [];
-  for (const sobre of c.archivos) {
-    const e = await descifrarJSON(llaves, sobre, AAD);
+  for (const e of contenidos) {
     if (!esObjeto(e) || typeof e.ruta !== "string" || !RUTA_PERMITIDA.test(e.ruta)) continue;
     if (e.tipo === "json" || (e.tipo === "base64" && typeof e.contenido === "string")) r.push({ ruta: e.ruta, tipo: e.tipo, contenido: e.contenido });
   }

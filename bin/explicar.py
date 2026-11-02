@@ -55,7 +55,8 @@ def explicar(tema_id, pregunta_id, respondio):
         return {"ok": False, "error": "No encontré esa pregunta."}
     texto, error = ia.preguntar(pedido(t, p, respondio), timeout=180)
     if error:
-        return {"ok": False, "error": error}
+        # Pieza «ia»: el error llega como {codigo, valores}; la interfaz traduce la frase en español (ia.frase) y puede decidir por código.
+        return {"ok": False, "error": ia.frase(error), "codigo": error["codigo"]}
     return {"ok": True, "texto": limpiar(texto), "pregunta": pregunta_id}
 
 

@@ -1,5 +1,5 @@
 // El anfitrión de Repasa en el celular: atiende las acciones del puente (host.enviar en ui/app.js) con el motor JS (motor/) y los
-// plugins nativos, igual que Ventana.swift en el Mac. Todo queda en el teléfono; la única IA es la del propio teléfono (o, en la
+// plugins nativos, igual que la app de Mac (pieza «host-mac» + app/Sources/Repasa). Todo queda en el teléfono; la única IA es la del propio teléfono (o, en la
 // fase 2, el computador de la casa por la carpeta cifrada). No hay red: ni servidores, ni telemetría, ni llaves de API.
 //
 // Plugins (por el puente de Capacitor, sin empaquetador): Filesystem y Camera (oficiales), IaLocal y Carpeta (propios, en
@@ -9,7 +9,6 @@ import { validar } from "../motor/temas.js";
 import * as crear from "../motor/crear_tema.js";
 import * as exp from "../motor/explicar.js";
 import * as copia from "../motor/copia.js";
-import { revisarFrase } from "../motor/cifrado.js";
 
 const CAP = window.Capacitor;
 const llamar = (plugin, metodo, opciones = {}) => CAP.nativePromise(plugin, metodo, opciones);
@@ -17,6 +16,8 @@ const RAIZ = "Repasa"; // dentro de los datos de la app (Directory.Data: Documen
 const DIR = "DATA";
 const A = () => window.Repasa; // las funciones de la interfaz
 const hoy = () => window.REPASA_HOY || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+/** La frase lista para mostrar de un error de la pieza «cifrado» (frase, dañado, no es una copia…); "" si es otro error. */
+const deCifrado = (e) => (globalThis.PiezaCifrado && e instanceof globalThis.PiezaCifrado.ErrorCifrado ? e.message : "");
 const cancelado = (e) => /cancel/i.test(String(e?.message || e)) || e?.code === "CANCELADO";
 
 // ───────────── Archivos: el adaptador del motor sobre Capacitor Filesystem ─────────────
@@ -89,7 +90,7 @@ async function preguntarLocal(prompt, { maxTokens = 800, temperatura = 0.3 } = {
 function iasParaLaInterfaz() {
   return [
     { id: "telefono", nombre: nombreIA(), instalada: !!ia.texto, detalle: detalleIA() },
-    { id: "computador", nombre: "El computador de la casa", instalada: false, detalle: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." },
+    { id: "computador", nombre: "El computador de la casa", instalada: false, revisable: false, detalle: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." },
   ];
 }
 
@@ -189,16 +190,18 @@ const ACCIONES = {
     const t = (await almacen.tema(d.tema)) || (await cargarCatalogo()).find((x) => x.id === d.tema);
     A().explicado(await exp.explicar(preguntarLocal, t, d.pregunta, String(d.respondio || "")));
   },
+  // probarIA {ia} → iaProbada {ia, ok, texto?}: la misma forma que en el Mac (pieza «host-ui»). La IA del teléfono es «telefono».
   async probarIA(d) {
-    if (d.id !== "telefono") return A().iaProbada({ id: d.id, ok: false, texto: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." });
+    const id = String(d.ia || "");
+    if (id !== "telefono") return A().iaProbada({ ia: id, ok: false, texto: "Muy pronto: el computador de la casa hará el trabajo con su IA, por la carpeta de la familia." });
     try { await llamar("IaLocal", "preparar"); } catch { /* sigue */ }
     await revisarIA();
-    if (!ia.texto) return A().iaProbada({ id: d.id, ok: false, texto: detalleIA() });
+    if (!ia.texto) return A().iaProbada({ ia: id, ok: false, texto: detalleIA() });
     try {
       await preguntarLocal("Responde solo con la palabra: listo", { maxTokens: 10, temperatura: 0 });
       await enOrden(() => almacen.guardarConfig({ ia: "telefono" }));
-      A().iaProbada({ id: d.id, ok: true });
-    } catch (e) { A().iaProbada({ id: d.id, ok: false, texto: e.message }); }
+      A().iaProbada({ ia: id, ok: true });
+    } catch (e) { A().iaProbada({ ia: id, ok: false, texto: e.message }); }
   },
   abrirEnlace(d) {
     // Solo los enlaces conocidos de Repasa (Acerca de); Capacitor abre lo externo en el navegador del sistema.
@@ -207,13 +210,12 @@ const ACCIONES = {
   abrirCarpeta: () => {},
   buscarActualizacion: () => A().actualizacionRevisada({ hay: false }),
   async guardarCopia(d) {
-    const problema = revisarFrase(d.frase);
-    if (problema) return A().copiaLista({ ok: false, error: problema });
+    // La pieza «cifrado» (ui/cifrado.js) revisa la frase al armar: una corta da su frase («Usa una frase de al menos 12…»).
     try {
       const { texto, cantidad } = await copia.armarCopia(almacen, d.frase, hoy());
       await llamar("Carpeta", "exportar", { nombre: `Repasa-copia-${hoy()}.repasa`, texto });
       A().copiaLista({ ok: true, cantidad });
-    } catch (e) { A().copiaLista(cancelado(e) ? { ok: false, cancelado: true } : { ok: false, error: "No se pudo guardar la copia." }); }
+    } catch (e) { A().copiaLista(cancelado(e) ? { ok: false, cancelado: true } : { ok: false, error: deCifrado(e) || "No se pudo guardar la copia." }); }
   },
   async traerCopia(d) {
     if (!d.frase) return A().copiaTraida({ ok: false, error: "La frase no es la correcta." });
@@ -224,7 +226,7 @@ const ACCIONES = {
       const resumen = await enOrden(() => copia.juntar(almacen, entradas));
       A().copiaTraida({ ok: true, resumen });
       await enviarEstado();
-    } catch (e) { A().copiaTraida({ ok: false, error: e.message }); }
+    } catch (e) { A().copiaTraida({ ok: false, error: deCifrado(e) || "No se pudo abrir el archivo." }); }
   },
 };
 

@@ -7,7 +7,7 @@ telemetría.
 | Ruta | Qué es |
 |---|---|
 | `armar.mjs` | Arma `www/` (no se versiona): copia `ui/` (sin la vista previa), `motor/`, `host/` y los temas de ejemplo como catálogo. |
-| `host/arranque.js`, `host/host.js` | El anfitrión del teléfono: atiende `host.enviar(...)` de la interfaz con el motor y los plugins (como `Ventana.swift` en el Mac). |
+| `host/arranque.js`, `host/host.js` | El anfitrión del teléfono: atiende `host.enviar(...)` de la interfaz con el motor y los plugins (lo mismo que hace en el Mac `app/Sources/Repasa/` sobre la pieza «host-mac»). |
 | `plugins/ia-local/` | Plugin propio: iOS (Swift) con Apple Foundation Models + Vision; Android (Kotlin) con Gemini Nano (ML Kit GenAI) + ML Kit Text Recognition. `disponible()`, `preparar()`, `leerTexto({ruta})`, `preguntar({prompt, maxTokens, temperatura})`. |
 | `plugins/carpeta/` | Plugin propio: guardar y traer la copia cifrada con el selector de archivos del sistema (iCloud Drive, Google Drive…). |
 | `ios/`, `android/` | Proyectos nativos (Xcode con Swift Package Manager; Gradle). Se versionan; `www/` y `node_modules/` no. |

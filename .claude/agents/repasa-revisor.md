@@ -23,6 +23,9 @@ mira las pruebas de GitHub y aplica la lista de abajo. No reescribas el aporte: 
 - Todo texto nuevo de la interfaz tiene su entrada en `ui/idiomas/en.json` (la prueba de la interfaz lo exige).
 - Python solo con la biblioteca estándar. Español en código, comentarios y textos.
 - Datos de ejemplo ficticios (Martina, Diego). Corre `bash herramientas/revisar_privacidad.sh --generico` sobre la rama.
+- App de Mac: `app/Sources/PiezaHost/` y `app/Sources/PiezaActualizaciones/` son piezas de Pieza (no se editan aquí). Una acción
+  que solo corre un script va en `app.json` → `acciones` (y `acciones.json` al día con `pieza.py acciones .`); lo nativo propio se
+  registra en `app/Sources/Repasa/` (`p.registrar`). Nada que arme otra ventana, otro puente o el comando de una IA en Swift.
 
 **Temas (`temas/` o el catálogo)**
 - `python3 -c "import sys,json; sys.path.insert(0,'bin'); import temas; print(temas.validar(json.load(open('<archivo>'))))"` → `[]`.

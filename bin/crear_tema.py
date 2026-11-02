@@ -5,6 +5,8 @@
                                                                                             en un archivo (así lo llaman las apps)
   crear_tema.py amano <entrada.json> <salida.json>                                          tema escrito a mano (ver lineas.py), sin IA
   crear_tema.py guardar <tema.json> [archivo1 …] <salida.json>                              lo guarda en ~/Repasa/temas/<id>/
+  crear_tema.py catalogo <entrada.json> <salida.json>                                       guarda un tema del catálogo incluido
+                                                                                            (temas/<id>.json), con {id} en un archivo
 
 La IA ve solo copias del material, con la cuenta del adulto. Lo que responde se valida (temas.validar); si no cumple, no se usa.
 """
@@ -108,7 +110,8 @@ def crear(curso, ramo, texto, archivos):
         return {"ok": False, "error": "Agrega una foto, un PDF o pega el texto que hay que estudiar."}
     respuesta, error = ia.preguntar(prompt(curso, ramo, texto.strip()[:20000], bool(archivos)), timeout=900, archivos=archivos)
     if error:
-        return {"ok": False, "error": error}
+        # Pieza «ia»: el error llega como {codigo, valores}; la interfaz traduce la frase en español (ia.frase) y puede decidir por código.
+        return {"ok": False, "error": ia.frase(error), "codigo": error["codigo"]}
     t = leer_json_ia(respuesta)
     if isinstance(t, dict):
         completar(t, curso, ramo, time.strftime("%Y-%m-%d"))
@@ -119,6 +122,16 @@ def crear(curso, ramo, texto, archivos):
 
 
 EXT_MATERIAL = (".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif", ".pdf")
+
+
+def del_catalogo(d):
+    """Un tema del catálogo que viene dentro de la app (temas/<id>.json): solo un id con su forma y un archivo que existe."""
+    i = d.get("id") if isinstance(d, dict) else None
+    archivo = os.path.join(datos.RECURSOS, "temas", f"{i}.json") if isinstance(i, str) and datos.ID_TEMA.fullmatch(i) else None
+    t = datos.leer_json(archivo, None) if archivo and os.path.isfile(archivo) else None
+    if not isinstance(t, dict):
+        return {"ok": False, "error": "No encontré ese tema."}
+    return guardar(t, [])
 
 
 def guardar(tema, archivos):
@@ -155,6 +168,8 @@ if __name__ == "__main__":
             r = crear(str(d.get("curso") or ""), str(d.get("ramo") or "auto"), str(d.get("texto") or ""), archivos[:20])
         elif len(a) == 3 and a[0] == "amano":
             r = a_mano(datos.leer_json(a[1], None), time.strftime("%Y-%m-%d"))
+        elif len(a) == 3 and a[0] == "catalogo":
+            r = del_catalogo(datos.leer_json(a[1], None))
         elif len(a) >= 3 and a[0] == "guardar":
             r = guardar(datos.leer_json(a[1], None), a[2:-1])
         elif len(a) >= 4:
