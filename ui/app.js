@@ -614,7 +614,7 @@
         ias: e.ias || [], version: e.version || "", carpeta: e.carpeta || "", actualizacion: e.actualizacion || { hay: false },
         capacidades: e.capacidades || {}, catalogo: Array.isArray(e.catalogo) ? e.catalogo : null });
       tema.aplicar(tema.elegir({ config: E.config.tema }));
-      ui.actualizacionDisponible(E.actualizacion?.hay ? E.actualizacion : null, { pintar: false }); // `detalle` (Mac) = notas
+      ui.actualizacionDisponible(E.actualizacion?.hay ? E.actualizacion : null, { pintar: false }); // el Mac manda `notas` (pieza «actualizaciones»)
       if (E.perfil && !E.perfiles.some((p) => p.id === E.perfil)) E.perfil = null;
       if (!E.config.bienvenida && E.bv === null && !E.bvCerrada) E.bv = 0;
       await cargarIdioma();
@@ -636,7 +636,7 @@
     iaProbada: (r) => ui.iaProbada(r),
     copiaLista(r) { E.copia = r.ok ? { frase: "", estado: "guardada", cantidad: r.cantidad, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
     copiaTraida(r) { E.copia = r.ok ? { frase: "", estado: "traida", resumen: r.resumen, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
-    actualizacionRevisada: (r) => ui.actualizacionRevisada(r), // la app de Mac manda `detalle`: la pieza lo acepta
+    actualizacionRevisada: (r) => ui.actualizacionRevisada(r), // la app de Mac manda `notas` y `desarrollo` (pieza «actualizaciones»)
     actualizacionProgreso: (a) => ui.actualizacionProgreso(a),
     /** Un menú de la app de Mac (pieza «host-mac»): «Para adultos…» (⌘,) lo abre, salvo en medio de la bienvenida. «guardar» llega
      *  al cerrar: Repasa ya guardó todo al momento. */

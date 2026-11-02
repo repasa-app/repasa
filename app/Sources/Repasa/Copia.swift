@@ -85,6 +85,11 @@ enum Copia {
     private static func elegirDondeGuardar(_ p: Puente, texto: String, cantidad: Int, hoy: String) {
         let icloud = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs")
         let desde = FileManager.default.fileExists(atPath: icloud.path) ? icloud : nil
+        // guardarComo devuelve nil igual si es muy grande que si se cancela: lo grande se dice antes, como un error.
+        guard texto.utf8.count <= maximo else {
+            p.soltar()
+            return RepasaApp.responder("copiaLista", ["ok": false, "error": Idioma.t("No se pudo guardar la copia.")])
+        }
         p.guardarComo(nombre: "Repasa-copia-\(hoy)", extension: "repasa", datos: Data(texto.utf8), desde: desde, maximo: maximo) { u in
             p.soltar()
             guard let u else { return RepasaApp.responder("copiaLista", ["ok": false, "cancelado": true]) }

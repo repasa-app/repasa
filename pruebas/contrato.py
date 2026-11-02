@@ -217,6 +217,12 @@ for linea in re.findall(r'"""(.*?)"""', ACT_MAC, re.S):
         # paso(…), cerrar y progreso los arma la pieza con comillas(); pid es un número.
         if not interpolado.startswith(("comillas(", "paso(")) and interpolado not in ("pid", "cerrar", "progreso"):
             problemas.append(f"Actualizaciones.swift: «\\({interpolado})» va en el guion sin comillas().")
+# Es para niños: la interfaz no tiene enlaces que se toquen. El host de Mac abre cualquier https tocado dentro de la ventana
+# (sin pasar por el abrirEnlace de Repasa, que solo deja los de Repasa): mientras eso no cambie en Pieza, nada de <a href>.
+for nombre in ["index.html"] + sorted(f for f in os.listdir(os.path.join(RAIZ, "ui")) if f.endswith(".js") and f != "componentes.js"):
+    texto = leer("ui", nombre)
+    if re.search(r"<a\s[^>]*href|\bhref\s*:", texto):
+        problemas.append(f"ui/{nombre}: un enlace <a href> (en Repasa los enlaces van por host.enviar(\"abrirEnlace\"), que solo abre los de Repasa).")
 PLIST = leer("app", "Info.plist")
 if "<string>app.repasa.mac</string>" not in PLIST or 'identifier "app.repasa.mac"' not in leer("herramientas", "empaquetar.sh"):
     problemas.append("El identificador de la app de Mac (app.repasa.mac) no coincide entre Info.plist y la firma de empaquetar.sh.")

@@ -64,7 +64,7 @@ Repasa usa piezas de Pieza, la base de la familia de apps: código probado que s
   `bin/nucleo.py` lo busca junto a `bin/` y la pieza «host-mac» los lee de ahí. Sus claves de config (`ia`, `idioma_ui`, `bienvenida`,
   `ultimo_perfil` con su patrón, `tema`) las validan igual `nucleo` y el `Config` del host; lo demás se descarta al leer. En las pruebas, `REPASA_CARPETA` también mueve la carpeta de `nucleo`
   (`datos.py` pone `REPASA_DATOS`).
-- `.gitignore` es una lista blanca: `app.json` y `piezas.json` están en ella. `app.json` → `plataformas`: `mac`, `ios`, `android`
+- `.gitignore` es una lista blanca: `app.json`, `piezas.json` y `acciones.json` están en ella. `app.json` → `plataformas`: `mac`, `ios`, `android`
   (Windows y Linux, cuando existan).
 - No adoptada todavía: `bienvenida` 0.3. Los pasos calzan (idioma con teclas 1 y 2, presentación, la IA del computador o del
   teléfono), pero la pieza dice «Ajustes» fijo en la pantalla del idioma («Puedes cambiarlo cuando quieras en Ajustes») y en «Todo
@@ -169,7 +169,7 @@ el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
   guiones, todo lo variable va con `comillas()` (`pruebas/contrato.py` lo revisa).
 - Desarrollo en el Mac: el checkout va en `~/Developer/repasa` (macOS no distingue mayúsculas: `~/repasa` chocaría con `~/Repasa`);
   `bash build.sh` (se niega si la IA está armando un tema) e instala en `~/Applications/Repasa.app`. Compilar solo:
-  `cd app && swift build -c release`. Swift solo compila en un Mac (o en el job `mac` de GitHub, que corre si cambió `app/`).
+  `cd app && swift build -c release`. Swift solo compila en un Mac (o en el job `mac` de GitHub, que corre si cambió `app/`, `app.json` o `acciones.json`).
 - Una acción nueva del puente va en `ui/app.js`, `simular()`, `movil/host/host.js` (o en `SOLO_ESCRITORIO` de `pruebas/contrato.py`)
   y, en el Mac, declarada en `app.json` → `acciones` (si solo corre un script) o registrada en `app/Sources/Repasa/`.
 
