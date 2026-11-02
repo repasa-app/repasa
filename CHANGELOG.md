@@ -6,6 +6,14 @@ Lo que cambia para quien usa Repasa, en palabras simples. Las versiones anterior
 
 ## Sin publicar · Unreleased
 
+- **La app de Mac, sobre la base compartida de Pieza:** la ventana, los menús, los ajustes y las actualizaciones ahora son los de la
+  familia de apps. Para ti se ve igual: la misma carpeta `~/Repasa`, los mismos perfiles, temas y ajustes, los mismos menús y
+  atajos («Para adultos…» con ⌘,), y las versiones nuevas siguen apareciendo solo en «Para adultos». Ahora cada tarea tiene un tiempo
+  máximo (si la IA se queda pegada, Repasa la corta y lo dice) y, al cerrar, nada queda corriendo por detrás.
+  *The Mac app, on Pieza's shared base: the window, menus, settings and updates now come from the family of apps. For you it looks
+  the same: the same `~/Repasa` folder, the same profiles, topics and settings, the same menus and shortcuts («For grown-ups…» with
+  ⌘,), and new versions still show up only in «For grown-ups». Every task now has a time limit (if the AI gets stuck, Repasa stops
+  it and says so) and, when you quit, nothing keeps running behind.*
 - En pantallas táctiles todos los botones siguen siendo grandes, para dedos chicos. En el celular, «El computador de la casa» ya no
   ofrece «Revisar de nuevo» (todavía no existe: llega muy pronto). Las copias en tu nube se guardan y se abren igual que antes.
   *On touch screens every button stays large, for small fingers. On the phone, «The home computer» no longer offers «Check again»

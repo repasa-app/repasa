@@ -123,6 +123,7 @@ class Escritorio(unittest.TestCase):
         self.assertEqual((e["perfiles"], e["temas"], e["progreso"], e["pruebas"]), ([], [], {}, []))
         self.assertEqual(sorted(t["id"] for t in e["catalogo"]), ["fracciones", "independencia-de-chile", "sistema-digestivo", "sujeto-y-predicado"])
         self.assertEqual(stat.S_IMODE(os.stat(datos.BASE).st_mode), 0o700, "~/Repasa solo para la persona")
+        self.assertEqual([x["id"] for x in e["ias"]], ["claude", "codex", "gemini"], "las IA del adulto (pieza «ia») van en el estado")
         perfil = {"id": "martina", "nombre": "  Martina  ", "curso": "6b", "avatar": "🦊", "extra": "no"}
         self.assertTrue(correr("guardar.py", "perfil", self.entrada({"perfil": perfil}))["ok"])
         self.assertFalse(correr("guardar.py", "perfil", self.entrada({"perfil": {**perfil, "id": "../x"}}))["ok"])
@@ -141,6 +142,39 @@ class Escritorio(unittest.TestCase):
         self.assertNotIn(TEMA["id"], [t["id"] for t in e["catalogo"]], "lo ya agregado no se ofrece de nuevo")
         archivo = os.path.join(datos.BASE, "perfiles.json")
         self.assertEqual(stat.S_IMODE(os.stat(archivo).st_mode), 0o600)
+
+    def test_acciones_declaradas(self):
+        """Lo que hace el host de Mac (pieza «host-mac») con cada acción declarada en acciones.json: los datos de la interfaz (más lo
+        inyectado) en un archivo de entrada y `script <args…> <entrada> <salida>`. Que cada script entienda esa forma."""
+        with open(os.path.join(RAIZ, "acciones.json"), encoding="utf-8") as f:
+            acciones = json.load(f)["acciones"]
+        ejemplos = {
+            "guardarPerfil": {"perfil": {"id": "diego", "nombre": "Diego", "curso": "7b", "avatar": "🐼"}},
+            "guardarProgreso": {"perfil": "diego", "progreso": {"puntos": 3}},
+            "guardarPruebas": {"pruebas": []},
+            "agregarDelCatalogo": {"id": "sujeto-y-predicado"},
+            "temaAMano": {"titulo": "Los planetas", "ramo": "ciencias", "curso": "5b", "resumen": "El sistema solar tiene ocho planetas.",
+                          "conceptos": "Planeta: cuerpo que gira alrededor del Sol.", "idioma": "es",
+                          "preguntas": "¿Cuántos planetas hay?\n* Ocho\n- Nueve\n- Siete\n\n¿Qué es el Sol?\n* Una estrella\n- Un planeta\n- Una luna\n\n¿Cuál es el más grande?\n* Júpiter\n- Marte\n- Venus"},
+        }
+        for n, d in ejemplos.items():
+            a = acciones[n]
+            self.assertEqual(a["entrada"], "archivo", n)
+            self.assertTrue(set(d) <= set(a["datos"]) | set(a.get("inyectar", {})) or a["datos"].get("*") == "pasar", n)
+            r = correr(a["script"], *a["args"], self.entrada(d))
+            self.assertTrue(r["ok"], (n, r))
+        r = correr("explicar.py", *acciones["explicar"]["args"], self.entrada({"tema": "sujeto-y-predicado", "pregunta": "p1", "respondio": "x"}))
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(acciones["temaAMano"]["inyectar"], {"idioma": "idiomaUI"}, "el idioma lo pone el host, nunca la interfaz")
+
+    def test_catalogo(self):
+        """agregarDelCatalogo (acción declarada): solo el id, en un archivo; el tema sale de temas/ dentro de la app."""
+        r = correr("crear_tema.py", "catalogo", self.entrada({"id": "fracciones"}))
+        self.assertTrue(r["ok"], r)
+        self.assertTrue(os.path.isfile(os.path.join(datos.TEMAS, r["tema"]["id"], "tema.json")))
+        for malo in ("../app", "no-existe", "", 7, None):
+            self.assertFalse(correr("crear_tema.py", "catalogo", self.entrada({"id": malo}))["ok"], malo)
+        self.assertFalse(correr("crear_tema.py", "catalogo", self.entrada([]))["ok"])
 
     def test_pedido_crear_y_explicar(self):
         raro = os.path.join(TMP, "nota.txt")
@@ -219,7 +253,8 @@ class Explicar(unittest.TestCase):
 
 
 class Piezas(unittest.TestCase):
-    """Repasa usa las piezas de Pieza (nucleo, ia, i18n, host-ui, tema y componentes) sin mover los datos de la familia."""
+    """Repasa usa las piezas de Pieza (nucleo, ia, i18n, host-ui, tema, componentes, cifrado, host-mac y actualizaciones) sin mover
+    los datos de la familia."""
 
     def test_app_json_respeta_la_carpeta_de_siempre(self):
         import nucleo
@@ -249,14 +284,17 @@ class Piezas(unittest.TestCase):
 
     def test_app_json_va_dentro_de_la_app(self):
         with open(os.path.join(RAIZ, "herramientas", "empaquetar.sh"), encoding="utf-8") as f:
-            self.assertIn('cp "$RAIZ/app.json" "$CODIGO/app.json"', f.read())
+            sh = f.read()
+        self.assertIn('cp "$RAIZ/app.json" "$CODIGO/app.json"', sh)
+        self.assertIn('cp "$RAIZ/acciones.json" "$CODIGO/acciones.json"', sh, "las acciones declaradas que lee la pieza «host-mac»")
         with open(os.path.join(RAIZ, "piezas.json"), encoding="utf-8") as f:
-            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes", "cifrado"})
+            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes", "cifrado", "host-mac",
+                                                            "actualizaciones"})
 
     def test_cifrado_es_la_pieza(self):
         """La copia cifrada usa la pieza «cifrado» (ui/cifrado.js): sin copia propia, y el Mac la carga antes que escritorio.js."""
         self.assertFalse(os.path.exists(os.path.join(RAIZ, "motor", "cifrado.js")), "motor/cifrado.js se reemplazó por la pieza")
-        with open(os.path.join(RAIZ, "app", "Sources", "Repasa", "Ventana.swift"), encoding="utf-8") as f:
+        with open(os.path.join(RAIZ, "app", "Sources", "Repasa", "Copia.swift"), encoding="utf-8") as f:
             swift = f.read()
         self.assertLess(swift.index("c.src = 'cifrado.js'"), swift.index("s.src = 'escritorio.js'"))
 

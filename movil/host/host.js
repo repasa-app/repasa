@@ -1,5 +1,5 @@
 // El anfitrión de Repasa en el celular: atiende las acciones del puente (host.enviar en ui/app.js) con el motor JS (motor/) y los
-// plugins nativos, igual que Ventana.swift en el Mac. Todo queda en el teléfono; la única IA es la del propio teléfono (o, en la
+// plugins nativos, igual que la app de Mac (pieza «host-mac» + app/Sources/Repasa). Todo queda en el teléfono; la única IA es la del propio teléfono (o, en la
 // fase 2, el computador de la casa por la carpeta cifrada). No hay red: ni servidores, ni telemetría, ni llaves de API.
 //
 // Plugins (por el puente de Capacitor, sin empaquetador): Filesystem y Camera (oficiales), IaLocal y Carpeta (propios, en
