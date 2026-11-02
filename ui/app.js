@@ -49,8 +49,8 @@
     i18n, host, app: "Repasa", repo: "repasa-app/repasa",
     pintar: () => mantener(),
     cerrar: () => cerrarDialogo(),
-    // La app nativa ya guardó la IA que probó bien (Config / almacén del teléfono): aquí solo se anota.
-    elegirIA: (id) => { E.config.ia = id; },
+    // Recién cuando la prueba sale bien: se guarda por el mismo camino que Ajustes (en el Mac, probarIA solo corre ia.py probar).
+    elegirIA: (id) => { E.config.ia = id; host.enviar("config", { ia: id }); },
     // Mientras se elige el idioma no se muestra nada más: los avisos esperan y salen ya en el idioma elegido.
     retener: (texto, o) => { if (E.bv !== 0) return false; avisosEnEspera.push([texto, o]); return true; },
   });
@@ -614,7 +614,7 @@
         ias: e.ias || [], version: e.version || "", carpeta: e.carpeta || "", actualizacion: e.actualizacion || { hay: false },
         capacidades: e.capacidades || {}, catalogo: Array.isArray(e.catalogo) ? e.catalogo : null });
       tema.aplicar(tema.elegir({ config: E.config.tema }));
-      ui.actualizacionDisponible(E.actualizacion?.hay ? E.actualizacion : null, { pintar: false }); // `detalle` (Mac) = notas
+      ui.actualizacionDisponible(E.actualizacion?.hay ? E.actualizacion : null, { pintar: false }); // el Mac manda `notas` (pieza «actualizaciones»)
       if (E.perfil && !E.perfiles.some((p) => p.id === E.perfil)) E.perfil = null;
       if (!E.config.bienvenida && E.bv === null && !E.bvCerrada) E.bv = 0;
       await cargarIdioma();
@@ -636,8 +636,11 @@
     iaProbada: (r) => ui.iaProbada(r),
     copiaLista(r) { E.copia = r.ok ? { frase: "", estado: "guardada", cantidad: r.cantidad, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
     copiaTraida(r) { E.copia = r.ok ? { frase: "", estado: "traida", resumen: r.resumen, error: "" } : { ...E.copia, estado: "", error: r.cancelado ? "" : r.error }; mantener(); },
-    actualizacionRevisada: (r) => ui.actualizacionRevisada(r), // la app de Mac manda `detalle`: la pieza lo acepta
+    actualizacionRevisada: (r) => ui.actualizacionRevisada(r), // la app de Mac manda `notas` y `desarrollo` (pieza «actualizaciones»)
     actualizacionProgreso: (a) => ui.actualizacionProgreso(a),
+    /** Un menú de la app de Mac (pieza «host-mac»): «Para adultos…» (⌘,) lo abre, salvo en medio de la bienvenida. «guardar» llega
+     *  al cerrar: Repasa ya guardó todo al momento. */
+    menu(m) { if (m?.accion === "ajustes" && E.bv === null) { E.adultos = true; pintar(); } },
     /** Vista previa y pruebas: `f(E, ui)` cambia el estado (también el de la pieza: ui.act, ui.ia) y se vuelve a pintar. */
     _probar(f) { f(E, ui, tema); pintar(); },
   });

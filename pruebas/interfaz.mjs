@@ -181,6 +181,17 @@ async function nuevaPagina(opciones) {
   if (MOVIL) await p.waitForSelector(".perfiles, [data-idioma]");
   else await p.evaluate((e) => window.Repasa.estado({ ...e, config: { bienvenida: true } }), estadoDemo);
   if (await p.$("[data-idioma]") || !(await p.$(".perfiles"))) falla("la pantalla de idioma aparece aunque la bienvenida ya estaba hecha");
+  // El menú «Para adultos…» (⌘,) de la app de Mac (pieza «host-mac»: window.Repasa.menu({accion: "ajustes"})) abre Para adultos…
+  await p.evaluate(() => window.Repasa.menu({ accion: "ajustes" }));
+  const adultos = await p.evaluate(() => !!document.querySelector(".pz-dialogo"));
+  // …pero nunca en medio de la bienvenida (la pantalla del idioma sigue sola).
+  await p.evaluate((e) => window.Repasa.estado({ ...e, config: {} }), estadoDemo);
+  await p.evaluate(() => window.Repasa._probar((E) => { E.adultos = false; E.bv = 0; }));
+  await p.evaluate(() => window.Repasa.menu({ accion: "ajustes" }));
+  const enBienvenida = await p.evaluate(() => window.Repasa._probar((E) => { window.__adultos = E.adultos; }) || window.__adultos);
+  if (!adultos) falla("el menú «Para adultos…» de la app de Mac no abre Para adultos");
+  else if (enBienvenida) falla("el menú «Para adultos…» se abre en medio de la bienvenida");
+  else console.log("  ✓ El menú «Para adultos…» del Mac abre Para adultos, nunca en medio de la bienvenida");
   await p.close();
 }
 

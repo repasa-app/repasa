@@ -19,11 +19,154 @@
    "codex",
    "gemini"
   ],
-  "ultimo_perfil": "texto",
+  "ultimo_perfil": {
+   "tipo": "texto",
+   "patron": "[a-z0-9-]{1,80}"
+  },
   "tema": [
    "sistema",
    "claro",
    "oscuro"
   ]
+ },
+ "sin_acciones": [
+  "listaIA"
+ ],
+ "acciones": {
+  "guardarPerfil": {
+   "script": "guardar.py",
+   "scriptDeLaApp": true,
+   "args": [
+    "perfil"
+   ],
+   "entrada": "archivo",
+   "datos": {
+    "*": "pasar"
+   },
+   "responde": null,
+   "cola": "escritura",
+   "limite": 30
+  },
+  "guardarProgreso": {
+   "script": "guardar.py",
+   "scriptDeLaApp": true,
+   "args": [
+    "progreso"
+   ],
+   "entrada": "archivo",
+   "datos": {
+    "perfil": {
+     "tipo": "texto",
+     "max": 80,
+     "requerido": true
+    },
+    "*": "pasar"
+   },
+   "responde": null,
+   "cola": "escritura",
+   "limite": 30
+  },
+  "guardarPruebas": {
+   "script": "guardar.py",
+   "scriptDeLaApp": true,
+   "args": [
+    "pruebas"
+   ],
+   "entrada": "archivo",
+   "datos": {
+    "*": "pasar"
+   },
+   "responde": null,
+   "cola": "escritura",
+   "limite": 30
+  },
+  "temaAMano": {
+   "script": "crear_tema.py",
+   "scriptDeLaApp": true,
+   "args": [
+    "amano"
+   ],
+   "entrada": "archivo",
+   "datos": {
+    "titulo": {
+     "tipo": "texto",
+     "max": 30000,
+     "recortar": true
+    },
+    "ramo": {
+     "tipo": "texto",
+     "max": 30000,
+     "recortar": true
+    },
+    "curso": {
+     "tipo": "texto",
+     "max": 30000,
+     "recortar": true
+    },
+    "resumen": {
+     "tipo": "texto",
+     "max": 30000,
+     "recortar": true
+    },
+    "conceptos": {
+     "tipo": "texto",
+     "max": 30000,
+     "recortar": true
+    },
+    "preguntas": {
+     "tipo": "texto",
+     "max": 30000,
+     "recortar": true
+    }
+   },
+   "inyectar": {
+    "idioma": "idiomaUI"
+   },
+   "responde": "temaCreado",
+   "limite": 60
+  },
+  "agregarDelCatalogo": {
+   "script": "crear_tema.py",
+   "scriptDeLaApp": true,
+   "args": [
+    "catalogo"
+   ],
+   "entrada": "archivo",
+   "datos": {
+    "id": {
+     "tipo": "texto",
+     "max": 60,
+     "requerido": true
+    }
+   },
+   "responde": "temaGuardado",
+   "cola": "escritura",
+   "limite": 60
+  },
+  "explicar": {
+   "script": "explicar.py",
+   "scriptDeLaApp": true,
+   "args": [],
+   "entrada": "archivo",
+   "datos": {
+    "tema": {
+     "tipo": "texto",
+     "max": 60,
+     "requerido": true
+    },
+    "pregunta": {
+     "tipo": "texto",
+     "max": 80,
+     "requerido": true
+    },
+    "respondio": {
+     "tipo": "texto",
+     "max": 300,
+     "recortar": true
+    }
+   },
+   "responde": "explicado",
+   "limite": 240
+  }
  }
 }

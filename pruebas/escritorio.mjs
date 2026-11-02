@@ -18,7 +18,7 @@ const ui = fs.mkdtempSync(path.join(os.tmpdir(), "repasa-escritorio-"));
 fs.cpSync(path.join(RAIZ, "motor"), path.join(ui, "motor"), { recursive: true });
 fs.copyFileSync(path.join(RAIZ, "app", "web", "escritorio.js"), path.join(ui, "escritorio.js"));
 globalThis.window = {};
-// Ventana.swift carga ui/cifrado.js (pieza «cifrado», script clásico) antes de escritorio.js: queda en window.PiezaCifrado.
+// La app de Mac (Copia.swift) carga ui/cifrado.js (pieza «cifrado», script clásico) antes de escritorio.js: queda en window.PiezaCifrado.
 globalThis.PiezaCifrado = createRequire(import.meta.url)(path.join(RAIZ, "ui", "cifrado.js"));
 await import(pathToFileURL(path.join(ui, "escritorio.js")).href);
 const R = globalThis.window.RepasaEscritorio;

@@ -3,15 +3,17 @@
 Uso: python3 pruebas/contrato.py
 Revisa:
 1. Cada acción que manda la interfaz (host.enviar en ui/app.js y lo que mandan las piezas de la interfaz: ui/componentes.js) existe en el anfitrión del celular (movil/host/host.js), en la vista
-   previa (simular() en ui/app.js), en la app de Mac (app/Sources/Repasa/Ventana.swift) y, cuando exista, en la de Windows/Linux
-   (escritorio/).
-2. Cada función de la interfaz que llaman el anfitrión del celular y la app de Mac (window.Repasa.<funcion>) existe en ui/app.js, y
-   cada script de bin/ que llama la app de Mac existe.
+   previa (simular() en ui/app.js), en la app de Mac (pieza «host-mac»: registrada en app/Sources/Repasa, del host o declarada en
+   acciones.json) y, cuando exista, en la de Windows/Linux (escritorio/).
+2. Cada función de la interfaz que llaman el anfitrión del celular y la app de Mac (window.Repasa.<funcion>, también lo que
+   responden las acciones declaradas) existe en ui/app.js, cada script de bin/ que llama la app de Mac existe y acciones.json está
+   al día con app.json → «acciones».
 3. Cada método nativo que llama el anfitrión (llamar("Plugin", "metodo")) existe en el plugin de iOS (Swift) y de Android (Kotlin o
    Java), y en el Capacitor falso de las pruebas (pruebas/capacitor_falso.js), para que lo probado sea lo que existe.
 4. Seguridad de las apps nativas (es para niños): Capacitor sin servidor remoto ni http en claro ni navegación a otros sitios;
    Android sin respaldo automático a la nube, sin tráfico en claro y sin componentes exportados de más; iOS sin excepciones de ATS;
-   Mac con el puente solo para la interfaz local, la ventana sin navegar fuera de ui/ y descargas solo de los Releases de Repasa.
+   Mac con el puente solo para la interfaz local, la ventana sin navegar fuera de ui/, enlaces solo de Repasa y descargas solo de
+   los Releases de Repasa.
 """
 import json
 import glob
@@ -55,10 +57,38 @@ for a in sorted(acciones - en_host - set(SOLO_ESCRITORIO)):
     problemas.append(f"La acción «{a}» no está en movil/host/host.js (ACCIONES).")
 for a in sorted(acciones - en_simular):
     problemas.append(f"La acción «{a}» no está simulada en simular() (ui/app.js).")
-MAC = leer("app", "Sources", "Repasa", "Ventana.swift")
-casos_mac = set(re.findall(r'"(\w+)"', " ".join(re.findall(r"case ([^:\n]+):", MAC))))
-for a in sorted(acciones - casos_mac):
-    problemas.append(f"La acción «{a}» no está en la app de Mac (un case en Ventana.swift).")
+# Mac (pieza «host-mac»): lo que registra Repasa (app/Sources/Repasa), lo que trae el host (Puente.swift: listo, config, abrirEnlace,
+# copiar y, con la pieza «actualizaciones», buscarActualizacion y actualizar) y lo declarado (acciones.json, lo arma pieza.py).
+def sin_comentarios(texto):
+    return re.sub(r"^\s*(//|///|\*).*$", "", texto, flags=re.M)
+
+
+SWIFT = {os.path.basename(f): open(f, encoding="utf-8").read() for f in glob.glob(os.path.join(RAIZ, "app", "Sources", "Repasa", "*.swift"))}
+TODO_SWIFT = sin_comentarios("\n".join(SWIFT.values()))
+PUENTE_MAC = leer("app", "Sources", "PiezaHost", "Puente.swift")
+HOST_MAC = "\n".join(open(f, encoding="utf-8").read() for f in glob.glob(os.path.join(RAIZ, "app", "Sources", "PiezaHost", "*.swift")))
+ACT_MAC = leer("app", "Sources", "PiezaActualizaciones", "Actualizaciones.swift")
+APP_JSON = json.loads(leer("app.json"))
+DECLARADAS = json.loads(leer("acciones.json"))["acciones"]
+registradas_mac = set(re.findall(r'registrar\("(\w+)"', TODO_SWIFT))
+del_host_mac = set(re.findall(r'internas\["(\w+)"\]', sin_comentarios(PUENTE_MAC)))
+if "p.actualizaciones = .init(" not in TODO_SWIFT:
+    del_host_mac -= {"buscarActualizacion", "actualizar"}  # el host las atiende solo si recibe la pieza «actualizaciones»
+for a in sorted(acciones - registradas_mac - del_host_mac - set(DECLARADAS)):
+    problemas.append(f"La acción «{a}» no está en la app de Mac (ni registrada en app/Sources/Repasa, ni del host, ni declarada).")
+for n, d in (APP_JSON.get("acciones") or {}).items():
+    if {k: v for k, v in d.items() if k != "scriptDeLaApp"} != {k: v for k, v in DECLARADAS.get(n, {}).items() if k != "pieza"}:
+        problemas.append(f"acciones.json no está al día con app.json en «{n}»: python3 <pieza>/herramientas/pieza.py acciones .")
+for n, d in DECLARADAS.items():
+    if not os.path.exists(os.path.join(RAIZ, "bin", d.get("script", ""))):
+        problemas.append(f"La acción declarada «{n}» usa bin/{d.get('script')}, que no existe.")
+    if n not in acciones:
+        problemas.append(f"La acción declarada «{n}» no la manda la interfaz (sácala o ponla en «sin_acciones» de app.json).")
+    if n in registradas_mac:
+        problemas.append(f"«{n}» está declarada y también registrada en Swift: la registrada gana y la declarada sobra.")
+for n in ("guardarPerfil", "guardarProgreso", "guardarPruebas", "agregarDelCatalogo"):
+    if (DECLARADAS.get(n) or {}).get("cola") != "escritura":
+        problemas.append(f"acciones.json: «{n}» va en la fila (\"cola\": \"escritura\"): un estado nunca se lee a medio guardar.")
 for a in sorted(set(SOLO_ESCRITORIO) - acciones):
     problemas.append(f"SOLO_ESCRITORIO tiene «{a}», que la interfaz ya no manda (sácala del contrato).")
 for patron in ["escritorio/src/**/*.js"]:
@@ -75,18 +105,22 @@ interfaz = APP[APP.index("host.responder({"):APP.index("// ───────
 en_interfaz = set(re.findall(r"^    (?:async )?(\w+)(?:\(|: \()", interfaz, re.M))
 for f in sorted(set(re.findall(r"A\(\)\.(\w+)", HOST)) - en_interfaz):
     problemas.append(f"movil/host/host.js llama window.Repasa.{f}, que no existe en ui/app.js.")
-SWIFT = {os.path.basename(f): open(f, encoding="utf-8").read() for f in glob.glob(os.path.join(RAIZ, "app", "Sources", "Repasa", "*.swift"))}
-TODO_SWIFT = "\n".join(SWIFT.values())
-for f in sorted(set(re.findall(r'llamar\("(\w+)"', TODO_SWIFT)) - en_interfaz):
+llamadas_mac = set(re.findall(r'(?:llamar|responder)\("(\w+)"', TODO_SWIFT)) | set(re.findall(r'llamar\("(\w+)"', sin_comentarios(PUENTE_MAC)))
+llamadas_mac |= {d["responde"] for d in DECLARADAS.values() if d.get("responde")}
+if "copiar" not in acciones:
+    llamadas_mac.discard("copiado")  # la respuesta de «copiar» (del host), que la interfaz de Repasa no usa
+for f in sorted(llamadas_mac - en_interfaz):
     problemas.append(f"La app de Mac llama window.Repasa.{f}, que no existe en ui/app.js.")
-for script in sorted(set(re.findall(r'(?:correrJSON|conEntrada|guardarEnFila)\("(\w+\.py)"', TODO_SWIFT))):
+for script in sorted(set(re.findall(r'(?:correrJSON|conEntrada)\("(\w+\.py)"', TODO_SWIFT))):
     if not os.path.exists(os.path.join(RAIZ, "bin", script)):
         problemas.append(f"La app de Mac llama bin/{script}, que no existe.")
 
-# Probar la IA es `probarIA {ia}` → `iaProbada {ia, …}` en todas las apps (pieza «host-ui»); antes Repasa mandaba {id}.
-caso_probar = MAC[MAC.index('case "probarIA":'):MAC.index("case ", MAC.index('case "probarIA":') + 10)]
-if 'd["ia"]' not in caso_probar or '"id":' in caso_probar:
-    problemas.append("Ventana.swift: probarIA lee d[\"ia\"] y responde iaProbada con «ia» (no «id»).")
+# Probar la IA es `probarIA {ia}` → `iaProbada {ia, …}` en todas las apps (pieza «host-ui»); antes Repasa mandaba {id}. En el Mac la
+# declara la pieza «ia»: la IA va en el archivo de entrada, nunca como argumento.
+probar = DECLARADAS.get("probarIA") or {}
+if (probar.get("script"), probar.get("args"), probar.get("entrada"), probar.get("responde"), list((probar.get("datos") or {}))) != \
+        ("ia.py", ["probar"], "archivo", "iaProbada", ["ia"]) or "probarIA" in registradas_mac:
+    problemas.append("acciones.json: probarIA es la de la pieza «ia» (ia.py probar con {ia} en un archivo de entrada → iaProbada).")
 host_probar = HOST[HOST.index("async probarIA(d)"):HOST.index("abrirEnlace(d)")]
 if "d.id" in host_probar or "{ id:" in host_probar:
     problemas.append("movil/host/host.js: probarIA lee d.ia y responde iaProbada con «ia» (no «id»).")
@@ -148,28 +182,47 @@ if permisos - {"android.permission.INTERNET"}:
 if "NSAppTransportSecurity" in leer("movil", "ios", "App", "App", "Info.plist"):
     problemas.append("Info.plist: sin excepciones de App Transport Security (NSAppTransportSecurity).")
 
-# Mac: lo que ya está endurecido no se pierde sin que alguien lo note.
-for archivo, texto, por_que in [
-    ("Ventana.swift", "frameInfo.isMainFrame, mensaje.frameInfo.securityOrigin.protocol == \"file\"", "el puente solo para la interfaz local"),
-    ("Ventana.swift", "decidePolicyFor", "la ventana no navega fuera de ui/"),
-    ("Ventana.swift", "hasPrefix(carpetaUI)", "la ventana no navega fuera de ui/"),
-    ("Ventana.swift", "elegidos.contains", "crear y guardar un tema solo con archivos que eligió la persona"),
-    ("Ventana.swift", "Rutas.permitidaEnCopia(ruta)", "lo que trae una copia solo escribe rutas permitidas"),
-    ("Actualizaciones.swift", "esDescargaNuestra(zip), esDescargaNuestra(huella)", "descargas solo de los Releases de Repasa"),
-    ("Actualizaciones.swift", "shasum -a 256", "la versión nueva se verifica con su huella"),
-    ("Ventana.swift", "Procesador.conEntrada(\"ia.py\", [\"probar\"], [\"ia\": id])",
-     "la prueba de la IA va por bin/ia.py (pieza «ia»), con la IA en un archivo de entrada"),
+# Mac: lo que ya está endurecido no se pierde sin que alguien lo note (la ventana y el puente los trae la pieza «host-mac»).
+for donde, codigo, textos, por_que in [
+    ("PiezaHost/Puente.swift", PUENTE_MAC, ['mensaje.frameInfo.isMainFrame, mensaje.frameInfo.securityOrigin.protocol == "file"', "hasPrefix(prefijoUI)",
+                                            "decidePolicyFor"], "el puente solo para la interfaz local y la ventana sin navegar fuera de ui/"),
+    ("PiezaHost/Procesador.swift", HOST_MAC, ["hasPrefix(prefijo)", "matarArbol", 'env["PYTHONDONTWRITEBYTECODE"] = "1"'],
+     "los scripts sin variables REPASA_* de afuera, con límite de tiempo y sin __pycache__ dentro de la app"),
+    ("Repasa/Material.swift", SWIFT.get("Material.swift", ""), ["elegidos.contains", 'registrarMedios("material")'],
+     "crear y guardar un tema solo con archivos que eligió la persona; el material por repasa://material/"),
+    ("Repasa/Copia.swift", SWIFT.get("Copia.swift", ""), ["Rutas.permitidaEnCopia(ruta)", "callAsyncJavaScript(js, arguments:",
+                                                          "c.src = 'cifrado.js'"], "lo que trae una copia solo escribe rutas permitidas"),
+    ("Repasa/RepasaApp.swift", SWIFT.get("RepasaApp.swift", ""), ['p.registrar("abrirEnlace")', "enlaceNuestro(u)", "estadoScript: nil", "Fila.agregar",
+                                                                  'Actualizaciones.configurar(.init(repo: "repasa-app/repasa", nombre: "Repasa"'],
+     "enlaces solo de Repasa, el estado en la fila y las actualizaciones solo del repo de Repasa"),
+    ("PiezaActualizaciones/Actualizaciones.swift", ACT_MAC, ["esDescargaNuestra(zip, repo: c.repo), esDescargaNuestra(huella, repo: c.repo)",
+                                                             "shasum -a 256", "--proto-redir '=https'"], "descargas solo de los Releases, con su huella"),
 ]:
-    if texto not in SWIFT.get(archivo, ""):
-        problemas.append(f"app/Sources/Repasa/{archivo}: falta «{texto}» ({por_que}).")
+    for texto in textos:
+        if texto not in codigo:
+            problemas.append(f"app/Sources/{donde}: falta «{texto}» ({por_que}).")
+if re.search(r"WKWebView\(|WKScriptMessageHandler|NSApplicationDelegate|decidePolicyFor", TODO_SWIFT):
+    problemas.append("app/Sources/Repasa: la ventana, el puente y el delegado los pone la pieza «host-mac» (Repasa no arma otros).")
+if 'cp "$RAIZ/acciones.json" "$CODIGO/acciones.json"' not in leer("herramientas", "empaquetar.sh"):
+    problemas.append("herramientas/empaquetar.sh tiene que copiar acciones.json junto a app.json (lo lee la pieza «host-mac»).")
+paquete = leer("app", "Package.swift")
+if not all(x in paquete for x in ('.target(name: "PiezaHost"', '.target(name: "PiezaActualizaciones"', 'dependencies: ["PiezaHost", "PiezaActualizaciones"]')):
+    problemas.append("app/Package.swift: los targets PiezaHost y PiezaActualizaciones, y el ejecutable que depende de los dos.")
 # La IA solo la corre bin/ia.py (pieza «ia»): ningún Swift arma el comando de un CLI de IA por su cuenta.
-for archivo, codigo in SWIFT.items():
+for archivo, codigo in list(SWIFT.items()) + [("PiezaHost", HOST_MAC)]:
     if re.search(r'"--disallowedTools"|"--skip-git-repo-check"|"--strict-mcp-config"', codigo):
-        problemas.append(f"app/Sources/Repasa/{archivo}: arma el comando de una IA; eso lo hace solo bin/ia.py (pieza «ia»).")
-for linea in re.findall(r'"""(.*?)"""', SWIFT.get("Actualizaciones.swift", ""), re.S):
+        problemas.append(f"app/Sources/{archivo}: arma el comando de una IA; eso lo hace solo bin/ia.py (pieza «ia»).")
+for linea in re.findall(r'"""(.*?)"""', ACT_MAC, re.S):
     for interpolado in re.findall(r"\\\(([^)]*(?:\([^)]*\))?[^)]*)\)", linea):
-        if not interpolado.startswith("comillas(") and interpolado != "pid":
+        # paso(…), cerrar y progreso los arma la pieza con comillas(); pid es un número.
+        if not interpolado.startswith(("comillas(", "paso(")) and interpolado not in ("pid", "cerrar", "progreso"):
             problemas.append(f"Actualizaciones.swift: «\\({interpolado})» va en el guion sin comillas().")
+# Es para niños: la interfaz no tiene enlaces que se toquen. El host de Mac abre cualquier https tocado dentro de la ventana
+# (sin pasar por el abrirEnlace de Repasa, que solo deja los de Repasa): mientras eso no cambie en Pieza, nada de <a href>.
+for nombre in ["index.html"] + sorted(f for f in os.listdir(os.path.join(RAIZ, "ui")) if f.endswith(".js") and f != "componentes.js"):
+    texto = leer("ui", nombre)
+    if re.search(r"<a\s[^>]*href|\bhref\s*:", texto):
+        problemas.append(f"ui/{nombre}: un enlace <a href> (en Repasa los enlaces van por host.enviar(\"abrirEnlace\"), que solo abre los de Repasa).")
 PLIST = leer("app", "Info.plist")
 if "<string>app.repasa.mac</string>" not in PLIST or 'identifier "app.repasa.mac"' not in leer("herramientas", "empaquetar.sh"):
     problemas.append("El identificador de la app de Mac (app.repasa.mac) no coincide entre Info.plist y la firma de empaquetar.sh.")
