@@ -13,7 +13,7 @@
   const E = {
     hoy: "", perfiles: [], temas: [], progreso: {}, pruebas: [], config: {}, ias: [], version: "", carpeta: "", actualizacion: { hay: false },
     perfil: null, vista: "inicio", temaSel: null, pestana: "resumen", volteadas: {}, sesion: null, nuevo: null, prueba: null, perfilEdit: null,
-    adultos: false, bv: null, bvCerrada: false, idioma: "es",
+    adultos: false, bvCerrada: false, bvVista: false, idioma: "es",
     capacidades: {}, catalogo: null, copia: { frase: "", estado: "", error: "" },
   };
   const ENLACES = { sitio: "https://repasa-app.github.io/repasa/", codigo: "https://github.com/repasa-app/repasa",
@@ -33,7 +33,6 @@
   const i18n = window.PiezaI18n.crear();
   const { T, Thtml, tr, frase } = i18n;
   const traducirDOM = (raiz) => i18n.traducirDOM(raiz);
-  const idiomaSistema = () => i18n.idiomaDelSistema();
   /** Carga los textos del idioma. `elegido` viene de la persona (bienvenida o Ajustes) y manda sobre ?idioma= de la vista previa. */
   async function cargarIdioma(elegido) {
     await i18n.cargar(i18n.elegir({ elegido, config: E.config.idioma_ui }));
@@ -44,15 +43,14 @@
   // Sistema, claro u oscuro (Para adultos → General). Diálogos con el foco adentro y Esc, avisos en cola, las filas de la IA y de
   // las actualizaciones. `mantener` es el pintar de Repasa (conserva el scroll); `cerrar` es Esc, el velo o ✕ sobre sus diálogos.
   const tema = window.PiezaTema.crear({ guardar: (v) => { E.config.tema = v; host.enviar("config", { tema: v }); } });
-  const avisosEnEspera = [];
   const ui = window.PiezaComponentes.crear({
     i18n, host, app: "Repasa", repo: "repasa-app/repasa",
     pintar: () => mantener(),
     cerrar: () => cerrarDialogo(),
     // Recién cuando la prueba sale bien: se guarda por el mismo camino que Ajustes (en el Mac, probarIA solo corre ia.py probar).
     elegirIA: (id) => { E.config.ia = id; host.enviar("config", { ia: id }); },
-    // Mientras se elige el idioma no se muestra nada más: los avisos esperan y salen ya en el idioma elegido.
-    retener: (texto, o) => { if (E.bv !== 0) return false; avisosEnEspera.push([texto, o]); return true; },
+    // Mientras se elige el idioma no se muestra nada más: los avisos esperan (pieza «bienvenida») y salen ya en el idioma elegido.
+    retener: (texto, o) => bv.retener(texto, o),
   });
   const toast = (texto, o) => ui.aviso(texto, o);
 
@@ -128,7 +126,7 @@
   function pintar() {
     const raiz = $("#app"), activo = document.activeElement?.id, y = window.scrollY;
     // Primer uso: mientras se elige el idioma no se muestra nada más (ni perfiles ni ajustes), para no hablarle en otro idioma.
-    const soloIdioma = E.bv === 0;
+    const soloIdioma = bv.soloIdioma;
     const html = [barra(soloIdioma), `<main>${soloIdioma ? "" : principal()}</main>`, dialogos(), ui.capas()];
     const antes = pintado && pintado.idioma === E.idioma && pintado.nodos.every((ns) => ns.every((n) => n.parentNode === raiz)) ? pintado : null;
     const yDialogo = $(".pz-dialogo", raiz)?.scrollTop || 0;
@@ -453,55 +451,40 @@
       <div class="botones-copia"><button class="pz-boton" data-accion="guardar-copia" ${ocupado ? "disabled" : ""}>☁️ Guardar copia…</button><button class="pz-boton" data-accion="traer-copia" ${ocupado ? "disabled" : ""}>📥 Traer copia…</button></div>
       <div class="estado-copia" role="status">${estado}</div></div>`;
   }
-  // Paso 0: el idioma, antes que cualquier otra cosa. Cada opción va escrita en su propio idioma (no se traduce), por eso el título
-  // bilingüe va armado aquí y no por T(). Es un diálogo de la pieza (`dialogo` con `tituloHTML` y `claseTitulo`: aria-modal, foco adentro) que no se cierra; el foco
-  // empieza en el idioma sugerido (data-autofoco), así Enter lo elige.
-  const IDIOMAS = [["es", "Español", "Sugerido"], ["en", "English", "Suggested"]];
-  function pasoIdioma(puntos) {
-    const sugerido = E.config.idioma_ui || idiomaSistema();
-    return ui.dialogo({ id: "t-idioma", antes: puntos, claseTitulo: "titulo-idioma", clase: "bv", cerrable: false, sinEsc: true,
-      tituloHTML: `<span lang="es">Elige tu idioma</span> <span class="sep">·</span> <span lang="en">Choose your language</span>`,
-      cuerpo: `<div class="opciones-idioma" role="group" aria-labelledby="t-idioma" data-sin-traducir>${IDIOMAS.map(([codigo, nombre, marca], k) => `
-        <button class="idioma-op ${codigo === sugerido ? "sugerido" : ""}" id="idioma-${codigo}" data-idioma="${codigo}" lang="${codigo}" aria-keyshortcuts="${k + 1}"${codigo === sugerido ? " data-autofoco" : ""}>
-          <span class="tecla" aria-hidden="true">${k + 1}</span><b>${nombre}</b>${codigo === sugerido ? `<small>✓ ${marca}</small>` : ""}</button>`).join("")}</div>` });
-  }
-  async function elegirIdioma(codigo) {
-    if (!IDIOMAS.some(([c]) => c === codigo)) return;
-    E.config.idioma_ui = codigo;
-    host.enviar("config", { idioma_ui: codigo });
-    await cargarIdioma(codigo);
-    E.bv = 1; pintar(); // el paso siguiente es otro diálogo: el foco va a su título
-    for (const [texto, o] of avisosEnEspera.splice(0)) toast(texto, o);
-  }
-  function bienvenida() {
-    const pasos = [
-      ["", "", true],
-      ["Hola, esto es Repasa", `<p>Una app para estudiar con lo que pasan en el colegio. Le sacan una foto al cuaderno y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas para memorizar. Las preguntas que cuestan vuelven hasta que se aprenden.</p><p class="nota">${MOVIL ? "Gratis, sin cuentas y sin publicidad. Todo queda en este teléfono." : "Gratis, sin cuentas y sin publicidad. Todo queda en este computador."}</p>`, true],
-      MOVIL ? ["La IA", `<p>En el celular, Repasa usa la IA del propio teléfono: gratis, privada y sin internet. Si este teléfono no la tiene, igual pueden escribir temas a mano o elegirlos del catálogo.</p><div class="seccion">${filasIA()}</div>`, true]
-        : ["Elijan la IA", `<p>Repasa usa la IA que ya tiene un adulto de la casa (Claude, ChatGPT o Gemini), con su cuenta. La probamos con una pregunta corta.</p><div class="seccion">${filasIA()}</div>`, !!E.config.ia],
-    ];
-    const [titulo, cuerpo, puede] = pasos[E.bv];
-    const puntos = `<div class="pasos-bv">${pasos.map((_, i) => `<i class="${i <= E.bv ? "hecho" : ""}"></i>`).join("")}</div>`;
-    if (E.bv === 0) return pasoIdioma(puntos); // sin «Lo hago después»: elegir es un solo toque
-    const ultimo = E.bv >= pasos.length - 1;
-    // Un id por paso: al avanzar, el foco va al título del paso nuevo (el lector de pantalla lo anuncia). Los puntos de avance van
-    // antes del título (`antes`). Esc no la cierra (está «Lo hago después»).
-    return dlg(`t-bv-${E.bv}`, titulo, cuerpo,
-      `<button class="pz-boton pz-izq" data-bv="${E.bv - 1}">Atrás</button><button class="pz-boton" data-accion="bv-fin">Lo hago después</button>
-        ${ultimo ? `<button class="pz-boton pz-principal" data-accion="bv-fin">Empezar</button>` : `<button class="pz-boton pz-principal" data-bv="${E.bv + 1}" ${puede ? "" : "disabled"}>Siguiente</button>`}`,
-      { antes: puntos, clase: "bv", cerrable: false, sinEsc: true });
-  }
+  // ───────────── Primer uso (pieza «bienvenida»): el idioma siempre primero; después el saludo y la IA ─────────────
+  // Paso 0: el idioma, antes que cualquier otra cosa (sin perfiles ni Para adultos detrás), cada opción escrita en su idioma, el
+  // del sistema sugerido y con el foco; 1 y 2 eligen. Se guarda por el mismo camino que Para adultos (`config`). Los niños no
+  // tienen «Ajustes»: lo elegido se cambia en «Para adultos» (`ajustes`). El último paso (la IA) es opcional: «Lo hago después»
+  // y «Empezar» (`saltable`). En el celular, la IA es la del propio teléfono.
+  const FORZAR_BV = new URLSearchParams(location.search).has("bienvenida");
+  const bv = window.PiezaBienvenida.crear({
+    i18n, pintar: () => pintar(), listo: false, ajustes: { es: "Para adultos", en: "For grown-ups" },
+    guardarIdioma: (codigo) => { E.config.idioma_ui = codigo; host.enviar("config", { idioma_ui: codigo }); },
+    cargarIdioma: (codigo) => cargarIdioma(codigo),
+    terminar: () => { E.bvCerrada = true; E.config.bienvenida = true; host.enviar("config", { bienvenida: true }); },
+    mostrarAviso: (texto, o) => toast(texto, o),
+  });
+  bv.sumarPaso({ id: "hola", orden: 10, titulo: "Hola, esto es Repasa",
+    cuerpo: () => `<p>Una app para estudiar con lo que pasan en el colegio. Le sacan una foto al cuaderno y Repasa arma un resumen fácil, preguntas tipo prueba y tarjetas para memorizar. Las preguntas que cuestan vuelven hasta que se aprenden.</p><p class="nota">${MOVIL ? "Gratis, sin cuentas y sin publicidad. Todo queda en este teléfono." : "Gratis, sin cuentas y sin publicidad. Todo queda en este computador."}</p>` });
+  bv.sumarPaso({ id: "ia", orden: 20, saltable: true, titulo: MOVIL ? "La IA" : "Elijan la IA",
+    cuerpo: () => MOVIL ? `<p>En el celular, Repasa usa la IA del propio teléfono: gratis, privada y sin internet. Si este teléfono no la tiene, igual pueden escribir temas a mano o elegirlos del catálogo.</p><div class="seccion">${filasIA()}</div>`
+      : `<p>Repasa usa la IA que ya tiene un adulto de la casa (Claude, ChatGPT o Gemini), con su cuenta. La probamos con una pregunta corta.</p><div class="seccion">${filasIA()}</div>` });
+
   /** Un diálogo de Repasa con la pieza «componentes»: id del título, título (frase en español), cuerpo y botones del pie. */
   const dlg = (id, titulo, cuerpo, pie = "", o = {}) => ({ id, titulo, cuerpo, pie, ...o });
   function dialogos() {
-    if (E.bv === 0) return bienvenida(); // la pantalla del idioma ya viene envuelta
-    const d = E.nuevo ? dialogoNuevoTema() : E.prueba ? dialogoPrueba() : E.perfilEdit ? dialogoPerfil()
-      : E.bv !== null ? bienvenida() : E.adultos ? dialogoAdultos() : null;
-    return d ? ui.dialogo(d) : "";
+    // La bienvenida (pieza «bienvenida») trae su título (#t-bv), los puntos de avance y su pie: va en la caja de «componentes»,
+    // que no se cierra con Esc ni tocando afuera (se sale eligiendo, con «Lo hago después» o «Empezar»).
+    const bienvenida = () => ui.envolver(bv.html(), { id: "t-bv", clase: "bv", sinEsc: true });
+    if (bv.soloIdioma) return bienvenida();
+    const d = E.nuevo ? dialogoNuevoTema() : E.prueba ? dialogoPrueba() : E.perfilEdit ? dialogoPerfil() : null;
+    if (!d && bv.activa) return bienvenida();
+    const x = d || (E.adultos ? dialogoAdultos() : null);
+    return x ? ui.dialogo(x) : "";
   }
   /** Esc, el velo o ✕: cierra el diálogo de Repasa que está abierto (nunca mientras la IA arma un tema ni la bienvenida). */
   function cerrarDialogo() {
-    if (E.nuevo?.paso === "creando" || (E.bv !== null && !E.nuevo && !E.prueba && !E.perfilEdit)) return;
+    if (E.nuevo?.paso === "creando" || (bv.activa && !E.nuevo && !E.prueba && !E.perfilEdit)) return;
     E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false;
     pintar();
   }
@@ -518,8 +501,9 @@
   }
   document.addEventListener("click", async (ev) => {
     if (tema.manejarClic(ev)) return mantener();
+    if (bv.manejarClic(ev)) return; // de la pieza «bienvenida»: el idioma, Atrás, Siguiente, «Lo hago después» y Empezar
     if (ui.manejarClic(ev)) return; // de la pieza: ✕, el velo, confirmar, probar la IA, actualizaciones, enlaces y comentarios
-    const el = ev.target.closest("[data-accion],[data-perfil],[data-tema],[data-pestana],[data-flip],[data-practicar],[data-responder],[data-quitar],[data-avatar],[data-editar-perfil],[data-bv],[data-idioma],[data-modo],[data-catalogo]");
+    const el = ev.target.closest("[data-accion],[data-perfil],[data-tema],[data-pestana],[data-flip],[data-practicar],[data-responder],[data-quitar],[data-avatar],[data-editar-perfil],[data-modo],[data-catalogo]");
     if (!el) return;
     const d = el.dataset;
     if (d.perfil) { E.perfil = d.perfil; E.vista = "inicio"; host.enviar("config", { ultimo_perfil: d.perfil }); return pintar(); }
@@ -531,10 +515,8 @@
     if (d.quitar != null) { leerNuevo(); E.nuevo.archivos.splice(Number(d.quitar), 1); return mantener(); }
     if (d.avatar) { E.perfilEdit.nombre = $("#nombre-perfil")?.value ?? E.perfilEdit.nombre; E.perfilEdit.curso = $("#curso-perfil")?.value || E.perfilEdit.curso; E.perfilEdit.avatar = d.avatar; return mantener(); }
     if (d.editarPerfil) { E.adultos = false; E.perfilEdit = { ...E.perfiles.find((p) => p.id === d.editarPerfil) }; return pintar(); }
-    if (d.idioma) return elegirIdioma(d.idioma);
     if (d.modo) { leerNuevo(); Object.assign(E.nuevo, { modo: d.modo, error: "", problemas: [] }); return mantener(); }
     if (d.catalogo) { E.nuevo.agregando = d.catalogo; E.nuevo.error = ""; host.enviar("agregarDelCatalogo", { id: d.catalogo }); return mantener(); }
-    if (d.bv) { E.bv = Number(d.bv); return pintar(); }
     switch (d.accion) {
       case "cambiar-perfil": E.perfil = null; E.sesion = null; return pintar();
       case "nuevo-perfil": E.perfilEdit = { nombre: "", curso: "6b", avatar: AVATARES[E.perfiles.length % AVATARES.length] }; pintar(); return $("#nombre-perfil")?.focus();
@@ -587,7 +569,6 @@
       case "adultos": E.adultos = true; return pintar();
       case "cerrar": if (E.nuevo?.paso !== "creando") E.nuevo = null; E.prueba = null; E.perfilEdit = null; E.adultos = false; return pintar();
       case "abrir-carpeta": return host.enviar("abrirCarpeta", {});
-      case "bv-fin": E.bv = null; E.bvCerrada = true; host.enviar("config", { bienvenida: true }); return pintar();
       case "guardar-copia": case "traer-copia": {
         const frase = $("#frase-copia")?.value || "";
         if (!frase) { E.copia = { frase, estado: "", error: "Escribe la frase de la familia." }; mantener(); return $("#frase-copia")?.focus(); }
@@ -632,7 +613,7 @@
   });
   document.addEventListener("keydown", (ev) => {
     if (ui.manejarTecla(ev)) return; // Esc cierra el diálogo de más arriba; Tab no se escapa de él
-    if (E.bv === 0 && /^[12]$/.test(ev.key) && !ev.target.closest?.("input, textarea, select")) { ev.preventDefault(); return elegirIdioma(IDIOMAS[Number(ev.key) - 1][0]); }
+    if (bv.manejarTecla(ev)) return; // en el idioma: 1 y 2 eligen, las flechas pasan de uno a otro
     const s = E.sesion;
     // Las teclas del repaso (1–5 y Enter) solo cuando no hay un diálogo encima.
     if (!s || s.fin || ev.target.closest?.("input, textarea, select") || $(".pz-capa")) return;
@@ -649,7 +630,8 @@
       tema.aplicar(tema.elegir({ config: E.config.tema }));
       ui.actualizacionDisponible(E.actualizacion?.hay ? E.actualizacion : null, { pintar: false }); // el Mac manda `notas` (pieza «actualizaciones»)
       if (E.perfil && !E.perfiles.some((p) => p.id === E.perfil)) E.perfil = null;
-      if (!E.config.bienvenida && E.bv === null && !E.bvCerrada) E.bv = 0;
+      // Sin «bienvenida»: desde el idioma (o desde el saludo, si ya lo eligió). ?bienvenida (vista previa) la abre desde el idioma.
+      if (!bv.activa && !E.bvCerrada) { bv.abrir({ config: E.config, forzar: !E.bvVista && FORZAR_BV }); E.bvVista = true; }
       await cargarIdioma();
       pintar();
     },
@@ -673,11 +655,21 @@
     actualizacionProgreso: (a) => ui.actualizacionProgreso(a),
     /** Un menú de la app de Mac (pieza «host-mac»): «Para adultos…» (⌘,) lo abre, salvo en medio de la bienvenida. «guardar» llega
      *  al cerrar: Repasa ya guardó todo al momento. */
-    menu(m) { if (m?.accion === "ajustes" && E.bv === null) { E.adultos = true; pintar(); } },
+    menu(m) { if (m?.accion === "ajustes" && !bv.activa) { E.adultos = true; pintar(); } },
     /** Vista previa y pruebas: `f(E, ui)` cambia el estado (también el de la pieza: ui.act, ui.ia) y se vuelve a pintar. */
     _probar(f) { f(E, ui, tema); pintar(); },
   });
-  window.Repasa._pruebas = { actualizarCaja, esCorrecta, elegirSesion, actualizarRacha, sumarDias, normalizar };
+  window.Repasa._pruebas = { actualizarCaja, esCorrecta, elegirSesion, actualizarRacha, sumarDias, normalizar,
+    // La bienvenida en las pruebas: `paso(0)` la abre en el idioma; `paso(n)`, en el paso n (con el idioma ya elegido).
+    bienvenida: {
+      paso(n) {
+        E.bvCerrada = false;
+        bv.abrir({ config: n === 0 ? {} : { idioma_ui: E.idioma }, forzar: n === 0 });
+        if (n > 1) bv.ir(n); else pintar();
+      },
+      terminar: () => bv.terminar("despues"),
+      get activa() { return bv.activa; },
+    } };
 
   // ───────────── Vista previa en el navegador (datos ficticios de demo.json) ─────────────
   let DEMO = null;

@@ -34,13 +34,13 @@ for (const f of fs.readdirSync(path.join(RAIZ, "temas")).filter((x) => x.endsWit
 fs.writeFileSync(path.join(SALIDA, "temas", "index.json"), JSON.stringify(temas));
 
 let html = fs.readFileSync(path.join(SALIDA, "index.html"), "utf8");
-// Las piezas de la interfaz (idiomas, puente, tema y componentes) vienen en ui/: sin ellas app.js no arranca en el teléfono.
+// Las piezas de la interfaz (idiomas, puente, tema, componentes y bienvenida) vienen en ui/: sin ellas app.js no arranca en el teléfono.
 // La pieza «cifrado» (ui/cifrado.js) la carga el anfitrión del teléfono (abajo): sin ella no hay copia cifrada.
 if (!fs.existsSync(path.join(SALIDA, "cifrado.js"))) throw new Error("falta ui/cifrado.js (pieza «cifrado» de Pieza)");
-for (const f of ["i18n.js", "host.js", "tema.js", "componentes.js"]) {
+for (const f of ["i18n.js", "host.js", "tema.js", "componentes.js", "bienvenida.js"]) {
   if (!fs.existsSync(path.join(SALIDA, f)) || !html.includes(`<script src="${f}"></script>`)) throw new Error(`falta ui/${f} (pieza de Pieza)`);
 }
-for (const f of ["tema.css", "componentes.css"]) {
+for (const f of ["tema.css", "componentes.css", "bienvenida.css"]) {
   if (!fs.existsSync(path.join(SALIDA, f)) || !html.includes(`<link rel="stylesheet" href="${f}">`)) throw new Error(`falta ui/${f} (pieza de Pieza)`);
 }
 const cambios = [

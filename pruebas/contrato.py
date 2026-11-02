@@ -191,10 +191,10 @@ for donde, codigo, textos, por_que in [
     ("Repasa/Material.swift", SWIFT.get("Material.swift", ""), ["elegidos.contains", 'registrarMedios("material")'],
      "crear y guardar un tema solo con archivos que eligió la persona; el material por repasa://material/"),
     ("Repasa/Copia.swift", SWIFT.get("Copia.swift", ""), ["Rutas.permitidaEnCopia(ruta)", "callAsyncJavaScript(js, arguments:",
-                                                          "c.src = 'cifrado.js'"], "lo que trae una copia solo escribe rutas permitidas"),
-    ("Repasa/RepasaApp.swift", SWIFT.get("RepasaApp.swift", ""), ['p.registrar("abrirEnlace")', "enlaceNuestro(u)", "estadoScript: nil", "Fila.agregar",
-                                                                  'Actualizaciones.configurar(.init(repo: "repasa-app/repasa", nombre: "Repasa"'],
-     "enlaces solo de Repasa, el estado en la fila y las actualizaciones solo del repo de Repasa"),
+                                                          "c.src = 'cifrado.js'", "privado: true"], "lo que trae una copia solo escribe rutas permitidas y la copia queda 0600"),
+    ("Repasa/RepasaApp.swift", SWIFT.get("RepasaApp.swift", ""), ['p.registrar("abrirEnlace")', "enlaceNuestro(u)", "estadoEnFila: true",
+                                                                  'tituloAjustes: "Para adultos…"', 'Actualizaciones.configurar(.init(repo: "repasa-app/repasa", nombre: "Repasa"'],
+     "enlaces solo de Repasa (también los tocados), el estado en la fila, «Para adultos…» y las actualizaciones solo del repo de Repasa"),
     ("PiezaActualizaciones/Actualizaciones.swift", ACT_MAC, ["esDescargaNuestra(zip, repo: c.repo), esDescargaNuestra(huella, repo: c.repo)",
                                                              "shasum -a 256", "--proto-redir '=https'"], "descargas solo de los Releases, con su huella"),
 ]:
@@ -217,8 +217,8 @@ for linea in re.findall(r'"""(.*?)"""', ACT_MAC, re.S):
         # paso(…), cerrar y progreso los arma la pieza con comillas(); pid es un número.
         if not interpolado.startswith(("comillas(", "paso(")) and interpolado not in ("pid", "cerrar", "progreso"):
             problemas.append(f"Actualizaciones.swift: «\\({interpolado})» va en el guion sin comillas().")
-# Es para niños: la interfaz no tiene enlaces que se toquen. El host de Mac abre cualquier https tocado dentro de la ventana
-# (sin pasar por el abrirEnlace de Repasa, que solo deja los de Repasa): mientras eso no cambie en Pieza, nada de <a href>.
+# Es para niños: la interfaz no tiene enlaces que se toquen. Desde host-mac 0.3.0 un https tocado en la ventana pasa por el
+# abrirEnlace de Repasa (que solo abre los de Repasa); esto queda como defensa extra (y el celular no tiene esa guarda).
 for nombre in ["index.html"] + sorted(f for f in os.listdir(os.path.join(RAIZ, "ui")) if f.endswith(".js") and f != "componentes.js"):
     texto = leer("ui", nombre)
     if re.search(r"<a\s[^>]*href|\bhref\s*:", texto):

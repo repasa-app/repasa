@@ -13,18 +13,19 @@ import PiezaHost
 enum RepasaApp {
     @MainActor static func main() {
         // La ventana de siempre (mismo tamaño, mismo nombre para recordar su lugar), sin menú Ayuda: los enlaces de Repasa están
-        // en «Acerca de», dentro de Para adultos. El estado lo lee estado.py en la fila (ver `estado`), nunca a medio guardar.
+        // en «Acerca de», dentro de Para adultos. estado.py corre en la fila (`estadoEnFila`): un estado nunca se lee a medio
+        // guardar. «Ajustes…» se llama «Para adultos…» (lo atiende la interfaz con window.Repasa.menu({accion: "ajustes"}), nunca
+        // en medio de la bienvenida) y debajo va la carpeta (`menuApp`). Sin menú Archivo, el host pone «Cerrar ventana» ⌘W en
+        // Ventana. ~/Repasa la crea el host solo para la persona (0700, app.json → "datos": "visible").
         Host.arrancar(.init(ancho: 1180, alto: 800, minAncho: 420, minAlto: 560, sitio: "https://repasa-app.github.io/repasa/",
-                            codigo: "https://github.com/repasa-app/repasa", menuAyuda: false, estadoScript: nil)) { p in
-            Rutas.prepararCarpeta()
+                            codigo: "https://github.com/repasa-app/repasa", menuAyuda: false, estadoEnFila: true,
+                            tituloAjustes: "Para adultos…")) { p in
             // Fotos o PDF arrastrados para un tema que no se guardó la vez anterior.
             try? FileManager.default.removeItem(at: Rutas.temporal)
 
-            p.estado = { base, listo in estado(base, listo) }
-            p.menus = { m in menus(m) }
-            p.alCambiarConfig = { _, _ in ajustarMenus() }
-            // Host.arrancar instala los menús justo después de este bloque: se ajustan apenas termina el arranque.
-            Task { @MainActor in ajustarMenus() }
+            p.estado = { base, listo in listo(estado(base)) }
+            p.menus = { m in [m.edicion()] }
+            p.menuApp = { m in [m.nativo("Abrir la carpeta de Repasa") { abrirCarpeta() }] }
 
             // Pieza «actualizaciones»: solo los Releases de este repo (Repasa-macOS.zip + .sha256). Instalación de desarrollo:
             // build.sh deja la ruta del checkout en ~/Repasa/.repasa/desarrollo y empaquetar.sh escribe su avance en REPASA_PROGRESO.
@@ -37,7 +38,8 @@ enum RepasaApp {
                 seguir: Actualizaciones.seguir, instalar: Actualizaciones.instalar, aviso: Actualizaciones.aviso,
                 disponible: { Actualizaciones.disponible })
 
-            // Es para niños: la app solo abre el sitio y el repositorio de Repasa (lo mismo que el anfitrión del celular).
+            // Es para niños: la app solo abre el sitio y el repositorio de Repasa (lo mismo que el anfitrión del celular). El host
+            // también manda aquí un enlace https tocado en la ventana (un <a href>), no solo lo que pide la interfaz.
             p.registrar("abrirEnlace") { d in
                 if let u = URL(string: d["url"] as? String ?? ""), enlaceNuestro(u) { NSWorkspace.shared.open(u) }
             }
@@ -57,7 +59,7 @@ enum RepasaApp {
     }
 
     @MainActor static func abrirCarpeta() {
-        Rutas.prepararCarpeta()
+        try? FileManager.default.createDirectory(at: Rutas.base, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         NSWorkspace.shared.open(Rutas.base)
     }
 
@@ -71,42 +73,14 @@ enum RepasaApp {
     // MARK: Estado
 
     /// Lo del host (versión, idioma, config, actualización) + lo que hay en ~/Repasa (bin/estado.py: perfiles, temas, progreso,
-    /// pruebas, catálogo y las IA del adulto), leído en la fila: un estado nunca se lee a medio guardar.
-    @MainActor static func estado(_ base: [String: Any], _ listo: @escaping @MainActor ([String: Any]) -> Void) {
-        Fila.agregar { fin in
-            Procesador.correrJSON("estado.py", [], limite: 60) { datos in
-                fin()
-                var e = base
-                for (k, v) in datos where k != "ok" && k != "error" && k != "codigo" && k != "texto" && k != "valores" { e[k] = v }
-                e["hoy"] = hoy()
-                e["carpeta"] = Rutas.base.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~")
-                e["capacidades"] = ["copia": true, "camara": false]
-                listo(e)
-            }
-        }
-    }
-
-    // MARK: Menús (los de siempre: Acerca de, Para adultos ⌘, la carpeta, Ocultar, Salir; Edición; Ventana con Cerrar ⌘W)
-
-    /// El host pone el de la app (Acerca de, Ajustes, Ocultar, Salir) y Ventana; aquí va Edición y, para `ajustarMenus`, el ítem
-    /// de la carpeta (se arma de nuevo, en el idioma elegido, cada vez que el host rearma los menús).
-    @MainActor private static var itemCarpeta: NSMenuItem?
-
-    @MainActor static func menus(_ m: Menus) -> [NSMenuItem] {
-        itemCarpeta = m.nativo("Abrir la carpeta de Repasa") { abrirCarpeta() }
-        return [m.edicion()]
-    }
-
-    /// Lo que el host todavía no deja elegir (pendiente en Pieza): «Ajustes…» se llama «Para adultos…» (lo atiende la interfaz con
-    /// window.Repasa.menu({accion: "ajustes"}), nunca en medio de la bienvenida), la carpeta va debajo, y Ventana tiene «Cerrar» ⌘W.
-    @MainActor static func ajustarMenus() {
-        guard let principal = NSApp.mainMenu, let app = principal.items.first?.submenu,
-              let i = app.items.firstIndex(where: { $0.representedObject as? String == "ajustes" }) else { return }
-        app.item(at: i)?.title = Idioma.t("Para adultos…")
-        if let c = itemCarpeta, c.menu == nil { app.insertItem(c, at: i + 1) }
-        if let ventana = NSApp.windowsMenu, !ventana.items.contains(where: { $0.action == #selector(NSWindow.performClose(_:)) }) {
-            ventana.addItem(withTitle: Idioma.t("Cerrar"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-        }
+    /// pruebas, catálogo y las IA del adulto; el host lo lee en la fila) + lo propio del Mac.
+    static func estado(_ base: [String: Any]) -> [String: Any] {
+        var e = base
+        for k in ["codigo", "texto", "valores"] { e.removeValue(forKey: k) }  // si estado.py no pudo, la interfaz pinta lo que hay
+        e["hoy"] = hoy()
+        e["carpeta"] = Rutas.base.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~")
+        e["capacidades"] = ["copia": true, "camara": false]
+        return e
     }
 }
 
@@ -119,14 +93,6 @@ enum Rutas {
     static var temas: URL { base.appendingPathComponent("temas") }
     /// Fotos o PDF arrastrados a «Nuevo tema» mientras el tema no se guarda (se borran al abrir la app).
     @MainActor static var temporal: URL { Host.datos.appendingPathComponent("temporal") }
-
-    /// ~/Repasa solo para la cuenta de la persona (0700): hay nombres de niños y su avance. El host crea ~/Repasa/.repasa con los
-    /// permisos de siempre para la carpeta de arriba: aquí se cierra.
-    static func prepararCarpeta() {
-        let fm = FileManager.default
-        try? fm.createDirectory(at: base, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-        try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: base.path)
-    }
 
     /// Una ruta relativa a ~/Repasa que puede entrar o salir de una copia (igual que RUTA_PERMITIDA en motor/copia.js).
     static let patronCopia = #"^(perfiles\.json|pruebas\.json|progreso/[a-z0-9-]{1,80}\.json|temas/[a-z0-9-]{2,60}/tema\.json|temas/[a-z0-9-]{2,60}/material/material-[0-9]{1,3}\.(jpg|jpeg|png|webp|heic|gif|pdf))$"#

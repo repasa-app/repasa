@@ -56,14 +56,14 @@ async function paso(nombre, f) {
 
 await paso("Teléfono nuevo: idioma primero, la IA del teléfono, perfil y a estudiar", async () => {
   const p = await telefono({ semilla: false });
-  await p.waitForSelector("[data-idioma]");
+  await p.waitForSelector("[data-bv-idioma]");
   if (await p.$(".perfiles")) falla("se ve algo antes de elegir el idioma");
-  await p.click('[data-idioma="es"]');
-  await p.click('[data-bv="2"]');
+  await p.click('[data-bv-idioma="es"]');
+  await p.click('[data-bv-ir="2"]');
   const ia = await p.textContent(".pz-dialogo");
   if (!ia.includes("Apple Intelligence") || !ia.includes("IA del propio teléfono")) falla("el paso de la IA no habla de la IA del teléfono: " + ia.slice(0, 200));
   if (/Claude|Codex|instalarla/.test(ia)) falla("en el teléfono se ofrecen IA de computador");
-  await p.click('[data-accion="bv-fin"]');
+  await p.click('[data-bv-fin="despues"]');
   await p.click('[data-accion="nuevo-perfil"]');
   await p.fill("#nombre-perfil", "Martina");
   await p.click('[data-accion="guardar-perfil"]');
@@ -183,9 +183,9 @@ await paso("Copia cifrada: se guarda sin dejar ver nada y se trae a otro teléfo
   // Otro teléfono, vacío: con la frase equivocada no abre; con la correcta junta todo.
   const q = await telefono({ semilla: false, antes: (t) => { window._exportado = { texto: t }; }, consulta: "" });
   await q.evaluate((t) => { window._exportado = { texto: t }; }, exportado.texto);
-  await q.waitForSelector("[data-idioma]");
-  await q.click('[data-idioma="es"]');
-  await q.click('[data-accion="bv-fin"]');
+  await q.waitForSelector("[data-bv-idioma]");
+  await q.click('[data-bv-idioma="es"]');
+  await q.click('[data-bv-fin="despues"]');
   await q.click('[data-accion="adultos"]');
   await q.fill("#frase-copia", "pino lluvia tetera roja");
   await q.click('[data-accion="traer-copia"]');

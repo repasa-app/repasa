@@ -33,7 +33,7 @@ enum Material {
     }
 
     private static func elegir(_ p: Puente) {
-        p.elegirArchivos(extensiones: extensiones, varios: true) { urls in
+        p.elegirArchivos(extensiones: extensiones, varios: true, mensaje: Idioma.t("Elige las fotos del cuaderno o la guía, o un PDF")) { urls in
             let lista: [[String: Any]] = urls.prefix(20).compactMap { u -> [String: Any]? in
                 guard extensiones.contains(u.pathExtension.lowercased()), Disco.tamano(u) <= maximo else { return nil }
                 elegidos.insert(u.path)
