@@ -12,15 +12,15 @@
     "android": "node armar.mjs && cap sync android && cap open android"
   },
   "dependencies": {
-    "@capacitor/android": "7.6.9",
+    "@capacitor/android": "7.6.10",
     "@capacitor/camera": "7.0.5",
-    "@capacitor/core": "7.6.9",
+    "@capacitor/core": "7.6.10",
     "@capacitor/filesystem": "7.1.9",
-    "@capacitor/ios": "7.6.9",
+    "@capacitor/ios": "7.6.10",
     "repasa-carpeta": "file:plugins/carpeta",
     "repasa-ia-local": "file:plugins/ia-local"
   },
   "devDependencies": {
-    "@capacitor/cli": "7.6.9"
+    "@capacitor/cli": "7.6.10"
   }
 }
