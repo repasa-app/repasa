@@ -4,6 +4,12 @@ Lo que cambia para quien usa Repasa, en palabras simples. Cada versión publicad
 [Releases](https://github.com/repasa-app/repasa/releases).
 *What changes for people using Repasa, in plain words. Each published version can be downloaded from Releases.*
 
+## Sin publicar · Unreleased
+
+- La app de Mac es más liviana: ahora está hecha con Rust y Tauri, sobre el navegador del sistema. Todo sigue igual: tus perfiles,
+  temas, progreso, la copia cifrada y tus ajustes. · *The Mac app is lighter: it's now built with Rust and Tauri, on the system's
+  browser. Everything stays the same: your profiles, topics, progress, the encrypted copy and your settings.*
+
 ## 0.1.0 · 2026-11-02
 
 - **La primera versión para descargar:** la app de Mac (macOS 15, Apple Silicon) ya se baja lista desde la

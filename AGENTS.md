@@ -6,7 +6,7 @@
 Repasa es una app de estudio para niñas y niños de 5° básico a 4° medio, pensada para el computador de la casa. Le sacan una foto al
 cuaderno (o agregan un PDF o texto) y la IA de un adulto (Claude Code, Codex o Gemini, con su cuenta) arma un **tema**: resumen fácil,
 conceptos, preguntas tipo prueba y tarjetas. El repaso diario usa cajas de Leitner; antes de una prueba se priorizan sus temas. Puntos y
-racha para que den ganas de volver. Interfaz web única; app de Mac (`app/`, publicada desde 0.1.0), Windows y Linux en camino; app para iPhone y
+racha para que den ganas de volver. Interfaz web única; app de Mac (`escritorio/`, Rust + Tauri, publicada desde 0.1.0; la misma servirá para Windows y Linux); app para iPhone y
 Android (`movil/`, fase 1) con la IA del propio teléfono.
 
 **Principios que no se negocian**
@@ -31,16 +31,16 @@ Android (`movil/`, fase 1) con la IA del propio teléfono.
 |---|---|
 | `bin/` | Python **solo biblioteca estándar**. `nucleo.py` (pieza «nucleo»: `app.json`, config validada, escritura atómica), `datos.py` (lo propio de Repasa sobre `nucleo`: carpetas, ids, perfiles, progreso y pruebas con las reglas de `motor/datos.js`), `temas.py` (`validar`, ramos y cursos), `ia.py` (pieza «ia»: `preguntar()` con la IA del adulto, fotos y PDF como copias de solo lectura, `probar`; errores como `{codigo, valores}` que `ia.frase()` pasa a texto), `crear_tema.py` (material → tema validado; `pedido`; `amano`; `guardar`; `catalogo`), `lineas.py` (preguntas y conceptos en texto simple), `explicar.py` (explicar de nuevo una pregunta). Scripts que llaman las apps de escritorio: `estado.py` (todo lo que pinta la interfaz, más el catálogo incluido y las IA instaladas) y `guardar.py` (perfil, progreso, pruebas). Lo que manda la interfaz llega en un archivo de entrada, nunca como argumento. El último argumento de cada script es la ruta del JSON de salida. |
 | `motor/` | El motor en **JavaScript** (ES modules, sin dependencias) para el celular: lo mismo que `bin/` (`temas.js`, `lineas.js`, `crear_tema.js`, `explicar.js`, `datos.js` sobre un adaptador de almacenamiento) más `copia.js` (copia cifrada y juntar, sobre la pieza «cifrado») y `carpeta.js` (formato de la carpeta de la fase 2). |
-| `app/` | App de Mac (SwiftPM, macOS 15, sin proyecto de Xcode) sobre la pieza «host-mac» (`Sources/PiezaHost/`: ventana, puente, config, idioma, menús, scripts con límite y las acciones declaradas) y «actualizaciones» (`Sources/PiezaActualizaciones/`). Lo propio de Repasa en `Sources/Repasa/`: `RepasaApp.swift` (`Host.arrancar`, estado en la fila, menús, enlaces de Repasa, actualizaciones), `Material.swift` (elegir y arrastrar fotos o PDF, crear y guardar un tema, `repasa://material/…`) y `Copia.swift` (copia cifrada). `web/escritorio.js` (copia cifrada con el motor JS, en el WebView), `Info.plist`, `Repasa.icns` (sale de `herramientas/icono_mac.mjs`). |
-| `build.sh`, `herramientas/empaquetar.sh` | Arman `dist/Repasa.app` (Python portátil verificado por SHA-256; `bin/`, `temas/` y `ui/` con `motor/` y `escritorio.js` adentro) + zip + `.sha256`; `build.sh` la instala en `~/Applications`. |
+| `escritorio/` | App de escritorio (Rust + Tauri, con el WebView del sistema; hoy se publica para Mac) sobre la pieza «host-tauri» (`src/pieza/`: ventana, puente, config, idioma, menús, scripts con límite y las acciones declaradas) y «actualizaciones» (`src/pieza/actualizaciones.rs`). Lo propio de Repasa: `src/main.rs` (`arrancar`, estado, menú, enlaces de Repasa, la carpeta y el motor JS en `<base>motor/`), `src/material.rs` (elegir y arrastrar fotos o PDF, crear y guardar un tema, `<base>material/…`), `src/copia.rs` (copia cifrada: lee y escribe `~/Repasa`, la página cifra con `host.pedir`) y `src/b64.rs`. `Cargo.toml`, `tauri.conf.json`, `Info.plist` y `pruebas/arranque.sh` los genera la pieza; `iconos/` sale de `herramientas/iconos.mjs`. |
+| `build.sh`, `herramientas/empaquetar.sh`, `instalar.sh` | Pieza «empaquetado»: `empaquetar.sh mac` arma `dist/Repasa.app` con Tauri (Python portátil verificado por SHA-256 en `herramientas/python.lock`; en `recursos/`: `bin/`, `ui/`, `temas/`, `motor/`, `app.json` y `acciones.json`) + `Repasa-macOS.zip` + `.sha256`; `build.sh` la instala en `~/Applications` (no mientras la IA arma un tema: `herramientas/antes-de-instalar.sh`). |
 | `movil/` | App de iPhone y Android con Capacitor 7: `armar.mjs` (arma `www/` con `ui/` + `motor/` + `host/`), `host/` (el anfitrión del teléfono), `plugins/ia-local` (Swift: Foundation Models + Vision; Kotlin: Gemini Nano + ML Kit), `plugins/carpeta` (selector de archivos del sistema), `ios/` y `android/` (proyectos nativos). Comandos en `movil/README.md`. |
 | `temas/` | Temas de ejemplo incluidos (vista previa y primeras pruebas) y `README.md` con el formato. |
-| `ui/` | Interfaz web única (`app.js`, `app.css` y las piezas de la interfaz: `i18n.js`, `host.js`, `tema.js` + `tema.css`, `componentes.js` + `componentes.css`, `bienvenida.js` + `bienvenida.css`; ver «Piezas»), `demo.json` (ficticio, se genera con `herramientas/generar_demo.py`) e `idiomas/en.json`. |
+| `ui/` | Interfaz web única (`app.js`, `app.css`, `escritorio.js` —la copia cifrada del computador, que `app.js` carga solo ahí— y las piezas de la interfaz: `i18n.js`, `host.js`, `tema.js` + `tema.css`, `componentes.js` + `componentes.css`, `bienvenida.js` + `bienvenida.css`; ver «Piezas»), `demo.json` (ficticio, se genera con `herramientas/generar_demo.py`) e `idiomas/en.json`. |
 | `docs/` | Página pública (GitHub Pages). `pagina.yml` la publica junto a `ui/` en `/demo/`. |
 | `CHANGELOG.md` | Lo que cambia para quien usa la app, en palabras simples (ver «Lo que rodea a un cambio»). |
-| `pruebas/` | `correr.sh` (todo), `test_python.py`, `motor.mjs` (motor JS: igual que Python, cifrado, copia), `escritorio.mjs` (copia cifrada del escritorio), `contrato.py` (puente, plugins y app de Mac), `interfaz.mjs` (Playwright; `MOVIL=1` con el anfitrión del teléfono), `movil.mjs` (la app del celular de punta a punta), `capacitor_falso.js`, `casos.json` (casos compartidos Python ↔ JS), `ia_falsa.py`, `datos/` (material ficticio; `datos/antes/`: una copia `.repasa` y una carpeta de la fase 2 armadas con el cifrado de antes de la pieza, que se tienen que seguir abriendo). |
-| `app.json`, `piezas.json`, `acciones.json` | **Pieza** (ver «Piezas» abajo): `app.json` describe la app para las piezas (id, nombre, datos, plataformas, claves de config y las acciones que solo corren un script); `piezas.json` lo escribe `pieza.py` (versión y huella de cada archivo copiado) y `acciones.json` también (`pieza.py acciones .`: lo lee la app de Mac). |
-| `herramientas/` | `revisar_privacidad.sh`, `generar_demo.py`, `empaquetar.sh` (app de Mac), `icono_mac.mjs`, `imagenes.mjs` (imágenes de la página). |
+| `pruebas/` | `correr.sh` (todo), `test_python.py`, `motor.mjs` (motor JS: igual que Python, cifrado, copia), `escritorio.mjs` (copia cifrada del escritorio), `contrato.py` (puente, plugins y app de escritorio), `interfaz.mjs` (Playwright; `MOVIL=1` con el anfitrión del teléfono), `movil.mjs` (la app del celular de punta a punta), `capacitor_falso.js`, `casos.json` (casos compartidos Python ↔ JS), `ia_falsa.py`, `datos/` (material ficticio; `datos/antes/`: una copia `.repasa` y una carpeta de la fase 2 armadas con el cifrado de antes de la pieza, que se tienen que seguir abriendo). |
+| `app.json`, `piezas.json`, `acciones.json` | **Pieza** (ver «Piezas» abajo): `app.json` describe la app para las piezas (id, nombre, datos, plataformas, claves de config y las acciones que solo corren un script); `piezas.json` lo escribe `pieza.py` (versión y huella de cada archivo copiado) y `acciones.json` también (`pieza.py acciones .`: lo lee la app de escritorio). |
+| `herramientas/` | `revisar_privacidad.sh`, `generar_demo.py`, `empaquetar.sh` (app de escritorio), `antes-de-instalar.sh`, `iconos.mjs` (íconos de la app desde `ui/favicon.svg`), `imagenes.mjs` (imágenes de la página). |
 
 ## Piezas (de [Pieza](https://github.com/pieza-app/pieza))
 Repasa usa piezas de Pieza, la base de la familia de apps: código probado que se copia a la app (modelo «copiar y adueñarse»).
@@ -48,24 +48,25 @@ Repasa usa piezas de Pieza, la base de la familia de apps: código probado que s
 | Pieza | Versión | Archivos | Qué usa Repasa |
 |---|---|---|---|
 | `nucleo` | 0.7.1 | `bin/nucleo.py` | `app.json` (`"datos": "visible"` → `~/Repasa/.repasa`, la carpeta de siempre), config validada por `app.json`, `escribir_atomico` (siempre 0600 para lo de la familia), `leer_json`, `recursos()`. `datos.py` lo envuelve con lo propio de Repasa (`~/Repasa` 0700, perfiles, progreso, pruebas, temas). |
-| `ia` | 0.6.3 | `bin/ia.py` | La IA del adulto (`preguntar` con `archivos=` para fotos y PDF, `nombre`, `frase`, `probar`, `lista`: las IA instaladas, que `estado.py` manda en `ias`). En el Mac `probarIA` es la acción declarada de la pieza (límite 150 s); `listaIA` no se usa (`sin_acciones`). Los prompts (temas, «No entendí») siguen en `crear_tema.py` y `explicar.py`, que responden `{"ok": false, "error": ia.frase(error), "codigo"}`. La IA del teléfono (plugins `ia-local`) no es esta pieza. |
+| `ia` | 0.6.3 | `bin/ia.py` | La IA del adulto (`preguntar` con `archivos=` para fotos y PDF, `nombre`, `frase`, `probar`, `lista`: las IA instaladas, que `estado.py` manda en `ias`). En el computador `probarIA` es la acción declarada de la pieza (límite 150 s); `listaIA` no se usa (`sin_acciones`). Los prompts (temas, «No entendí») siguen en `crear_tema.py` y `explicar.py`, que responden `{"ok": false, "error": ia.frase(error), "codigo"}`. La IA del teléfono (plugins `ia-local`) no es esta pieza. |
 | `i18n` | 0.3.1 | `ui/i18n.js` | `T`, `Thtml`, `tr`, `frase`, `traducirDOM` en la misma interfaz del computador y del celular (`movil/armar.mjs` copia `ui/` entero y revisa que esté). `ui/idiomas/en.json` lleva `codigo` y `nombre`. |
-| `host-ui` | 0.2.0 | `ui/host.js` | El puente: `PiezaHost.crearHost({nombre: "repasa", global: "Repasa", simular})` elige Mac (`webkit.messageHandlers.repasa`), celular (`window.repasaMovil`) o la vista previa (`simular`; lo común —buscar y actualizar, abrir un enlace— con `simulacionesComunes`). Las respuestas se suman con `host.responder({…})` (nunca `window.Repasa = {…}`: la pieza guarda la referencia). Pone `<html data-host>`. |
+| `host-ui` | 0.3.0 | `ui/host.js` | El puente: `PiezaHost.crearHost({nombre: "repasa", global: "Repasa", simular})` elige el escritorio (`window.repasaEscritorio`, lo pone «host-tauri»), celular (`window.repasaMovil`) o la vista previa (`simular`; lo común —buscar y actualizar, abrir un enlace— con `simulacionesComunes`). Las respuestas se suman con `host.responder({…})` (nunca `window.Repasa = {…}`: la pieza guarda la referencia). Pone `<html data-host>`. `host.medio("material", …)` da la dirección de una foto del material y `host.atender("escritorioArmar" | "escritorioTraer", …)` responde lo que la app de escritorio pide para la copia cifrada. |
 | `tema` | 0.2.1 | `ui/tema.css`, `ui/tema.js` | Los tokens de color (`--fondo`, `--panel`, `--panel-2`, `--linea`, `--texto`, `--texto-suave`, `--acento`, `--rojo`, `--verde`, `--sombra` y los derivados `--acento-suave`, `--rojo-suave`, `--verde-suave`) con `light-dark()` (la sombra, por modo); el modo elegido va en `<html data-pz-modo>` y se lee con `tema.valor`/`tema.resuelto()` (nunca un `data-tema` de `<html>`: `data-tema` es de las tarjetas de los temas). `app.css` solo redefine los pares `--x-claro`/`--x-oscuro` de Repasa y lo propio (`--papel` = `--panel-2`, `--cuadricula`, `--destacador`, los ramos). «Apariencia» (sistema, claro u oscuro) en Para adultos → `config.tema`. |
 | `componentes` | 0.3.0 | `ui/componentes.js`, `ui/componentes.css` | Diálogos (`ui.dialogo`; la bienvenida va en `ui.envolver(bv.html(), {id: "t-bv", clase: "bv", sinEsc: true})`; al abrir, el foco va al título —no pongas `data-autofoco` en botones del pie, solo en un campo o en el idioma sugerido—, Esc y el velo cierran, el foco vuelve), `ui.confirmar` (borrar una prueba: el foco empieza en «Dejarla»), avisos en cola (`toast` = `ui.aviso`; esperan mientras se elige el idioma), las filas de la IA (`ui.filasIA` en el computador y en el celular, con `detalle` y «Revisar de nuevo», salvo «El computador de la casa», que va con `revisable: false` porque llega «muy pronto»; en el celular sin guía de instalación y con los nombres traducidos), la fila de actualizaciones «Paso n de 3» (acepta el `detalle` del Mac, que manda `desarrollo: true` desde un checkout: «cambios nuevos en el código») y «Acerca de» con «Enviar comentarios». Clases `pz-*`: botones de 44 px con `--pz-boton-alto` y 48 en táctil con `--pz-tactil` (en `:root` de `app.css`, nunca `min-height` sobre `.pz-boton`; desde 0.3 `--pz-tactil` solo sube los componentes de la pieza, así que `app.css` lo pone también en `:root` en táctil y a 760 px o menos, para que todos los botones y chips crezcan), su «escalón» y `.pz-dialogo` como hoja de cuaderno. |
-| `bienvenida` | 0.4.0 | `ui/bienvenida.js`, `ui/bienvenida.css` | El primer uso: `bv = PiezaBienvenida.crear({…, listo: false, ajustes: {es: "Para adultos", en: "For grown-ups"}})` (los niños no tienen «Ajustes»: la nota del idioma dice «Para adultos») y dos pasos de Repasa con `sumarPaso`: `hola` y `ia` (el último, con `saltable: true`: «Lo hago después» y «Empezar»; en el celular, la IA del teléfono). El idioma con teclas 1 y 2 y flechas, el sugerido con `data-autofoco`; los avisos esperan con `bv.retener`. Va en `ui.envolver(bv.html(), {id: "t-bv", clase: "bv", sinEsc: true})`; `app.css` le da a las opciones del idioma la forma de Repasa (`.pieza-bv .opcion-idioma`). |
-| `cifrado` | 0.2.0 | `ui/cifrado.js` | La copia cifrada y la carpeta de la fase 2: `copia.cifrado()` en `motor/copia.js` = `PiezaCifrado.crear({app: "Repasa", contexto: "repasa", claveVersion: "v", maximo: 1 GB})` (los mismos verificador, AAD y nombres opacos de antes: lo ya guardado se abre). La copia `.repasa` (`{"repasa": "copia", "v", "creada", …, "archivos"}`) se arma y se abre con `armarVarios`/`abrirVarios` (`aad: "repasa:copia:v1"`, `extra: {creada}`): el mismo archivo de siempre (`pruebas/datos/antes/` lo revisa). `copia.errorCifrado(codigo)` = `C.error(codigo)` (la marca de Repasa; lo usa `carpeta.js`). Script clásico: lo cargan `movil/armar.mjs` (antes de `host/host.js`) y `Copia.swift` (antes de `escritorio.js`); en Node, `createRequire`. Errores `ErrorCifrado` con `codigo` (`frase`, `danado`, `no_es`, `version`, `corta`), `plantilla`/`valores` y su frase lista (`e.frase` = `e.message`); la interfaz la traduce con `tr()`, que reconoce la plantilla con `{app}` (en `en.json` van las plantillas, no las frases ya rellenas). Repasa no usa `fuerzaFrase`. |
-| `host-mac` | 0.3.0 | `app/Sources/PiezaHost/*.swift` | La app de Mac: `Host.arrancar(.init(ancho: 1180, alto: 800, minAncho: 420, minAlto: 560, menuAyuda: false, estadoEnFila: true, tituloAjustes: "Para adultos…"))` lee `app.json` (dentro de la app) y `acciones.json`. Trae la ventana (mismo tamaño y nombre que antes: recuerda su lugar), el puente (solo el marco principal con un archivo de `ui/`; nunca navega fuera; un enlace https tocado pasa por el `abrirEnlace` que registra Repasa), `config` con las reglas de `app.json`, el idioma, los menús en el idioma elegido («Para adultos…» ⌘, con «Abrir la carpeta de Repasa» debajo por `p.menuApp`, y «Cerrar ventana» ⌘W en Ventana, porque Repasa no tiene menú Archivo), la apariencia, guardar al salir, `~/Repasa` recién creada en 0700, `estado.py` dentro de la `Fila` (`estadoEnFila`) y los scripts de `bin/` con límite de tiempo (corta también lo que lanzaron) y sin variables `REPASA_*` de afuera. Las acciones declaradas (abajo) las atiende solo; lo propio de Repasa se registra (`p.registrar`). Los paneles del sistema llevan su texto (`elegirArchivos(mensaje:)`) y la copia cifrada se guarda con `guardarArchivo(…, privado: true)` (0600; cancelar no es un error, una copia muy grande sí). |
-| `actualizaciones` | 0.3.0 | `app/Sources/PiezaActualizaciones/Actualizaciones.swift` | `Actualizaciones.configurar(.init(repo: "repasa-app/repasa", nombre: "Repasa", archivoDesarrollo: Host.datos/desarrollo, variableProgreso: "REPASA_PROGRESO"))` y `p.actualizaciones = .init(…)`: el host atiende `buscarActualizacion` y `actualizar` (nunca con un script corriendo, p. ej. la IA armando un tema), revisa al abrir y cada 6 horas con el idioma elegido y suma `actualizacion` al estado. Mismos nombres de siempre (`Repasa-macOS.zip` + `.sha256`, `~/Repasa/.repasa/desarrollo`). En el celular no hay actualizaciones dentro de la app. |
+| `bienvenida` | 0.4.1 | `ui/bienvenida.js`, `ui/bienvenida.css` | El primer uso: `bv = PiezaBienvenida.crear({…, listo: false, ajustes: {es: "Para adultos", en: "For grown-ups"}})` (los niños no tienen «Ajustes»: la nota del idioma dice «Para adultos») y dos pasos de Repasa con `sumarPaso`: `hola` y `ia` (el último, con `saltable: true`: «Lo hago después» y «Empezar»; en el celular, la IA del teléfono). El idioma con teclas 1 y 2 y flechas, el sugerido con `data-autofoco`; los avisos esperan con `bv.retener`. Va en `ui.envolver(bv.html(), {id: "t-bv", clase: "bv", sinEsc: true})`; `app.css` le da a las opciones del idioma la forma de Repasa (`.pieza-bv .opcion-idioma`). |
+| `cifrado` | 0.2.0 | `ui/cifrado.js` | La copia cifrada y la carpeta de la fase 2: `copia.cifrado()` en `motor/copia.js` = `PiezaCifrado.crear({app: "Repasa", contexto: "repasa", claveVersion: "v", maximo: 1 GB})` (los mismos verificador, AAD y nombres opacos de antes: lo ya guardado se abre). La copia `.repasa` (`{"repasa": "copia", "v", "creada", …, "archivos"}`) se arma y se abre con `armarVarios`/`abrirVarios` (`aad: "repasa:copia:v1"`, `extra: {creada}`): el mismo archivo de siempre (`pruebas/datos/antes/` lo revisa). `copia.errorCifrado(codigo)` = `C.error(codigo)` (la marca de Repasa; lo usa `carpeta.js`). Script clásico: lo cargan `movil/armar.mjs` (antes de `host/host.js`) y `ui/app.js` en el computador (antes de `escritorio.js`); en Node, `createRequire`. Errores `ErrorCifrado` con `codigo` (`frase`, `danado`, `no_es`, `version`, `corta`), `plantilla`/`valores` y su frase lista (`e.frase` = `e.message`); la interfaz la traduce con `tr()`, que reconoce la plantilla con `{app}` (en `en.json` van las plantillas, no las frases ya rellenas). Repasa no usa `fuerzaFrase`. |
+| `host-tauri` | 0.1.0 | `escritorio/src/pieza/*.rs` y lo generado de `escritorio/` | La app de escritorio: `arrancar(…, Opciones {ventana: 1180×800 (mínimo 420×560), ayuda: false, estado_en_fila: true, titulo_ajustes: "Para adultos…", menu: «Abrir la carpeta de Repasa» en Archivo, …})` lee `app.json` y `acciones.json` (en `recursos/`). Trae la ventana, el puente (solo la ventana propia con su página en `ui/`; nunca navega fuera; un https tocado pasa por el `abrirEnlace` que registra Repasa), `config` con las reglas de `app.json`, el idioma, los menús en el idioma elegido, la apariencia, guardar al salir, `~/Repasa` recién creada en 0700, `estado.py` dentro de la fila (`estado_en_fila`) y los scripts de `bin/` con límite de tiempo (corta también lo que lanzaron) y sin variables `REPASA_*` de afuera. Las acciones declaradas las atiende solo; lo propio de Repasa se registra (`host.registrar`). Los diálogos del sistema llevan su texto y la copia cifrada se guarda con `guardar_archivo_con(…, ComoGuardar {privado: Some(true), maximo: 300 MB, …})` (0600; cancelar no es un error, una copia muy grande sí). `host.pedir` le pide a la página que cifre o junte (lo que antes era `callAsyncJavaScript`). Reemplaza a «host-mac» (Swift). |
+| `actualizaciones` | 0.4.0 | `escritorio/src/pieza/actualizaciones.rs` | `Actualizaciones::nuevas("repasa-app/repasa", "Repasa")` en `Opciones.actualizaciones`: el host atiende `buscarActualizacion` y `actualizar` (nunca con un script corriendo, p. ej. la IA armando un tema), revisa al abrir y cada 6 horas con el idioma elegido y suma `actualizacion` al estado. Mismos nombres de siempre (`Repasa-macOS.zip` + `.sha256`, `~/Repasa/.repasa/desarrollo`). En el celular no hay actualizaciones dentro de la app. |
+| `empaquetado` | 0.2.0 | `herramientas/python.lock`, `escritorio/herramientas/preparar.sh` y lo generado (`build.sh`, `herramientas/empaquetar.sh`, `instalar.sh`, `publicar.yml`) | Arma y publica la app con Tauri y su Python portátil. `app.json` → `empaquetado`: `carpetas` (`temas`, `motor`) y `quitar` (la demo y `temas/README.md`). |
 
 - **No edites a mano los archivos de una pieza.** Se actualizan con «Pieza al día» (`.github/workflows/pieza-al-dia.yml`, una vez por
   semana abre un PR o un issue) o con `python3 <pieza>/herramientas/pieza.py actualizar .`. Si hay que cambiar algo, el cambio va
   primero a Pieza (`pieza.py diferencias . <pieza>` lo muestra) y vuelve desde allá; `pieza.py estado .` dice si algo quedó distinto.
-- `app.json` y `acciones.json` van dentro de la app de Mac (`herramientas/empaquetar.sh` los copia a `Contents/Resources/repasa/`):
-  `bin/nucleo.py` lo busca junto a `bin/` y la pieza «host-mac» los lee de ahí. Sus claves de config (`ia`, `idioma_ui`, `bienvenida`,
+- `app.json` y `acciones.json` van dentro de la app (`bundle.resources` de `escritorio/tauri.conf.json`, en `recursos/`):
+  `bin/nucleo.py` lo busca junto a `bin/` y la pieza «host-tauri» los lee de ahí. Sus claves de config (`ia`, `idioma_ui`, `bienvenida`,
   `ultimo_perfil` con su patrón, `tema`) las validan igual `nucleo` y el `Config` del host; lo demás se descarta al leer. En las pruebas, `REPASA_CARPETA` también mueve la carpeta de `nucleo`
   (`datos.py` pone `REPASA_DATOS`).
-- `.gitignore` es una lista blanca: `app.json`, `piezas.json` y `acciones.json` están en ella. `app.json` → `plataformas`: `mac`, `ios`, `android`
+- `.gitignore` es una lista blanca: `app.json`, `piezas.json`, `acciones.json` y `escritorio/` están en ella (sin `escritorio/target/`). `app.json` → `plataformas`: `mac`, `ios`, `android`
   (Windows y Linux, cuando existan).
 - `bienvenida` va en `ui/index.html` antes de `app.js` (`movil/armar.mjs` revisa que esté). En las pruebas se maneja con
   `window.Repasa._pruebas.bienvenida.paso(n)` (0: el idioma; 1 y 2, con el idioma ya elegido), no con el estado.
@@ -127,38 +128,42 @@ crearTema, temaAMano, agregarDelCatalogo, guardarTema, explicar, probarIA, abrir
 guardarCopia, traerCopia` (`soltarMaterial` y `actualizar`: solo el computador). Respuestas: `estado, materialElegido, temaAvance,
 temaCreado, temaGuardado, explicado, iaProbada, actualizacionRevisada, actualizacionProgreso, copiaLista, copiaTraida`. `estado` puede traer `capacidades` ({ia, iaDetalle, ocr, copia, camara}) y `catalogo` (sin ellos, la interfaz se porta
 como antes); cada IA de `ias` puede traer `detalle` (por qué no está lista). Una acción nueva va en `ui/app.js`, en
-`movil/host/host.js`, en cada app nativa y simulada en `simular()`. En el Mac, una que solo corre un script se **declara** en
+`movil/host/host.js`, en cada app nativa y simulada en `simular()`. En el escritorio, una que solo corre un script se **declara** en
 `app.json` → `acciones` (después `pieza.py acciones .` arma `acciones.json`): hoy `guardarPerfil`, `guardarProgreso`,
 `guardarPruebas` y `agregarDelCatalogo` (`crear_tema.py catalogo`, en la fila: `"cola": "escritura"`), `temaAMano` (el idioma lo
-inyecta el host), `explicar` y, de la pieza «ia», `probarIA`. Lo nativo propio se **registra** en `app/Sources/Repasa`:
+inyecta el host), `explicar` y, de la pieza «ia», `probarIA`. Lo nativo propio se **registra** en `escritorio/src/`:
 `elegirMaterial`, `soltarMaterial`, `crearTema`, `guardarTema` (solo con archivos elegidos en esta sesión), `guardarCopia`,
 `traerCopia`, `abrirCarpeta` y `abrirEnlace` (solo los de Repasa); `listo` y `config` los trae el host. `pruebas/contrato.py` lo revisa
 (registrada, del host o declarada; que `acciones.json` esté al día con `app.json`) (y que cada método nativo que usa
-el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
+el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`, y que lo que la app pide con `h.pedir` lo atienda
+`ui/app.js` con `host.atender`).
 
-## App de Mac
-- Datos en `~/Repasa` (0700; archivos 0600); el código va dentro de la app (`Contents/Resources/repasa`) y los scripts corren con el
-  Python portátil incluido (`REPASA_RECURSOS` apunta ahí; las variables `REPASA_*` de afuera no llegan a los scripts ni a la IA, y sin
-  `__pycache__` dentro de la app). La app nunca usa `ui/demo.json` (se quita al empaquetar). `window.REPASA_HOST = "mac"`.
-- **Puente** (pieza «host-mac», `app/Sources/PiezaHost/Puente.swift`): solo el marco principal con origen `file` y una página de
-  `ui/`; la ventana nunca navega fuera de `ui/`. `abrirEnlace` es de Repasa (solo su sitio y su repositorio) y el host le manda
-  también un https tocado en la ventana; además la interfaz no tiene enlaces `<a href>` (`pruebas/contrato.py` lo revisa: defensa
-  extra, y el celular no tiene esa guarda). Lo que manda la interfaz no arma comandos: va en un JSON de
-  entrada (`crear_tema.py pedido`, `explicar.py <entrada>`, `guardar.py`). Crear y guardar un tema solo aceptan archivos que la persona
-  eligió en esta sesión (`NSOpenPanel` o arrastrados: `soltarMaterial` manda el contenido y queda en `.repasa/temporal/`).
+## App de escritorio (Mac)
+- Datos en `~/Repasa` (0700; archivos 0600); el código va dentro de la app (`recursos/`) y los scripts corren con el Python portátil
+  incluido (`REPASA_RECURSOS` apunta ahí; las variables `REPASA_*` de afuera no llegan a los scripts ni a la IA, y sin `__pycache__`
+  dentro de la app). La app nunca usa `ui/demo.json` (se quita al empaquetar). `window.REPASA_HOST = "mac"` (o `windows`, `linux`).
+- **Puente** (pieza «host-tauri», `escritorio/src/pieza/host.rs`): un solo comando de Tauri, solo de la ventana propia con su página en
+  `<base>ui/` (`repasa://localhost/ui/…`); la ventana nunca navega fuera de `ui/` ni abre otras, y la página no ve la API de Tauri
+  (`withGlobalTauri: false`). `abrirEnlace` es de Repasa (solo su sitio y su repositorio) y el host le manda también un https tocado
+  en la ventana; además la interfaz no tiene enlaces `<a href>` (`pruebas/contrato.py` lo revisa: defensa extra, y el celular no
+  tiene esa guarda). Lo que manda la interfaz no arma comandos: va en un JSON de entrada (`crear_tema.py pedido`, `explicar.py
+  <entrada>`, `guardar.py`). Crear y guardar un tema solo aceptan archivos que la persona eligió en esta sesión (el diálogo del
+  sistema o arrastrados: `soltarMaterial` manda el contenido y queda en `.repasa/temporal/`).
 - **Fila:** guardar perfil, progreso y pruebas, agregar del catálogo (declaradas con `"cola": "escritura"`), leer el estado (`estado.py`,
-  con `estadoEnFila: true`), guardar un tema y juntar una copia van de a uno (la `Fila` del host): un estado
-  nunca se lee a medio guardar. Lo que espera a la IA no entra en la fila.
+  con `estado_en_fila: true`), guardar un tema y juntar una copia van de a uno (la `Fila` del host): un estado nunca se lee a medio
+  guardar. Lo que espera a la IA no entra en la fila.
 - **Límites de tiempo** (el host corta el script y lo que lanzó): crear un tema 960 s (la IA tiene 900), explicar 240, probar la IA
-  150, tema a mano y catálogo 60, guardar 30, el estado 60.
-- **Material:** `repasa://material/<tema>/material-N.<ext>` (`p.registrarMedios("material")` en `Material.swift`), solo lectura de esa carpeta.
-- **Copia cifrada:** la misma del celular. `empaquetar.sh` copia `motor/` a `ui/motor/` y `app/web/escritorio.js` a `ui/escritorio.js`,
-  que se carga como módulo en el WebView. La app lee `~/Repasa`, `RepasaEscritorio.armar/traer` cifra, descifra y junta en memoria
-  (`callAsyncJavaScript`, con los datos como argumentos) y lo que hay que escribir se revisa otra vez (`Rutas.permitidaEnCopia`).
-  `Copia.swift` carga `cifrado.js` y `escritorio.js` con `p.alConfigurarWeb` y deja la app «ocupada» mientras arma o junta.
-  Probado en `pruebas/escritorio.mjs`.
+  150, tema a mano y catálogo 60, guardar 30 (un tema, 120), el estado 60.
+- **Material:** `host.medio("material", "<tema>/material-N.<ext>")` → `<base>material/…` (`registrar_medios("material")` en
+  `material.rs`), solo lectura de `~/Repasa/temas/<tema>/material/`.
+- **Copia cifrada:** la misma del celular. `copia.rs` lee `~/Repasa` y le pide a la página que cifre, descifre y junte en memoria
+  (`h.pedir("escritorioArmar" | "escritorioTraer", …)`, con los datos como argumentos): `ui/app.js` lo atiende con `host.atender`,
+  carga `cifrado.js` y después `ui/escritorio.js`, que importa el motor desde `<base>motor/` (`registrar_medios("motor")` en
+  `main.rs`: solo `motor/*.js`). Lo que hay que escribir se revisa otra vez (`copia::permitida`) y la app queda «ocupada» mientras
+  arma o junta. Probado en `pruebas/escritorio.mjs` y en `cargo test` (`copia.rs`).
 - **IA del adulto:** solo la corre `bin/ia.py` (pieza «ia»), también al probarla: «Usar y probar» en la interfaz → `ia.py probar
-  <entrada {ia}> <salida>` (acción declarada de la pieza «ia»; al salir bien, la interfaz guarda `config {ia}`); ningún Swift arma el comando de una IA (`pruebas/contrato.py` lo revisa).
+  <entrada {ia}> <salida>` (acción declarada de la pieza «ia»; al salir bien, la interfaz guarda `config {ia}`); ningún Rust arma el
+  comando de una IA (`pruebas/contrato.py` lo revisa).
   Siempre en una carpeta temporal; Claude sin MCP (`--strict-mcp-config`), sin herramientas (`--disallowedTools "*"`; con material,
   solo `Read,Glob,Grep` de las copias y `--disallowedTools` con Bash, Edit, Write, MultiEdit, NotebookEdit, WebFetch, WebSearch y
   Task), sin la memoria de la persona (`SIN_MEMORIA_CLAUDE`) y, si su versión los conoce, con `--tools`, `--safe-mode` y
@@ -166,22 +171,22 @@ el celular exista en Swift, en Kotlin y en `pruebas/capacitor_falso.js`).
   `actualizar`: «Actualiza Claude para usarla con Repasa…»);
   Codex `-s read-only`; Antigravity con el pedido en `instrucciones.md`. Ninguna IA recibe las variables `REPASA_*` (`ia._entorno`);
   las de las pruebas se llaman `PRUEBA_*`.
-- **Arranque:** menús y ventana de inmediato (`Host.arrancar`); lo que corre solo (revisar actualizaciones, al abrir y cada 6 horas)
-  lo arranca el host recién cuando hay idioma elegido. Una versión nueva se ofrece solo en «Para adultos» (nunca en la
-  pantalla de los niños ni con alertas del sistema) y no se instala mientras la IA arma un tema.
-- **Actualizaciones** (pieza «actualizaciones», `app/Sources/PiezaActualizaciones/`): Release `Repasa-macOS.zip` + `.sha256` solo desde
-  `https://github.com/repasa-app/repasa/releases/download/…`, huella verificada, la app anterior queda como respaldo hasta que la nueva
-  está en su lugar. Instalación de desarrollo (`~/Repasa/.repasa/desarrollo`): `git pull --ff-only` + `empaquetar.sh`. En los
-  guiones, todo lo variable va con `comillas()` (`pruebas/contrato.py` lo revisa).
+- **Arranque:** menús y ventana de inmediato (`arrancar`); lo que corre solo (revisar actualizaciones, al abrir y cada 6 horas) lo
+  arranca el host recién cuando hay idioma elegido. Una versión nueva se ofrece solo en «Para adultos» (nunca en la pantalla de los
+  niños ni con alertas del sistema) y no se instala mientras la IA arma un tema.
+- **Actualizaciones** (pieza «actualizaciones», `escritorio/src/pieza/actualizaciones.rs`): Release `Repasa-macOS.zip` + `.sha256`
+  solo desde `https://github.com/repasa-app/repasa/releases/download/…`, huella verificada. Instalación de desarrollo
+  (`~/Repasa/.repasa/desarrollo`): `git pull --ff-only` + `empaquetar.sh`.
 - Desarrollo en el Mac: el checkout va en `~/Developer/repasa` (macOS no distingue mayúsculas: `~/repasa` chocaría con `~/Repasa`);
-  `bash build.sh` (se niega si la IA está armando un tema) e instala en `~/Applications/Repasa.app`. Compilar solo:
-  `cd app && swift build -c release`. Swift solo compila en un Mac (o en el job `mac` de GitHub, que corre si cambió `app/`, `app.json` o `acciones.json`).
+  `bash build.sh` (se niega si la IA está armando un tema) e instala en `~/Applications/Repasa.app`. En cualquier sistema:
+  `cd escritorio && cargo run`. Pruebas: `cargo test`, `cargo clippy -- -D warnings` y `bash escritorio/pruebas/arranque.sh` (la abre
+  con Xvfb en Linux). GitHub las corre en Mac y Linux (job `app` de `revisar.yml`).
 - Una acción nueva del puente va en `ui/app.js`, `simular()`, `movil/host/host.js` (o en `SOLO_ESCRITORIO` de `pruebas/contrato.py`)
-  y, en el Mac, declarada en `app.json` → `acciones` (si solo corre un script) o registrada en `app/Sources/Repasa/`.
+  y, en el escritorio, declarada en `app.json` → `acciones` (si solo corre un script) o registrada en `escritorio/src/`.
 
 ## Publicar una versión
-Sube `CFBundleShortVersionString` en `app/Info.plist` y haz push a main: `.github/workflows/publicar.yml` corre las pruebas rápidas
-(`contrato.py` y `test_python.py`), arma la app en macos-15 con `herramientas/empaquetar.sh` y crea el Release `vX.Y.Z` con
+Sube `version` en `app.json` y haz push a main: `.github/workflows/publicar.yml` (pieza «empaquetado») corre las pruebas rápidas
+(`correr.sh` con `SIN_RUST=1`), arma la app en macos-15 con `herramientas/empaquetar.sh mac` y crea el Release `vX.Y.Z` con
 `Repasa-macOS.zip` + `.sha256` (nombres fijos: los usan la página, el README y la pieza «actualizaciones»). Si la versión ya existe,
 no hace nada; también se lanza con una etiqueta `vX.Y.Z` o a mano desde Actions. Por ahora solo Mac. En `CHANGELOG.md`, «Sin
 publicar» pasa a `## X.Y.Z · AAAA-MM-DD`.
@@ -192,7 +197,7 @@ publicar» pasa a `## X.Y.Z · AAAA-MM-DD`.
 - Contenido del usuario y de la IA con `esc()` y `data-sin-traducir`. `T()` ya escapa sus valores (no les pongas `esc()`); para
   meter HTML armado por el código (con lo de la persona ya escapado) está `Thtml()`. Los dos son de la pieza «i18n» (`ui/i18n.js`).
 - Archivos de piezas (`bin/nucleo.py`, `bin/ia.py`, `ui/i18n.js`, `ui/host.js`, `ui/tema.*`, `ui/componentes.*`, `ui/bienvenida.*`, `ui/cifrado.js`,
-  `app/Sources/PiezaHost/`, `app/Sources/PiezaActualizaciones/`): no se editan aquí;
+  `escritorio/src/pieza/`): no se editan aquí;
   ver «Piezas». Lo de Repasa que se ve distinto va en `app.css` sobre las clases `pz-*`.
 - Diálogos con `ui.dialogo({id, titulo, cuerpo, pie})` (devuelve `dlg(…)` en `app.js`); el título es una frase en español. Uno que no
   se cierra solo (mientras la IA arma un tema, la bienvenida) lleva `cerrable: false, sinEsc: true`.

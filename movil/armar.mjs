@@ -17,7 +17,8 @@ const version = JSON.parse(fs.readFileSync(path.join(AQUI, "package.json"), "utf
 fs.rmSync(SALIDA, { recursive: true, force: true });
 fs.mkdirSync(SALIDA, { recursive: true });
 const copiar = (de, a, filtro = () => true) => fs.cpSync(de, a, { recursive: true, filter: (f) => filtro(path.relative(de, f)) });
-copiar(path.join(RAIZ, "ui"), SALIDA, (r) => r !== "demo.json" && r !== "demo" && !r.startsWith("demo" + path.sep));
+// escritorio.js es la copia cifrada del computador (el celular la hace en su anfitrión): no va al teléfono.
+copiar(path.join(RAIZ, "ui"), SALIDA, (r) => r !== "demo.json" && r !== "escritorio.js" && r !== "demo" && !r.startsWith("demo" + path.sep));
 copiar(path.join(RAIZ, "motor"), path.join(SALIDA, "motor"));
 copiar(path.join(AQUI, "host"), path.join(SALIDA, "host"));
 fs.writeFileSync(path.join(SALIDA, "host", "arranque.js"), fs.readFileSync(path.join(AQUI, "host", "arranque.js"), "utf8").replace("__VERSION__", version));

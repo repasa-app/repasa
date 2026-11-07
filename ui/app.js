@@ -232,7 +232,9 @@
       <div class="pestanas" role="tablist">${PESTANAS.map(([id, n]) => `<button class="pestana" role="tab" data-pestana="${id}" aria-selected="${E.pestana === id}">${n}</button>`).join("")}</div>${cuerpo}</div>`;
   }
   const rutaMaterial = (t, f) => (HOST === "web" ? `demo/${f}` : MOVIL ? window.repasaMovil?.rutaMaterial?.(t, f) || ""
-    : `repasa://material/${encodeURIComponent(t.id)}/${encodeURIComponent(f)}`);
+    : medioMaterial(t, f));
+  /** Una foto del material que sirve la app de escritorio (<base>material/<tema>/<archivo>); "" si la ruta no es válida. */
+  function medioMaterial(t, f) { try { return host.medio("material", `${t.id}/${f}`); } catch { return ""; } }
 
   // ───────────── Sesión de preguntas ─────────────
   const BIEN = ["¡Bien!", "¡Excelente!", "¡Eso es!", "¡Muy bien!", "¡Perfecto!", "¡Sabía que podías!"];
@@ -659,6 +661,23 @@
     /** Vista previa y pruebas: `f(E, ui)` cambia el estado (también el de la pieza: ui.act, ui.ia) y se vuelve a pintar. */
     _probar(f) { f(E, ui, tema); pintar(); },
   });
+
+  // La copia cifrada en el computador: la app lee y escribe ~/Repasa y le pide a la página que cifre, descifre y junte con el
+  // motor JS (ui/escritorio.js sobre la pieza «cifrado»), igual que el celular. Se carga recién cuando hace falta.
+  let escritorioCargado = null;
+  function escritorio() {
+    if (!escritorioCargado) {
+      escritorioCargado = new Promise((listo, mal) => {
+        if (window.PiezaCifrado) return listo();
+        const s = document.createElement("script");
+        s.src = "cifrado.js"; s.onload = () => listo(); s.onerror = () => mal(new Error("cifrado.js"));
+        document.head.appendChild(s);
+      }).then(() => import("./escritorio.js")).catch((e) => { escritorioCargado = null; throw e; });
+    }
+    return escritorioCargado;
+  }
+  host.atender("escritorioArmar", async (d) => ({ ...(await (await escritorio()).armar(d.archivos, d.frase, E.hoy)), hoy: E.hoy }));
+  host.atender("escritorioTraer", async (d) => (await escritorio()).traer(d.archivos, d.texto, d.frase));
   window.Repasa._pruebas = { actualizarCaja, esCorrecta, elegirSesion, actualizarRacha, sumarDias, normalizar,
     // La bienvenida en las pruebas: `paso(0)` la abre en el idioma; `paso(n)`, en el paso n (con el idioma ya elegido).
     bienvenida: {

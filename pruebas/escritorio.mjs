@@ -1,5 +1,5 @@
-// Copia cifrada en las apps de escritorio (app/web/escritorio.js), sin navegador: node pruebas/escritorio.mjs
-// Arma la misma carpeta que deja empaquetar.sh (escritorio.js junto a motor/) y revisa que una copia hecha en el computador se
+// Copia cifrada en la app de escritorio (ui/escritorio.js), sin navegador: node pruebas/escritorio.mjs
+// Arma lo mismo que sirve la app (ui/escritorio.js y motor/ al lado, que la app sirve en <base>motor/) y revisa que una copia hecha en el computador se
 // abra en el teléfono y al revés, que la frase equivocada no toque nada, y que solo vuelva para escribir lo que cambió.
 import fs from "node:fs";
 import os from "node:os";
@@ -14,17 +14,19 @@ const TEMA = JSON.parse(fs.readFileSync(path.join(RAIZ, "pruebas", "datos", "ind
 const errores = [];
 const falla = (m) => { errores.push(m); console.log("  ✗ " + m); };
 
-const ui = fs.mkdtempSync(path.join(os.tmpdir(), "repasa-escritorio-"));
-fs.cpSync(path.join(RAIZ, "motor"), path.join(ui, "motor"), { recursive: true });
-fs.copyFileSync(path.join(RAIZ, "app", "web", "escritorio.js"), path.join(ui, "escritorio.js"));
+const recursos = fs.mkdtempSync(path.join(os.tmpdir(), "repasa-escritorio-"));
+const ui = path.join(recursos, "ui");
+fs.cpSync(path.join(RAIZ, "motor"), path.join(recursos, "motor"), { recursive: true });
+fs.mkdirSync(ui);
+fs.copyFileSync(path.join(RAIZ, "ui", "escritorio.js"), path.join(ui, "escritorio.js"));
 globalThis.window = {};
-// La app de Mac (Copia.swift) carga ui/cifrado.js (pieza «cifrado», script clásico) antes de escritorio.js: queda en window.PiezaCifrado.
+// ui/app.js carga ui/cifrado.js (pieza «cifrado», script clásico) antes de escritorio.js: queda en window.PiezaCifrado.
 globalThis.PiezaCifrado = createRequire(import.meta.url)(path.join(RAIZ, "ui", "cifrado.js"));
 await import(pathToFileURL(path.join(ui, "escritorio.js")).href);
 const R = globalThis.window.RepasaEscritorio;
 const FRASE = "cuatro palabras de prueba";
 
-// Lo que la app de Mac lee de ~/Repasa (texto para JSON, base64 para el material).
+// Lo que la app de escritorio lee de ~/Repasa (texto para JSON, base64 para el material).
 const computador = {
   "perfiles.json": { texto: JSON.stringify([{ id: "martina", nombre: "Martina", curso: "6b", avatar: "🦊" }]) },
   "progreso/martina.json": { texto: JSON.stringify({ puntos: 40, racha: 2, ultimo_dia: "2026-10-20", preguntas: { "independencia-de-chile/p1": { caja: 2, ultima: "2026-10-20" } }, sesiones: [] }) },
@@ -81,6 +83,6 @@ const computador = {
   if ((raro.escribir || []).some((x) => !copia.RUTA_PERMITIDA.test(x.ruta))) falla("traer devolvió una ruta fuera de las permitidas");
 }
 
-fs.rmSync(ui, { recursive: true, force: true });
+fs.rmSync(recursos, { recursive: true, force: true });
 if (errores.length) { console.log(`\n✗ ${errores.length} problemas`); process.exit(1); }
 console.log("✓ Copia en el escritorio OK");

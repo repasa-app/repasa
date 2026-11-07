@@ -68,9 +68,9 @@
    }
   },
   "host-ui": {
-   "version": "0.2.0",
+   "version": "0.3.0",
    "archivos": {
-    "ui/host.js": "cdca43b52982db53c3c018b807a8df0bc9282c9ff61b4ecee8037ddc3e5521aa"
+    "ui/host.js": "07505d7d288b0fdfa0d3a31430a57331f59198e2ebd413d3adf1f244883d501f"
    },
    "ficha": {
     "requiere": [],
@@ -116,40 +116,10 @@
     "red": []
    }
   },
-  "host-mac": {
-   "version": "0.3.0",
-   "archivos": {
-    "app/Sources/PiezaHost/Host.swift": "75342959251cc9d8921d23992c6e7cbb313a2a069bae1525a8bddc6d8ec38b59",
-    "app/Sources/PiezaHost/Procesador.swift": "92a11d93f07d381ba539f6bd45db6f1fa9d0e03e25f071e982d74bf32eea04dd",
-    "app/Sources/PiezaHost/Enchufe.swift": "7687d04c080e560be52d90b26d36e7cfad665f8792b2887b98f5214194038d4e",
-    "app/Sources/PiezaHost/Puente.swift": "be49c68045d6cd0371a55b84d5e7b3c7ded07badd0c984e1f26ff8c3aa73ec0a",
-    "app/Sources/PiezaHost/Carpeta.swift": "60676fa9a24d09105577ae1ab06bad3f379805490334e6e47afedb114292aa22",
-    "app/Sources/PiezaHost/Sistema.swift": "ec7219eee6a8b7678ce795572cd9225b1407200aa042e686bb7c833849df1277"
-   },
-   "ficha": {
-    "requiere": [
-     "nucleo",
-     "host-ui"
-    ],
-    "permisos": {
-     "mac": [
-      {
-       "clave": "Notificaciones",
-       "por": "solo si la app usa Notificaciones: macOS pregunta cuando la app lo pide (pedirPermiso), nunca al abrir"
-      },
-      {
-       "clave": "Llavero",
-       "por": "solo si la app usa Secretos: los tokens quedan en el Llavero de la persona, solo en este Mac"
-      }
-     ]
-    },
-    "red": []
-   }
-  },
   "actualizaciones": {
-   "version": "0.3.0",
+   "version": "0.4.0",
    "archivos": {
-    "app/Sources/PiezaActualizaciones/Actualizaciones.swift": "ab8c92a4ce314a388cbc0975f7b25d4fb4a8ad6fdbca6da60e3bcb0a4426e144"
+    "escritorio/src/pieza/actualizaciones.rs": "f75ebd8ebdfd8fda468cf8c613ea3509784e3cb3a5fe66c8be60ab32cf5f866f"
    },
    "ficha": {
     "requiere": [],
@@ -163,9 +133,9 @@
    }
   },
   "bienvenida": {
-   "version": "0.4.0",
+   "version": "0.4.1",
    "archivos": {
-    "ui/bienvenida.js": "e5d2d57fd43105b163670238b4aeb37c144367549179ab09be4b3f9a92173652",
+    "ui/bienvenida.js": "0265e1d4f6f9cea46eff5d0df1d1098c28bd0d889e0b26e8a8fb3936c8ccbd12",
     "ui/bienvenida.css": "cebd589f28a4fc2f1e08e143abd5b1a6531f8060dc346f53d2b9479b7c995719"
    },
    "ficha": {
@@ -174,6 +144,86 @@
     ],
     "permisos": {},
     "red": []
+   }
+  },
+  "host-tauri": {
+   "version": "0.1.0",
+   "archivos": {
+    "escritorio/src/pieza/mod.rs": "92f9a2a855b9f855b15a9a9112c5d87debc101a7d5ac8b39a2e02f67d38f37b1",
+    "escritorio/src/pieza/enchufe.rs": "1bed05654ba3826162aa6a7eccbdca94324193056cf860e8fc72c16227acdc2e",
+    "escritorio/src/pieza/procesador.rs": "e7fee7703077f71a9d393e52202cdef10b21ee41e83a8dda1616b13e3a1173b6",
+    "escritorio/src/pieza/protocolo.rs": "b19b87bb18ac63841871cad19da256372986ffe52512a6389fc87a1c59ca518b",
+    "escritorio/src/pieza/sistema.rs": "ecaef6d2c859ddf9b5b4dd707e1828932aa812f4e99ac670c25ec4527426457c",
+    "escritorio/src/pieza/vigilante.rs": "6be8519e7c8f9996e30af4c4f78695994966eb8476a4900eb9bbb840a583973d",
+    "escritorio/src/pieza/host.rs": "5611d1bda78d0bbf67eb0474aeb77f8c25c73b763f5937ab32ed772ad343293b",
+    "escritorio/iconos/32x32.png": "0c334ce1216ed797b3adf0a255bb68e22189ef538fe4a303180ef6c7e07ed7be",
+    "escritorio/iconos/128x128.png": "c86e3d530fc01c4bf60952a4005e269a6899a52aa3ca441b51e52e3afbd7dd5b",
+    "escritorio/iconos/128x128@2x.png": "8eb6cfbd01f498c1496e592d5ae169954b8448ae92e519863d7179d32e32ae73",
+    "escritorio/iconos/icon.icns": "bf63be44517a9ff5836916c204289a8ee905ebf45fdf28f01f75cd7f42fae65f",
+    "escritorio/iconos/icon.ico": "c9447636799599b281ae73a7a3b420869d9011248d18ad1231ce54b285f1ff7a",
+    "escritorio/iconos/icono.png": "3381c19a5e021e87e403b89f41ca097c4744e2699ccabc320c8131bf886a870e"
+   },
+   "ficha": {
+    "requiere": [
+     "nucleo",
+     "host-ui"
+    ],
+    "permisos": {
+     "mac": [
+      {
+       "clave": "Notificaciones",
+       "por": "solo si la app usa avisos: macOS pregunta la primera vez"
+      },
+      {
+       "clave": "Llavero",
+       "por": "solo si la app usa secretos: quedan en el Llavero de la persona, solo en este Mac"
+      }
+     ],
+     "windows": [
+      {
+       "clave": "Credenciales de Windows",
+       "por": "solo si la app usa secretos: quedan en el Administrador de credenciales de la persona"
+      }
+     ],
+     "linux": [
+      {
+       "clave": "Secret Service (gnome-keyring o KWallet)",
+       "por": "solo si la app usa secretos; sin llavero no se guarda nada"
+      }
+     ]
+    },
+    "red": []
+   },
+   "generados": {
+    "escritorio/Cargo.toml": "28f539c37f550c0022e5d2cbeab69bdbbb703ba206a5c66338b444f65df7ede3",
+    "escritorio/Info.plist": "cdd8026675baa933468ae1a711895e3f614838a74273964fb02b3c66e4ebe6fd",
+    "escritorio/build.rs": "8af41c0062014fc594e4bb9899e60ee9930ab57d4cf0c73041ff557d6ec736e6",
+    "escritorio/pruebas/arranque.sh": "0cad6c520098feba246aee52c854cdf85456104de147a02e9170f4e7c988e3e2",
+    "escritorio/tauri.conf.json": "32013b36383dee34e2ab504640a880ac1dd731cbf90f50a24bc6b5f5993f3f4e",
+    "escritorio/vacio/index.html": "d0e4206ea6cab581ef63f5eb57de088767133ef606110e2e5e53adf66074c924"
+   },
+   "una_vez": [
+    "escritorio/src/main.rs"
+   ]
+  },
+  "empaquetado": {
+   "version": "0.2.0",
+   "archivos": {
+    "herramientas/python.lock": "a038e911e34657048ee048b563506591fc62fdeaa08fb071926b54da57b75d42"
+   },
+   "ficha": {
+    "requiere": [
+     "host-tauri"
+    ],
+    "permisos": {},
+    "red": []
+   },
+   "generados": {
+    ".github/workflows/publicar.yml": "9ce585d6e1936f77d3b7aaad157e3ecc74bba55f9c8a1ae49bc0ab2f6ce34a45",
+    "build.sh": "7c872ab596db250f63ccbf7f9f476e8af01a8e86cb1830119639d8d2511bbe8a",
+    "escritorio/herramientas/preparar.sh": "941bbd2be95a5bfcbd1119cd888f99a828fe1d581bd8ead0d4d6b66e03fe9da2",
+    "herramientas/empaquetar.sh": "7251f4f3c23b8ddeb04a191cd23973108574aa554ee4b246d32981b06b4ffa8c",
+    "instalar.sh": "566171dfb94abbe111c7a04f6fe65dfacce4b614aedc212f62a48658868083c5"
    }
   }
  }
