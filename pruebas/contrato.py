@@ -113,7 +113,7 @@ llamadas_mac = set(re.findall(r'(?:llamar|responder)\((?:h, )?"(\w+)"', TODO_RUS
 llamadas_mac |= {d["responde"] for d in DECLARADAS.values() if d.get("responde")}
 if "copiar" not in acciones:
     llamadas_mac.discard("copiado")  # la respuesta de «copiar» (del host), que la interfaz de Repasa no usa
-for f in sorted(llamadas_mac - en_interfaz - {"soltados", "archivoCambiado"}):  # del host, solo si la app vigila o deja soltar
+for f in sorted(llamadas_mac - en_interfaz - {"soltados", "soltando", "archivoCambiado"}):  # del host, solo si la app vigila o deja soltar
     problemas.append(f"La app de escritorio llama window.Repasa.{f}, que no existe en ui/app.js.")
 for f in sorted(set(re.findall(r'\.pedir\("(\w+)"', TODO_RUST)) - atendidas):
     problemas.append(f"La app de escritorio le pide «{f}» a la página, pero ui/app.js no lo atiende (host.atender).")
