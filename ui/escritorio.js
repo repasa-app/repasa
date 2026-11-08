@@ -1,7 +1,7 @@
-// Copia cifrada en las apps de escritorio, con el mismo motor que el celular (motor/copia.js y la pieza «cifrado», WebCrypto).
-// La app de Mac lo copia a ui/escritorio.js (y motor/ a ui/motor/) al empaquetar y lo carga como módulo en su WebView, después de
-// ui/cifrado.js (script clásico: window.PiezaCifrado); la app
-// lee y escribe los archivos de ~/Repasa y este módulo solo cifra, descifra y junta, sobre un almacén en memoria.
+// Copia cifrada en la app de escritorio, con el mismo motor que el celular (motor/copia.js y la pieza «cifrado», WebCrypto).
+// ui/app.js lo carga como módulo solo en el computador, después de ui/cifrado.js (script clásico: window.PiezaCifrado). El motor
+// lo sirve la app en <base>motor/ (escritorio/src/main.rs, registrar_medios("motor")): por eso «../motor/». La app lee y
+// escribe los archivos de ~/Repasa y se los pasa con host.pedir; este módulo solo cifra, descifra y junta, en memoria.
 //
 //   RepasaEscritorio.armar(archivos, frase, hoy)  → {ok, texto, cantidad} | {ok: false, error}
 //   RepasaEscritorio.traer(archivos, texto, frase) → {ok, resumen, escribir: [{ruta, texto} | {ruta, base64}]} | {ok: false, error}
@@ -9,8 +9,8 @@
 // `archivos` es {ruta: {texto} | {base64}} con rutas relativas a la carpeta Repasa (las de copia.RUTA_PERMITIDA). Para traer, el
 // material puede venir con base64 vacío: solo importa que existe (juntar nunca pisa una foto). Lo que hay que escribir vuelve en
 // `escribir` y la app lo revisa otra vez antes de tocar el disco (solo rutas permitidas, nunca fuera de ~/Repasa).
-import { Almacen, adaptadorMemoria } from "./motor/datos.js";
-import { armarCopia, abrirCopia, juntar, RUTA_PERMITIDA } from "./motor/copia.js";
+import { Almacen, adaptadorMemoria } from "../motor/datos.js";
+import { armarCopia, abrirCopia, juntar, RUTA_PERMITIDA } from "../motor/copia.js";
 
 const NO_SE_PUDO = { armar: "No se pudo guardar la copia.", traer: "No se pudo abrir el archivo." };
 

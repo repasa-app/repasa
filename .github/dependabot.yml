@@ -1,4 +1,4 @@
-# Dependabot: avisa cuando hay versiones nuevas de las actions (fijadas por SHA) y de las dependencias de la app del celular, y abre
+# Dependabot: avisa cuando hay versiones nuevas de las actions (fijadas por SHA), de los crates de la app de escritorio y de las dependencias de la app del celular, y abre
 # un pull request para revisarlas. Nada se junta solo: cada pull request se revisa como cualquier aporte (ver CONTRIBUTING.md).
 # `cooldown`: espera unos días antes de proponer una versión recién publicada; si un paquete o una action fue secuestrada, casi
 # siempre se descubre y se retira en ese plazo. Las alertas de seguridad (Dependabot security updates) no esperan.
@@ -11,6 +11,15 @@ updates:
     groups:
       actions: { patterns: ["*"] }
     commit-message: { prefix: "Actions" }
+
+  # Los crates de Rust de la app de escritorio (escritorio/Cargo.lock, pieza «host-tauri»).
+  - package-ecosystem: cargo
+    directory: /escritorio
+    schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
+    groups:
+      crates: { patterns: ["*"] }
+    commit-message: { prefix: "Escritorio" }
 
   # Capacitor y sus plugins oficiales (movil/package.json, versiones exactas). Un cambio de versión mayor de Capacitor pide migrar
   # los proyectos de Xcode y Android Studio: se hace a mano, no por Dependabot.

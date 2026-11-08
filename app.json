@@ -1,6 +1,8 @@
 {
  "nombre": "Repasa",
  "id": "repasa",
+ "version": "0.1.0",
+ "repo": "repasa-app/repasa",
  "datos": "visible",
  "icono": "docs/favicon.svg",
  "plataformas": [
@@ -32,6 +34,21 @@
  "sin_acciones": [
   "listaIA"
  ],
+ "empaquetado": {
+  "descripcion": "Estudia con fotos de tu cuaderno: resumen, preguntas y tarjetas con la IA de un adulto.",
+  "categoria": "public.app-category.education",
+  "linux_categoria": "Education",
+  "carpetas": [
+   "temas",
+   "motor"
+  ],
+  "quitar": [
+   "ui/demo",
+   "temas/README.md"
+  ],
+  "permisos": [],
+  "ocupada": []
+ },
  "acciones": {
   "guardarPerfil": {
    "script": "guardar.py",

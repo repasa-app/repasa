@@ -2,7 +2,8 @@
 # - comun: sintaxis, privacidad básica, pruebas de Python (con una IA falsa), del motor JS (que dé lo mismo que Python), contrato del
 #   puente y de la interfaz (español/inglés, celular, contraste, misma lógica que Python), también con el anfitrión del teléfono.
 #   Los proyectos nativos de movil/ (Xcode y Gradle) no se compilan aquí todavía.
-# - mac: compila la app de Mac (app/, Swift) en macOS cuando cambió algo de ella.
+# - app: la app de escritorio (Rust, pieza «host-tauri») en Mac y Linux: compila con Cargo.lock, pasa sus pruebas y clippy sin
+#   avisos; en Linux además se abre de verdad con una pantalla virtual (la interfaz manda «listo» y recibe el estado).
 name: Revisar
 on:
   push:
@@ -25,7 +26,7 @@ jobs:
       - name: Sintaxis
         run: |
           node --check ui/app.js
-          for f in motor/*.js movil/host/*.js movil/*.mjs app/web/*.js herramientas/*.mjs pruebas/*.mjs pruebas/capacitor_falso.js; do node --check "$f"; done
+          for f in motor/*.js movil/host/*.js movil/*.mjs herramientas/*.mjs pruebas/*.mjs pruebas/capacitor_falso.js; do node --check "$f"; done
           python3 -m py_compile bin/*.py pruebas/*.py
           python3 -c "import json, glob; [json.load(open(f, encoding='utf-8')) for f in glob.glob('ui/idiomas/*.json') + glob.glob('temas/*.json') + ['ui/demo.json', 'pruebas/casos.json']]"
           for f in herramientas/*.sh pruebas/*.sh build.sh; do bash -n "$f"; done
@@ -44,9 +45,9 @@ jobs:
         run: python3 pruebas/test_python.py
       - name: Pruebas del motor JS (lo mismo que Python, cifrado, copia)
         run: node pruebas/motor.mjs
-      - name: Copia cifrada en el escritorio (app/web/escritorio.js con el motor)
+      - name: Copia cifrada en el escritorio (ui/escritorio.js con el motor)
         run: node pruebas/escritorio.mjs
-      - name: Contrato del puente (interfaz, celular, Mac y plugins nativos)
+      - name: Contrato del puente (interfaz, celular, escritorio y plugins nativos)
         run: python3 pruebas/contrato.py
       - name: Pruebas de la interfaz
         run: |
@@ -69,20 +70,24 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: capturas, path: capturas, retention-days: 14, if-no-files-found: ignore }
-  mac:
-    runs-on: macos-15
-    timeout-minutes: 30
+  app:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults: { run: { shell: bash, working-directory: escritorio } }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with: { fetch-depth: 0, persist-credentials: false }
-      - name: ¿Cambió algo de la app de Mac?
-        id: cambio
-        # Lo que viene del evento entra por variables de entorno, nunca pegado en el guion.
-        env:
-          ANTES: ${{ github.event.before }}
-          EVENTO: ${{ github.event_name }}
+        with: { persist-credentials: false }
+      - name: Lo que Tauri necesita en Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev xvfb
+      - name: Pruebas y clippy (exactamente lo de Cargo.lock)
         run: |
-          if [ "$EVENTO" != "push" ] || ! git cat-file -e "$ANTES" 2>/dev/null || git diff --name-only "$ANTES" HEAD | grep -qE '^(app/|herramientas/empaquetar\.sh|build\.sh|app\.json|acciones\.json)'; then echo "si=1" >> "$GITHUB_OUTPUT"; fi
-      - name: Compilar
-        if: steps.cambio.outputs.si == '1'
-        run: cd app && swift build -c release
+          cargo test --locked
+          cargo clippy --locked --all-targets -- -D warnings
+      - name: La app abierta en Linux (pantalla virtual)
+        if: runner.os == 'Linux'
+        run: bash pruebas/arranque.sh

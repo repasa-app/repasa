@@ -6,6 +6,7 @@ Perfiles, temas, progreso, pruebas y ajustes (lo mismo que Almacen.estado() en m
 (temas/*.json validados, sin los que ya se agregaron), igual que el anfitrión del celular, y las IA del adulto que hay en este
 computador (pieza «ia»: ia.lista()). La app de escritorio le suma lo suyo (versión, carpeta, actualizaciones y capacidades).
 """
+import datetime
 import glob
 import json
 import os
@@ -29,7 +30,8 @@ def catalogo(tengo):
 def estado():
     datos.carpeta_privada()
     ts = datos.temas_validos()
-    return {"ok": True, "perfiles": datos.perfiles(), "temas": ts, "progreso": datos.progreso(), "pruebas": datos.pruebas(),
+    # «hoy» en la fecha de este computador: el repaso cuenta los días con ella (la app de escritorio no la calcula).
+    return {"ok": True, "hoy": datetime.date.today().isoformat(), "perfiles": datos.perfiles(), "temas": ts, "progreso": datos.progreso(), "pruebas": datos.pruebas(),
             "config": datos.config(), "catalogo": catalogo({t["id"] for t in ts}), "ias": ia.lista()}
 
 

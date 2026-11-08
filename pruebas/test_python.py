@@ -283,20 +283,26 @@ class Piezas(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(os.stat(ruta).st_mode), 0o600, "lo de los niños queda 0600 aunque antes fuera otra cosa")
 
     def test_app_json_va_dentro_de_la_app(self):
+        """app.json y acciones.json (las acciones declaradas que lee «host-tauri») van en los recursos de la app, con bin/, ui/,
+        los temas del catálogo y el motor JS (la copia cifrada lo importa desde <base>motor/)."""
+        with open(os.path.join(RAIZ, "escritorio", "tauri.conf.json"), encoding="utf-8") as f:
+            recursos = json.load(f)["bundle"]["resources"]
+        for r in ("app.json", "acciones.json", "bin/", "ui/", "temas/", "motor/"):
+            self.assertIn("../" + r, recursos, r)
+            self.assertEqual(recursos["../" + r], "recursos/" + r)
         with open(os.path.join(RAIZ, "herramientas", "empaquetar.sh"), encoding="utf-8") as f:
-            sh = f.read()
-        self.assertIn('cp "$RAIZ/app.json" "$CODIGO/app.json"', sh)
-        self.assertIn('cp "$RAIZ/acciones.json" "$CODIGO/acciones.json"', sh, "las acciones declaradas que lee la pieza «host-mac»")
+            self.assertIn("QUITAR=(ui/demo.json ui/demo temas/README.md)", f.read(), "la app nunca lleva la demo")
         with open(os.path.join(RAIZ, "piezas.json"), encoding="utf-8") as f:
-            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes", "cifrado", "host-mac", "bienvenida",
-                                                            "actualizaciones"})
+            self.assertEqual(set(json.load(f)["piezas"]), {"nucleo", "ia", "i18n", "host-ui", "tema", "componentes", "cifrado", "host-tauri", "bienvenida",
+                                                            "actualizaciones", "empaquetado"})
 
     def test_cifrado_es_la_pieza(self):
-        """La copia cifrada usa la pieza «cifrado» (ui/cifrado.js): sin copia propia, y el Mac la carga antes que escritorio.js."""
+        """La copia cifrada usa la pieza «cifrado» (ui/cifrado.js): sin copia propia, y en el computador app.js la carga antes que
+        escritorio.js."""
         self.assertFalse(os.path.exists(os.path.join(RAIZ, "motor", "cifrado.js")), "motor/cifrado.js se reemplazó por la pieza")
-        with open(os.path.join(RAIZ, "app", "Sources", "Repasa", "Copia.swift"), encoding="utf-8") as f:
-            swift = f.read()
-        self.assertLess(swift.index("c.src = 'cifrado.js'"), swift.index("s.src = 'escritorio.js'"))
+        with open(os.path.join(RAIZ, "ui", "app.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertLess(js.index('s.src = "cifrado.js"'), js.index('import("./escritorio.js")'))
 
     def test_piezas_de_la_interfaz_en_orden(self):
         """Los estilos de las piezas van antes que app.css (Repasa los ajusta) y sus scripts antes que app.js (que los usa)."""

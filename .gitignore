@@ -3,7 +3,7 @@
 !/.gitignore
 !/.github/
 !/.claude/
-!/app/
+!/escritorio/
 !/bin/
 !/motor/
 !/movil/
@@ -15,6 +15,7 @@
 !/README.md
 !/AGENTS.md
 !/build.sh
+!/instalar.sh
 !/CLAUDE.md
 !/GEMINI.md
 !/CHANGELOG.md
@@ -25,7 +26,9 @@
 __pycache__/
 .terminos-privados
 capturas/
-.build/
+escritorio/target/
+escritorio/gen/
+escritorio/vendor/
 /dist/
 
 # Pieza: la descripción de la app y las piezas que usa

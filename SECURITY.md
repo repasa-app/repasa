@@ -24,11 +24,11 @@ Qué puedes esperar:
   deje ver nombres o temas.
 - La app del celular: el puente entre la página y los plugins nativos (`movil/plugins`), permisos, archivos de la app expuestos,
   respaldos o cualquier dato que salga del teléfono sin cifrar.
-- La app de Mac: el puente entre la página y la app (pieza «host-mac» en `app/Sources/PiezaHost/`: solo el marco principal con la
-  interfaz de `ui/`, las acciones declaradas en `acciones.json` con sus datos validados y su límite de tiempo; lo propio de Repasa en
-  `app/Sources/Repasa/`), leer o escribir fuera de `~/Repasa`, correr comandos con lo que manda la interfaz, abrir un enlace que no sea
-  de Repasa, o colar una actualización que no venga de los Releases de Repasa con su huella (pieza «actualizaciones» en
-  `app/Sources/PiezaActualizaciones/`).
+- La app de escritorio (Mac): el puente entre la página y la app (pieza «host-tauri» en `escritorio/src/pieza/`: solo la ventana
+  propia con la interfaz de `ui/`, las acciones declaradas en `acciones.json` con sus datos validados y su límite de tiempo; lo propio
+  de Repasa en `escritorio/src/`), leer o escribir fuera de `~/Repasa`, correr comandos con lo que manda la interfaz, abrir un enlace
+  que no sea de Repasa, o colar una actualización que no venga de los Releases de Repasa con su huella (pieza «actualizaciones» en
+  `escritorio/src/pieza/actualizaciones.rs`).
 - Cualquier cosa que mande datos de la familia afuera, muestre publicidad o contenido inapropiado para la edad, o permita contactar
   a un niño.
 - Problemas en los workflows de GitHub o en cómo se arma la app que permitan colar código.
