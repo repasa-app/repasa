@@ -160,7 +160,7 @@
 
   function barra(soloMarca = false) {
     const pf = soloMarca ? null : perfil();
-    return `<header class="barra"><span class="marca">${LOGO}<span>Repasa</span></span><span class="espacio"></span>
+    return `<header class="barra pz-zona-oscura"><span class="marca">${LOGO}<span>Repasa</span></span><span class="espacio"></span>
       ${pf ? `<span class="marcador" title="Racha de días seguidos">🔥 <span data-sin-traducir>${esc(prog().racha || 0)}</span></span>
         <span class="marcador" title="Puntos">⭐ <span data-sin-traducir>${esc(prog().puntos || 0)}</span></span>
         <button class="chip-perfil" data-accion="cambiar-perfil" title="Cambiar de perfil"><span class="av" aria-hidden="true">${esc(pf.avatar)}</span><span data-sin-traducir>${esc(pf.nombre)}</span></button>` : ""}
