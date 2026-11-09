@@ -6,6 +6,8 @@ Lo que cambia para quien usa Repasa, en palabras simples. Cada versión publicad
 
 ## Sin publicar · Unreleased
 
+## 0.2.0 · 2026-11-08
+
 - La app de Mac es más liviana: ahora está hecha con Rust y Tauri, sobre el navegador del sistema. Todo sigue igual: tus perfiles,
   temas, progreso, la copia cifrada y tus ajustes. · *The Mac app is lighter: it's now built with Rust and Tauri, on the system's
   browser. Everything stays the same: your profiles, topics, progress, the encrypted copy and your settings.*

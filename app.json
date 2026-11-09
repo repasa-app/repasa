@@ -1,7 +1,7 @@
 {
  "nombre": "Repasa",
  "id": "repasa",
- "version": "0.1.0",
+ "version": "0.2.0",
  "repo": "repasa-app/repasa",
  "datos": "visible",
  "icono": "docs/favicon.svg",
