@@ -5,6 +5,8 @@ Lo que cambia para quien usa Repasa, en palabras simples. Cada versión publicad
 *What changes for people using Repasa, in plain words. Each published version can be downloaded from Releases.*
 
 ## Sin publicar · Unreleased
+
+## 0.3.0 · 2026-11-09
 - Repasa tiene el estilo nuevo de la familia: barra de arriba oscura, fondo cálido y tarjetas blancas, con la misma hoja de cuaderno. · *Repasa has the family's new look: a dark top bar, a warm background and white cards, with the same notebook page.*
 
 ## 0.2.0 · 2026-11-08
